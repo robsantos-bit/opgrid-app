@@ -14,16 +14,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { getAtendimentos, addAtendimento, updateAtendimento, deleteAtendimento, getPrestadores, getTarifas, getTabelaPrecoPrestador } from '@/data/store';
 import { Atendimento, AtendimentoTarifa, StatusAtendimento } from '@/types';
-import { Plus, Pencil, Trash2, Eye, Search, X, ChevronLeft, Clock } from 'lucide-react';
+import { Plus, Pencil, Trash2, Eye, Search, X, ChevronLeft } from 'lucide-react';
 
 const STATUS_OPTIONS: StatusAtendimento[] = ['Aberto', 'Em andamento', 'Concluído', 'Cancelado', 'Faturado'];
 const TIPOS_ATD = ['Guincho', 'Reboque', 'Resgate', 'Munck', 'Guindaste', 'Carga Especial', 'Outro'];
 
 const statusVariant = (s: StatusAtendimento) => {
   switch (s) {
-    case 'Concluído': case 'Faturado': return 'default' as const;
+    case 'Concluído': case 'Faturado': return 'success' as const;
     case 'Cancelado': return 'destructive' as const;
-    default: return 'secondary' as const;
+    case 'Aberto': return 'warning' as const;
+    default: return 'info' as const;
   }
 };
 
@@ -43,10 +44,9 @@ export default function Atendimentos() {
 
   const filtered = useMemo(() => data.filter(a => {
     const s = search.toLowerCase();
-    const match = !s || a.protocolo.toLowerCase().includes(s) || a.clienteNome.toLowerCase().includes(s) || a.placa.toLowerCase().includes(s);
-    const matchS = filterStatus === 'all' || a.status === filterStatus;
-    const matchP = filterPrestador === 'all' || a.prestadorId === filterPrestador;
-    return match && matchS && matchP;
+    return (!s || a.protocolo.toLowerCase().includes(s) || a.clienteNome.toLowerCase().includes(s) || a.placa.toLowerCase().includes(s))
+      && (filterStatus === 'all' || a.status === filterStatus)
+      && (filterPrestador === 'all' || a.prestadorId === filterPrestador);
   }), [data, search, filterStatus, filterPrestador]);
 
   const totalPages = Math.ceil(filtered.length / perPage);
@@ -54,164 +54,100 @@ export default function Atendimentos() {
 
   const openNew = () => {
     const proto = `ATD-2026-${String(data.length + 1).padStart(4, '0')}`;
-    setForm({
-      protocolo: proto, dataHora: new Date().toISOString().slice(0, 16), clienteNome: '', solicitante: '',
-      origem: '', destino: '', tipoAtendimento: 'Guincho', veiculo: '', placa: '',
-      kmPrevisto: 0, km: 0, horasTrabalhadas: 0, horasParadas: 0, status: 'Aberto', observacoes: '', prestadorId: '',
-    });
-    setFormTarifas([]);
-    setModalOpen(true);
+    setForm({ protocolo: proto, dataHora: new Date().toISOString().slice(0, 16), clienteNome: '', solicitante: '', origem: '', destino: '', tipoAtendimento: 'Guincho', veiculo: '', placa: '', kmPrevisto: 0, km: 0, horasTrabalhadas: 0, horasParadas: 0, status: 'Aberto', observacoes: '', prestadorId: '' });
+    setFormTarifas([]); setModalOpen(true);
   };
-
-  const openEdit = (a: Atendimento) => {
-    setForm({ ...a });
-    setFormTarifas([...a.tarifas]);
-    setModalOpen(true);
-  };
-
-  const addTarifaLine = () => {
-    setFormTarifas(prev => [...prev, { tarifaId: '', quantidade: 1, valorUnitario: 0, valorTotal: 0 }]);
-  };
-
+  const openEdit = (a: Atendimento) => { setForm({ ...a }); setFormTarifas([...a.tarifas]); setModalOpen(true); };
+  const addTarifaLine = () => setFormTarifas(prev => [...prev, { tarifaId: '', quantidade: 1, valorUnitario: 0, valorTotal: 0 }]);
   const updateTarifaLine = (idx: number, field: string, value: any) => {
     setFormTarifas(prev => {
       const updated = [...prev];
       updated[idx] = { ...updated[idx], [field]: value };
       if (field === 'tarifaId' && form.prestadorId) {
-        const precos = getTabelaPrecoPrestador(form.prestadorId);
-        const preco = precos.find(p => p.tarifaId === value);
+        const preco = getTabelaPrecoPrestador(form.prestadorId).find(p => p.tarifaId === value);
         if (preco) updated[idx].valorUnitario = preco.valor;
       }
       updated[idx].valorTotal = updated[idx].quantidade * updated[idx].valorUnitario;
       return updated;
     });
   };
-
   const removeTarifaLine = (idx: number) => setFormTarifas(prev => prev.filter((_, i) => i !== idx));
   const totalCalc = formTarifas.reduce((s, t) => s + t.valorTotal, 0);
 
   const handleSave = () => {
     if (!form.prestadorId || !form.clienteNome) { toast.error('Preencha prestador e cliente.'); return; }
     const now = new Date().toISOString();
-    const timeline = form.id
-      ? (data.find(a => a.id === form.id)?.timeline || [])
-      : [{ data: now, descricao: 'Atendimento aberto' }];
-
-    const atd: Atendimento = {
-      ...form as Atendimento,
-      id: form.id || `a${Date.now()}`,
-      tarifas: formTarifas,
-      valorTotal: totalCalc,
-      timeline,
-    };
-    if (form.id) { updateAtendimento(atd); toast.success('Atendimento atualizado!'); }
-    else { addAtendimento(atd); toast.success('Atendimento criado!'); }
-    setData(getAtendimentos());
-    setModalOpen(false);
+    const timeline = form.id ? (data.find(a => a.id === form.id)?.timeline || []) : [{ data: now, descricao: 'Atendimento aberto' }];
+    const atd: Atendimento = { ...form as Atendimento, id: form.id || `a${Date.now()}`, tarifas: formTarifas, valorTotal: totalCalc, timeline };
+    if (form.id) { updateAtendimento(atd); toast.success('Atualizado!'); } else { addAtendimento(atd); toast.success('Criado!'); }
+    setData(getAtendimentos()); setModalOpen(false);
   };
-
-  const handleDelete = (id: string) => {
-    deleteAtendimento(id);
-    setData(getAtendimentos());
-    toast.success('Atendimento removido.');
-  };
-
+  const handleDelete = (id: string) => { deleteAtendimento(id); setData(getAtendimentos()); toast.success('Removido.'); };
   const updateField = (field: string, value: any) => setForm(prev => ({ ...prev, [field]: value }));
 
-  // Detail view
   if (detailAtd) {
     const prest = prestadores.find(p => p.id === detailAtd.prestadorId);
     return (
-      <div className="space-y-4 animate-fade-in">
+      <div className="space-y-5 animate-fade-in">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => setDetailAtd(null)}><ChevronLeft className="h-4 w-4" /></Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{detailAtd.protocolo}</h1>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailAtd(null)}><ChevronLeft className="h-4 w-4" /></Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="truncate">{detailAtd.protocolo}</h1>
+              <Badge variant={statusVariant(detailAtd.status)}>{detailAtd.status}</Badge>
+            </div>
             <p className="text-sm text-muted-foreground">{detailAtd.clienteNome} · {prest?.nomeFantasia}</p>
           </div>
-          <Badge variant={statusVariant(detailAtd.status)} className="ml-auto">{detailAtd.status}</Badge>
+          <Button variant="outline" size="sm" onClick={() => openEdit(detailAtd)}><Pencil className="h-3.5 w-3.5 mr-1.5" />Editar</Button>
         </div>
-
         <Tabs defaultValue="dados">
-          <TabsList>
-            <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
-            <TabsTrigger value="tarifas">Tarifas ({detailAtd.tarifas.length})</TabsTrigger>
-            <TabsTrigger value="timeline">Timeline</TabsTrigger>
-          </TabsList>
+          <TabsList className="h-9"><TabsTrigger value="dados" className="text-xs">Dados</TabsTrigger><TabsTrigger value="tarifas" className="text-xs">Tarifas ({detailAtd.tarifas.length})</TabsTrigger><TabsTrigger value="timeline" className="text-xs">Timeline</TabsTrigger></TabsList>
           <TabsContent value="dados" className="mt-4">
-            <Card>
-              <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div><span className="text-muted-foreground">Solicitante:</span> <span className="font-medium ml-1">{detailAtd.solicitante || '-'}</span></div>
-                <div><span className="text-muted-foreground">Tipo:</span> <span className="font-medium ml-1">{detailAtd.tipoAtendimento}</span></div>
-                <div><span className="text-muted-foreground">Veículo:</span> <span className="font-medium ml-1">{detailAtd.veiculo}</span></div>
-                <div><span className="text-muted-foreground">Placa:</span> <span className="font-mono font-medium ml-1">{detailAtd.placa}</span></div>
-                <div><span className="text-muted-foreground">Origem:</span> <span className="font-medium ml-1">{detailAtd.origem}</span></div>
-                <div><span className="text-muted-foreground">Destino:</span> <span className="font-medium ml-1">{detailAtd.destino}</span></div>
-                <div><span className="text-muted-foreground">Km Previsto:</span> <span className="font-medium ml-1">{detailAtd.kmPrevisto}</span></div>
-                <div><span className="text-muted-foreground">Km Realizado:</span> <span className="font-medium ml-1">{detailAtd.km}</span></div>
-                <div><span className="text-muted-foreground">Horas Trabalhadas:</span> <span className="font-medium ml-1">{detailAtd.horasTrabalhadas}</span></div>
-                <div><span className="text-muted-foreground">Horas Paradas:</span> <span className="font-medium ml-1">{detailAtd.horasParadas}</span></div>
-                <div><span className="text-muted-foreground">Data/Hora:</span> <span className="font-medium ml-1">{new Date(detailAtd.dataHora).toLocaleString('pt-BR')}</span></div>
-                <div><span className="text-muted-foreground">Valor Total:</span> <span className="font-bold text-lg ml-1">R$ {detailAtd.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span></div>
-                {detailAtd.observacoes && <div className="col-span-2"><span className="text-muted-foreground">Observações:</span> <span className="ml-1">{detailAtd.observacoes}</span></div>}
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-[13px]">
+                {[['Solicitante', detailAtd.solicitante || '—'], ['Tipo', detailAtd.tipoAtendimento], ['Veículo', detailAtd.veiculo], ['Placa', detailAtd.placa], ['Origem', detailAtd.origem], ['Destino', detailAtd.destino], ['Km Previsto', detailAtd.kmPrevisto], ['Km Realizado', detailAtd.km], ['Horas Trab.', detailAtd.horasTrabalhadas], ['Horas Paradas', detailAtd.horasParadas], ['Data/Hora', new Date(detailAtd.dataHora).toLocaleString('pt-BR')]].map(([l, v]) => (
+                  <div key={String(l)} className="flex justify-between py-1.5 border-b border-dashed border-border/60">
+                    <span className="text-muted-foreground">{l}</span><span className="font-medium">{v}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between py-1.5 border-b border-dashed border-border/60 md:col-span-2">
+                  <span className="text-muted-foreground">Valor Total</span><span className="font-bold text-lg">R$ {detailAtd.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                </div>
+              </div>
+              {detailAtd.observacoes && <div className="mt-4 p-3 rounded-lg bg-muted/50 text-[13px]"><span className="text-muted-foreground">Obs: </span>{detailAtd.observacoes}</div>}
+            </CardContent></Card>
           </TabsContent>
           <TabsContent value="tarifas" className="mt-4">
-            <Card>
-              <CardContent className="p-0">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tarifa</TableHead>
-                      <TableHead>Qtd</TableHead>
-                      <TableHead>Unitário</TableHead>
-                      <TableHead className="text-right">Subtotal</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {detailAtd.tarifas.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Sem tarifas aplicadas</TableCell></TableRow>
-                    ) : (
-                      <>
-                        {detailAtd.tarifas.map((t, i) => (
-                          <TableRow key={i}>
-                            <TableCell className="font-medium">{tarifasList.find(x => x.id === t.tarifaId)?.nome || t.tarifaId}</TableCell>
-                            <TableCell>{t.quantidade}</TableCell>
-                            <TableCell>R$ {t.valorUnitario.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-medium">R$ {t.valorTotal.toFixed(2)}</TableCell>
-                          </TableRow>
-                        ))}
-                        <TableRow className="bg-muted/30">
-                          <TableCell colSpan={3} className="text-right font-bold">Total</TableCell>
-                          <TableCell className="text-right font-bold">R$ {detailAtd.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
-                        </TableRow>
-                      </>
-                    )}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
+            <Card><CardContent className="p-0">
+              <Table>
+                <TableHeader><TableRow className="hover:bg-transparent"><TableHead className="text-[11px] uppercase tracking-wider">Tarifa</TableHead><TableHead className="text-[11px] uppercase tracking-wider">Qtd</TableHead><TableHead className="text-[11px] uppercase tracking-wider">Unitário</TableHead><TableHead className="text-[11px] uppercase tracking-wider text-right">Subtotal</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {detailAtd.tarifas.length === 0 ? <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground text-sm">Sem tarifas</TableCell></TableRow> : (
+                    <>{detailAtd.tarifas.map((t, i) => (
+                      <TableRow key={i} className="table-row-hover"><TableCell className="font-medium text-[13px]">{tarifasList.find(x => x.id === t.tarifaId)?.nome || t.tarifaId}</TableCell><TableCell className="tabular-nums text-[13px]">{t.quantidade}</TableCell><TableCell className="tabular-nums text-[13px]">R$ {t.valorUnitario.toFixed(2)}</TableCell><TableCell className="text-right font-medium tabular-nums text-[13px]">R$ {t.valorTotal.toFixed(2)}</TableCell></TableRow>
+                    ))}<TableRow className="bg-muted/30"><TableCell colSpan={3} className="text-right font-semibold text-[13px]">Total</TableCell><TableCell className="text-right font-bold text-[13px]">R$ {detailAtd.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell></TableRow></>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent></Card>
           </TabsContent>
           <TabsContent value="timeline" className="mt-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  {detailAtd.timeline.map((ev, i) => (
-                    <div key={i} className="flex gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1.5" />
-                        {i < detailAtd.timeline.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
-                      </div>
-                      <div className="pb-4">
-                        <p className="text-sm font-medium">{ev.descricao}</p>
-                        <p className="text-xs text-muted-foreground">{new Date(ev.data).toLocaleString('pt-BR')}</p>
-                      </div>
+            <Card><CardContent className="p-5">
+              <div className="space-y-0">
+                {detailAtd.timeline.map((ev, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-primary mt-2" />
+                      {i < detailAtd.timeline.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
                     </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+                    <div className="pb-5">
+                      <p className="text-[13px] font-medium">{ev.descricao}</p>
+                      <p className="text-[11px] text-muted-foreground">{new Date(ev.data).toLocaleString('pt-BR')}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent></Card>
           </TabsContent>
         </Tabs>
       </div>
@@ -219,196 +155,102 @@ export default function Atendimentos() {
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Atendimentos</h1>
-          <p className="text-sm text-muted-foreground">Gerencie os atendimentos realizados</p>
-        </div>
-        <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Atendimento</Button>
+    <div className="space-y-5 animate-fade-in">
+      <div className="page-header">
+        <div className="page-header-text"><h1>Atendimentos</h1><p>Gerencie os atendimentos realizados</p></div>
+        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1.5" />Novo Atendimento</Button>
       </div>
 
-      <Card>
-        <CardContent className="p-4 flex flex-wrap gap-3">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar protocolo, cliente ou placa..." className="pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
-          </div>
-          <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setPage(0); }}>
-            <SelectTrigger className="w-[150px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos Status</SelectItem>
-              {STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterPrestador} onValueChange={v => { setFilterPrestador(v); setPage(0); }}>
-            <SelectTrigger className="w-[180px]"><SelectValue placeholder="Prestador" /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos Prestadores</SelectItem>
-              {prestadores.map(p => <SelectItem key={p.id} value={p.id}>{p.nomeFantasia}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Protocolo</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="hidden md:table-cell">Prestador</TableHead>
-                <TableHead className="hidden lg:table-cell">Tipo</TableHead>
-                <TableHead className="hidden xl:table-cell">Data</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paged.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground">Nenhum atendimento</TableCell></TableRow>
-              ) : paged.map(a => {
-                const prest = prestadores.find(p => p.id === a.prestadorId);
-                return (
-                  <TableRow key={a.id} className="table-row-hover cursor-pointer" onClick={() => setDetailAtd(a)}>
-                    <TableCell className="font-mono text-sm">{a.protocolo}</TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{a.clienteNome}</p>
-                        <p className="text-xs text-muted-foreground">{a.placa}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">{prest?.nomeFantasia || '-'}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">{a.tipoAtendimento}</TableCell>
-                    <TableCell className="hidden xl:table-cell text-sm">{new Date(a.dataHora).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell><Badge variant={statusVariant(a.status)}>{a.status}</Badge></TableCell>
-                    <TableCell className="text-right font-medium">R$ {a.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1" onClick={e => e.stopPropagation()}>
-                        <Button variant="ghost" size="icon" onClick={() => setDetailAtd(a)}><Eye className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={() => openEdit(a)}><Pencil className="h-4 w-4" /></Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                              <AlertDialogDescription>Deseja excluir o atendimento {a.protocolo}?</AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDelete(a.id)}>Excluir</AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{filtered.length} registro(s)</p>
-          <div className="flex gap-1">
-            <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-            <span className="flex items-center px-3 text-sm">{page + 1} / {totalPages}</span>
-            <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Próxima</Button>
-          </div>
+      <Card><CardContent className="p-3">
+        <div className="filter-bar">
+          <div className="relative flex-1 min-w-[200px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" /><Input placeholder="Protocolo, cliente ou placa..." className="pl-9" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} /></div>
+          <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setPage(0); }}><SelectTrigger className="w-[140px] h-9"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos Status</SelectItem>{STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select>
+          <Select value={filterPrestador} onValueChange={v => { setFilterPrestador(v); setPage(0); }}><SelectTrigger className="w-[170px] h-9"><SelectValue placeholder="Prestador" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{prestadores.map(p => <SelectItem key={p.id} value={p.id}>{p.nomeFantasia}</SelectItem>)}</SelectContent></Select>
         </div>
-      )}
+      </CardContent></Card>
 
-      {/* Edit/Create Modal */}
+      <Card><CardContent className="p-0">
+        <Table>
+          <TableHeader><TableRow className="hover:bg-transparent">
+            <TableHead className="text-[11px] uppercase tracking-wider">Protocolo</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider">Cliente</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider hidden md:table-cell">Prestador</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider hidden lg:table-cell">Tipo</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider hidden xl:table-cell">Data</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-right">Valor</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider text-right w-[100px]">Ações</TableHead>
+          </TableRow></TableHeader>
+          <TableBody>
+            {paged.length === 0 ? <TableRow><TableCell colSpan={8} className="text-center py-12 text-muted-foreground text-sm">Nenhum atendimento</TableCell></TableRow> : paged.map(a => {
+              const prest = prestadores.find(p => p.id === a.prestadorId);
+              return (
+                <TableRow key={a.id} className="table-row-hover cursor-pointer" onClick={() => setDetailAtd(a)}>
+                  <TableCell className="font-mono text-xs">{a.protocolo}</TableCell>
+                  <TableCell><p className="font-medium text-[13px]">{a.clienteNome}</p><p className="text-[11px] text-muted-foreground font-mono">{a.placa}</p></TableCell>
+                  <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground">{prest?.nomeFantasia || '-'}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{a.tipoAtendimento}</TableCell>
+                  <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{new Date(a.dataHora).toLocaleDateString('pt-BR')}</TableCell>
+                  <TableCell><Badge variant={statusVariant(a.status)}>{a.status}</Badge></TableCell>
+                  <TableCell className="text-right font-medium tabular-nums text-[13px]">R$ {a.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                  <TableCell className="text-right"><div className="flex justify-end gap-0.5" onClick={e => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailAtd(a)}><Eye className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(a)}><Pencil className="h-3.5 w-3.5" /></Button>
+                    <AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Excluir {a.protocolo}?</AlertDialogTitle><AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Cancelar</AlertDialogCancel><AlertDialogAction onClick={() => handleDelete(a.id)}>Excluir</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog>
+                  </div></TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent></Card>
+
+      {totalPages > 1 && <div className="flex items-center justify-between text-xs"><span className="text-muted-foreground">{filtered.length} registro(s)</span><div className="flex items-center gap-1"><Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button><span className="px-3 text-muted-foreground">{page + 1} de {totalPages}</span><Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Próxima</Button></div></div>}
+
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader><DialogTitle>{form.id ? 'Editar Atendimento' : 'Novo Atendimento'}</DialogTitle></DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5"><Label>Protocolo</Label><Input value={form.protocolo || ''} readOnly className="bg-muted" /></div>
-              <div className="space-y-1.5"><Label>Data/Hora</Label><Input type="datetime-local" value={form.dataHora?.slice(0, 16) || ''} onChange={e => updateField('dataHora', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Status</Label>
-                <Select value={form.status || 'Aberto'} onValueChange={v => updateField('status', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
+          <div className="grid gap-3.5 py-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Protocolo</Label><Input value={form.protocolo || ''} readOnly className="bg-muted" /></div>
+              <div className="space-y-1"><Label className="text-xs">Data/Hora</Label><Input type="datetime-local" value={form.dataHora?.slice(0, 16) || ''} onChange={e => updateField('dataHora', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Status</Label><Select value={form.status || 'Aberto'} onValueChange={v => updateField('status', v)}><SelectTrigger className="h-9"><SelectValue /></SelectTrigger><SelectContent>{STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label>Prestador *</Label>
-                <Select value={form.prestadorId || ''} onValueChange={v => updateField('prestadorId', v)}>
-                  <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
-                  <SelectContent>{prestadores.filter(p => p.status === 'Ativo').map(p => <SelectItem key={p.id} value={p.id}>{p.nomeFantasia}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5"><Label>Cliente *</Label><Input value={form.clienteNome || ''} onChange={e => updateField('clienteNome', e.target.value)} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Prestador *</Label><Select value={form.prestadorId || ''} onValueChange={v => updateField('prestadorId', v)}><SelectTrigger className="h-9"><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent>{prestadores.filter(p => p.status === 'Ativo').map(p => <SelectItem key={p.id} value={p.id}>{p.nomeFantasia}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1"><Label className="text-xs">Cliente *</Label><Input value={form.clienteNome || ''} onChange={e => updateField('clienteNome', e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5"><Label>Solicitante</Label><Input value={form.solicitante || ''} onChange={e => updateField('solicitante', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Tipo</Label>
-                <Select value={form.tipoAtendimento || 'Guincho'} onValueChange={v => updateField('tipoAtendimento', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{TIPOS_ATD.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5"><Label>Placa</Label><Input value={form.placa || ''} onChange={e => updateField('placa', e.target.value.toUpperCase())} maxLength={8} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Solicitante</Label><Input value={form.solicitante || ''} onChange={e => updateField('solicitante', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Tipo</Label><Select value={form.tipoAtendimento || 'Guincho'} onValueChange={v => updateField('tipoAtendimento', v)}><SelectTrigger className="h-9"><SelectValue /></SelectTrigger><SelectContent>{TIPOS_ATD.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
+              <div className="space-y-1"><Label className="text-xs">Placa</Label><Input value={form.placa || ''} onChange={e => updateField('placa', e.target.value.toUpperCase())} maxLength={8} /></div>
             </div>
-            <div className="space-y-1.5"><Label>Veículo</Label><Input value={form.veiculo || ''} onChange={e => updateField('veiculo', e.target.value)} /></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label>Origem</Label><Input value={form.origem || ''} onChange={e => updateField('origem', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Destino</Label><Input value={form.destino || ''} onChange={e => updateField('destino', e.target.value)} /></div>
+            <div className="space-y-1"><Label className="text-xs">Veículo</Label><Input value={form.veiculo || ''} onChange={e => updateField('veiculo', e.target.value)} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Origem</Label><Input value={form.origem || ''} onChange={e => updateField('origem', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Destino</Label><Input value={form.destino || ''} onChange={e => updateField('destino', e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="space-y-1.5"><Label>Km Previsto</Label><Input type="number" value={form.kmPrevisto || ''} onChange={e => updateField('kmPrevisto', parseFloat(e.target.value) || 0)} /></div>
-              <div className="space-y-1.5"><Label>Km Realizado</Label><Input type="number" value={form.km || ''} onChange={e => updateField('km', parseFloat(e.target.value) || 0)} /></div>
-              <div className="space-y-1.5"><Label>Horas Trab.</Label><Input type="number" step="0.5" value={form.horasTrabalhadas || ''} onChange={e => updateField('horasTrabalhadas', parseFloat(e.target.value) || 0)} /></div>
-              <div className="space-y-1.5"><Label>Horas Paradas</Label><Input type="number" step="0.5" value={form.horasParadas || ''} onChange={e => updateField('horasParadas', parseFloat(e.target.value) || 0)} /></div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Km Prev.</Label><Input type="number" value={form.kmPrevisto || ''} onChange={e => updateField('kmPrevisto', parseFloat(e.target.value) || 0)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Km Real</Label><Input type="number" value={form.km || ''} onChange={e => updateField('km', parseFloat(e.target.value) || 0)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Horas Trab.</Label><Input type="number" step="0.5" value={form.horasTrabalhadas || ''} onChange={e => updateField('horasTrabalhadas', parseFloat(e.target.value) || 0)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Horas Paradas</Label><Input type="number" step="0.5" value={form.horasParadas || ''} onChange={e => updateField('horasParadas', parseFloat(e.target.value) || 0)} /></div>
             </div>
-            <div className="space-y-1.5"><Label>Observações</Label><Textarea value={form.observacoes || ''} onChange={e => updateField('observacoes', e.target.value)} rows={2} /></div>
-
+            <div className="space-y-1"><Label className="text-xs">Observações</Label><Textarea value={form.observacoes || ''} onChange={e => updateField('observacoes', e.target.value)} rows={2} /></div>
             <Separator />
-            <div className="flex items-center justify-between">
-              <p className="font-medium">Tarifas do Atendimento</p>
-              <Button variant="outline" size="sm" onClick={addTarifaLine}><Plus className="h-3 w-3 mr-1" />Adicionar</Button>
-            </div>
+            <div className="flex items-center justify-between"><p className="text-[13px] font-medium">Tarifas</p><Button variant="outline" size="sm" onClick={addTarifaLine}><Plus className="h-3 w-3 mr-1" />Adicionar</Button></div>
             {formTarifas.map((ft, idx) => (
-              <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                <div className="col-span-4 space-y-1">
-                  {idx === 0 && <Label className="text-xs">Tarifa</Label>}
-                  <Select value={ft.tarifaId} onValueChange={v => updateTarifaLine(idx, 'tarifaId', v)}>
-                    <SelectTrigger className="h-9"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                    <SelectContent>{tarifasList.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2 space-y-1">
-                  {idx === 0 && <Label className="text-xs">Qtd</Label>}
-                  <Input type="number" step="0.5" min="0" className="h-9" value={ft.quantidade} onChange={e => updateTarifaLine(idx, 'quantidade', parseFloat(e.target.value) || 0)} />
-                </div>
-                <div className="col-span-2 space-y-1">
-                  {idx === 0 && <Label className="text-xs">Valor Unit.</Label>}
-                  <Input type="number" step="0.01" min="0" className="h-9" value={ft.valorUnitario} onChange={e => updateTarifaLine(idx, 'valorUnitario', parseFloat(e.target.value) || 0)} />
-                </div>
-                <div className="col-span-3 space-y-1">
-                  {idx === 0 && <Label className="text-xs">Subtotal</Label>}
-                  <Input readOnly className="bg-muted font-medium h-9" value={`R$ ${ft.valorTotal.toFixed(2)}`} />
-                </div>
-                <div className="col-span-1">
-                  <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => removeTarifaLine(idx)}><X className="h-4 w-4 text-destructive" /></Button>
-                </div>
+              <div key={idx} className="grid grid-cols-12 gap-1.5 items-end">
+                <div className="col-span-4 space-y-0.5">{idx === 0 && <Label className="text-[10px]">Tarifa</Label>}<Select value={ft.tarifaId} onValueChange={v => updateTarifaLine(idx, 'tarifaId', v)}><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger><SelectContent>{tarifasList.map(t => <SelectItem key={t.id} value={t.id}>{t.nome}</SelectItem>)}</SelectContent></Select></div>
+                <div className="col-span-2 space-y-0.5">{idx === 0 && <Label className="text-[10px]">Qtd</Label>}<Input type="number" step="0.5" min="0" className="h-8 text-xs" value={ft.quantidade} onChange={e => updateTarifaLine(idx, 'quantidade', parseFloat(e.target.value) || 0)} /></div>
+                <div className="col-span-2 space-y-0.5">{idx === 0 && <Label className="text-[10px]">Unit.</Label>}<Input type="number" step="0.01" min="0" className="h-8 text-xs" value={ft.valorUnitario} onChange={e => updateTarifaLine(idx, 'valorUnitario', parseFloat(e.target.value) || 0)} /></div>
+                <div className="col-span-3 space-y-0.5">{idx === 0 && <Label className="text-[10px]">Subtotal</Label>}<Input readOnly className="bg-muted font-medium h-8 text-xs" value={`R$ ${ft.valorTotal.toFixed(2)}`} /></div>
+                <div className="col-span-1"><Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removeTarifaLine(idx)}><X className="h-3.5 w-3.5 text-destructive" /></Button></div>
               </div>
             ))}
-            <div className="text-right text-lg font-bold">Total: R$ {totalCalc.toFixed(2)}</div>
+            <div className="text-right font-bold text-base tabular-nums">Total: R$ {totalCalc.toFixed(2)}</div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave}>Salvar</Button>
-          </DialogFooter>
+          <DialogFooter className="gap-2"><Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button><Button onClick={handleSave}>Salvar</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

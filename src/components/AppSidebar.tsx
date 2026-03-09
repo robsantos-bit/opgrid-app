@@ -1,7 +1,7 @@
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
 import {
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
 
 const menuItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
@@ -32,36 +33,44 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="sidebar-gradient border-r-0">
-      <SidebarContent>
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/60 px-3 py-4">
-            {!collapsed ? (
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
-                  <Truck className="h-4 w-4 text-sidebar-primary-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-sidebar-foreground leading-tight">GTP</p>
-                  <p className="text-[10px] text-sidebar-muted leading-tight">Gestão de Prestadores</p>
-                </div>
-              </div>
-            ) : (
-              <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center mx-auto">
+      <SidebarContent className="py-3">
+        {/* Logo */}
+        <div className="px-4 pb-4">
+          {!collapsed ? (
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center shrink-0">
                 <Truck className="h-4 w-4 text-sidebar-primary-foreground" />
               </div>
-            )}
-          </SidebarGroupLabel>
+              <div>
+                <p className="text-[13px] font-bold text-sidebar-foreground leading-none">GTP</p>
+                <p className="text-[10px] text-sidebar-muted leading-none mt-1">Gestão de Prestadores</p>
+              </div>
+            </div>
+          ) : (
+            <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center mx-auto">
+              <Truck className="h-4 w-4 text-sidebar-primary-foreground" />
+            </div>
+          )}
+        </div>
+
+        <Separator className="bg-sidebar-border mb-2" />
+
+        <SidebarGroup>
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="gap-0.5 px-2">
               {menuItems.map((item) => {
                 const active = location.pathname === item.url || (item.url !== '/' && location.pathname.startsWith(item.url));
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <NavLink to={item.url} end={item.url === '/'}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${active ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : 'text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'}`}
-                        activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
-                        <item.icon className="h-4 w-4 shrink-0" />
+                        className={`flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] transition-all duration-150 ${
+                          active
+                            ? 'bg-sidebar-primary/15 text-sidebar-primary-foreground font-medium'
+                            : 'text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50'
+                        }`}
+                        activeClassName="bg-sidebar-primary/15 text-sidebar-primary-foreground font-medium">
+                        <item.icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-sidebar-primary' : ''}`} />
                         {!collapsed && <span>{item.title}</span>}
                       </NavLink>
                     </SidebarMenuButton>
@@ -72,16 +81,17 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter className="p-3">
+
+      <SidebarFooter className="p-3 border-t border-sidebar-border">
         {!collapsed && user && (
-          <div className="px-2 py-2 text-xs text-sidebar-foreground/60 truncate">
-            <p className="font-medium text-sidebar-foreground text-sm truncate">{user.nome}</p>
-            <p className="truncate">{user.email}</p>
+          <div className="px-1 py-1.5 text-xs text-sidebar-foreground/50 truncate mb-1">
+            <p className="font-medium text-sidebar-foreground text-[13px] truncate">{user.nome}</p>
+            <p className="truncate text-[11px] mt-0.5">{user.email}</p>
           </div>
         )}
         <Button variant="ghost" size="sm" onClick={handleLogout}
-          className="w-full justify-start text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent/50">
-          <LogOut className="h-4 w-4 mr-2" />
+          className="w-full justify-start text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 h-8 text-xs">
+          <LogOut className="h-3.5 w-3.5 mr-2" />
           {!collapsed && 'Sair'}
         </Button>
       </SidebarFooter>
