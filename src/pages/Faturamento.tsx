@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getAtendimentos, getPrestadores, updateAtendimento } from '@/data/store';
-import { DollarSign, FileDown, CheckCircle2, AlertTriangle, Clock } from 'lucide-react';
+import { DollarSign, FileDown, CheckCircle2, AlertTriangle, Clock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Faturamento() {
@@ -33,6 +33,9 @@ export default function Faturamento() {
   const totalPendente = faturaveis.filter(a => a.status === 'Concluído').reduce((s, a) => s + a.valorTotal, 0);
   const totalAndamento = faturaveis.filter(a => a.status === 'Em andamento').reduce((s, a) => s + a.valorTotal, 0);
 
+  // Simulated divergences
+  const divergencias = faturaveis.filter(a => a.km > a.kmPrevisto + 5);
+
   const toggleSelect = (id: string) => setSelected(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
   const handleFaturar = () => {
@@ -49,15 +52,15 @@ export default function Faturamento() {
 
   const kpis = [
     { label: 'Total Faturável', value: totalFat, icon: DollarSign, bg: 'bg-success/10', color: 'text-success' },
-    { label: 'Já Faturado', value: totalFaturado, icon: CheckCircle2, bg: 'bg-primary/10', color: 'text-primary' },
+    { label: 'Aprovado', value: totalFaturado, icon: CheckCircle2, bg: 'bg-primary/10', color: 'text-primary' },
     { label: 'Pendente', value: totalPendente, icon: Clock, bg: 'bg-warning/10', color: 'text-warning' },
-    { label: 'Em Andamento', value: totalAndamento, icon: AlertTriangle, bg: 'bg-info/10', color: 'text-info' },
+    { label: 'Divergências', value: divergencias.length, icon: XCircle, bg: 'bg-destructive/10', color: 'text-destructive', isCurrency: false },
   ];
 
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
-        <div className="page-header-text"><h1>Faturamento</h1><p>Confira e fature atendimentos concluídos</p></div>
+        <div className="page-header-text"><h1>Faturamento</h1><p>Conferência financeira e auditoria operacional</p></div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => toast.success('CSV exportado (simulado).')}><FileDown className="h-4 w-4 mr-1.5" />Exportar</Button>
           <Button onClick={handleFaturar} disabled={selected.size === 0}><CheckCircle2 className="h-4 w-4 mr-1.5" />Faturar ({selected.size})</Button>
@@ -75,7 +78,7 @@ export default function Faturamento() {
         {kpis.map(k => (
           <div key={k.label} className="kpi-card">
             <div className={`kpi-icon ${k.bg} ${k.color}`}><k.icon className="h-5 w-5" /></div>
-            <div><p className="kpi-label">{k.label}</p><p className="kpi-value tabular-nums">R$ {k.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></div>
+            <div><p className="kpi-label">{k.label}</p><p className="kpi-value tabular-nums">{(k as any).isCurrency === false ? k.value : `R$ ${k.value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}</p></div>
           </div>
         ))}
       </div>
@@ -97,7 +100,7 @@ export default function Faturamento() {
         </TableRow></TableHeader>
         <TableBody>
           {faturaveis.length === 0 ? <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-sm">Nenhum registro</TableCell></TableRow> : faturaveis.map(a => (
-            <TableRow key={a.id} className="table-row-hover">
+            <TableRow key={a.id} className={`table-row-hover ${divergencias.some(d => d.id === a.id) ? 'bg-destructive/[0.03]' : ''}`}>
               <TableCell>{a.status === 'Concluído' && <Checkbox checked={selected.has(a.id)} onCheckedChange={() => toggleSelect(a.id)} className="h-4 w-4" />}</TableCell>
               <TableCell className="font-mono text-xs">{a.protocolo}</TableCell>
               <TableCell className="text-[13px]">{a.clienteNome}</TableCell>
