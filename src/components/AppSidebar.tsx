@@ -5,7 +5,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
 import {
-  LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, Truck
+  LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, Truck, BarChart3
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -13,10 +13,11 @@ import { Button } from '@/components/ui/button';
 const menuItems = [
   { title: 'Dashboard', url: '/', icon: LayoutDashboard },
   { title: 'Prestadores', url: '/prestadores', icon: Users },
+  { title: 'Tabelas de Preço', url: '/tabela-precos', icon: TableProperties },
   { title: 'Tarifas', url: '/tarifas', icon: Tag },
-  { title: 'Tabela de Preços', url: '/tabela-precos', icon: TableProperties },
   { title: 'Atendimentos', url: '/atendimentos', icon: ClipboardList },
   { title: 'Faturamento', url: '/faturamento', icon: DollarSign },
+  { title: 'Relatórios', url: '/relatorios', icon: BarChart3 },
   { title: 'Configurações', url: '/configuracoes', icon: Settings },
 ];
 
@@ -34,18 +35,17 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/60 px-3 py-4">
-            {!collapsed && (
+            {!collapsed ? (
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center">
                   <Truck className="h-4 w-4 text-sidebar-primary-foreground" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-sidebar-foreground leading-tight">Gestor</p>
-                  <p className="text-[10px] text-sidebar-muted leading-tight">Tarifas & Prestadores</p>
+                  <p className="text-sm font-bold text-sidebar-foreground leading-tight">GTP</p>
+                  <p className="text-[10px] text-sidebar-muted leading-tight">Gestão de Prestadores</p>
                 </div>
               </div>
-            )}
-            {collapsed && (
+            ) : (
               <div className="w-8 h-8 bg-sidebar-primary rounded-lg flex items-center justify-center mx-auto">
                 <Truck className="h-4 w-4 text-sidebar-primary-foreground" />
               </div>
