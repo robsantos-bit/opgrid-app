@@ -13,6 +13,8 @@ import TabelaPrecos from "@/pages/TabelaPrecos";
 import Atendimentos from "@/pages/Atendimentos";
 import Faturamento from "@/pages/Faturamento";
 import Relatorios from "@/pages/Relatorios";
+import Contratos from "@/pages/Contratos";
+import Auditoria from "@/pages/Auditoria";
 import Configuracoes from "@/pages/Configuracoes";
 import NotFound from "@/pages/NotFound";
 
@@ -37,6 +39,8 @@ function AppRoutes() {
       <Route path="/atendimentos" element={<ProtectedRoute><Atendimentos /></ProtectedRoute>} />
       <Route path="/faturamento" element={<ProtectedRoute><Faturamento /></ProtectedRoute>} />
       <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
+      <Route path="/contratos" element={<ProtectedRoute><Contratos /></ProtectedRoute>} />
+      <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
       <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
