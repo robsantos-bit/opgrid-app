@@ -1,30 +1,28 @@
-import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa } from '@/types';
-import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig } from './mockData';
+import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, Contrato, AuditLog } from '@/types';
+import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig, mockContratos, mockAuditLogs } from './mockData';
 
 const KEYS = {
-  prestadores: 'gtp_prestadores',
-  tarifas: 'gtp_tarifas',
-  tabelaPrecos: 'gtp_tabela_precos',
-  atendimentos: 'gtp_atendimentos',
-  config: 'gtp_config',
+  prestadores: 'rc_prestadores',
+  tarifas: 'rc_tarifas',
+  tabelaPrecos: 'rc_tabela_precos',
+  atendimentos: 'rc_atendimentos',
+  config: 'rc_config',
+  contratos: 'rc_contratos',
+  auditLogs: 'rc_audit_logs',
 };
 
 function load<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch { return fallback; }
+  try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; }
+  catch { return fallback; }
 }
 
-function save<T>(key: string, data: T) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
+function save<T>(key: string, data: T) { localStorage.setItem(key, JSON.stringify(data)); }
 
 // Prestadores
 export function getPrestadores(): Prestador[] { return load(KEYS.prestadores, mockPrestadores); }
 export function savePrestadores(data: Prestador[]) { save(KEYS.prestadores, data); }
 export function addPrestador(p: Prestador) { const all = getPrestadores(); all.push(p); savePrestadores(all); }
-export function updatePrestador(p: Prestador) { const all = getPrestadores().map(x => x.id === p.id ? p : x); savePrestadores(all); }
+export function updatePrestador(p: Prestador) { savePrestadores(getPrestadores().map(x => x.id === p.id ? p : x)); }
 export function deletePrestador(id: string) { savePrestadores(getPrestadores().filter(x => x.id !== id)); }
 
 // Tarifas
@@ -37,9 +35,7 @@ export function deleteTarifa(id: string) { saveTarifas(getTarifas().filter(x => 
 // Tabela de Preços
 export function getTabelaPrecos(): TabelaPrecoItem[] { return load(KEYS.tabelaPrecos, mockTabelaPrecos); }
 export function saveTabelaPrecos(data: TabelaPrecoItem[]) { save(KEYS.tabelaPrecos, data); }
-export function getTabelaPrecoPrestador(prestadorId: string): TabelaPrecoItem[] {
-  return getTabelaPrecos().filter(x => x.prestadorId === prestadorId);
-}
+export function getTabelaPrecoPrestador(prestadorId: string): TabelaPrecoItem[] { return getTabelaPrecos().filter(x => x.prestadorId === prestadorId); }
 export function saveTabelaPrecoPrestador(prestadorId: string, items: TabelaPrecoItem[]) {
   const others = getTabelaPrecos().filter(x => x.prestadorId !== prestadorId);
   saveTabelaPrecos([...others, ...items]);
@@ -52,11 +48,19 @@ export function addAtendimento(a: Atendimento) { const all = getAtendimentos(); 
 export function updateAtendimento(a: Atendimento) { saveAtendimentos(getAtendimentos().map(x => x.id === a.id ? a : x)); }
 export function deleteAtendimento(id: string) { saveAtendimentos(getAtendimentos().filter(x => x.id !== id)); }
 
+// Contratos
+export function getContratos(): Contrato[] { return load(KEYS.contratos, mockContratos); }
+export function saveContratos(data: Contrato[]) { save(KEYS.contratos, data); }
+export function addContrato(c: Contrato) { const all = getContratos(); all.push(c); saveContratos(all); }
+export function updateContrato(c: Contrato) { saveContratos(getContratos().map(x => x.id === c.id ? c : x)); }
+
+// Audit Logs
+export function getAuditLogs(): AuditLog[] { return load(KEYS.auditLogs, mockAuditLogs); }
+export function addAuditLog(log: AuditLog) { const all = getAuditLogs(); all.unshift(log); save(KEYS.auditLogs, all); }
+
 // Config
 export function getConfig(): ConfigEmpresa { return load(KEYS.config, mockConfig); }
 export function saveConfig(data: ConfigEmpresa) { save(KEYS.config, data); }
 
-// Reset data
-export function resetAllData() {
-  Object.values(KEYS).forEach(k => localStorage.removeItem(k));
-}
+// Reset
+export function resetAllData() { Object.values(KEYS).forEach(k => localStorage.removeItem(k)); }

@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'prestador';
+export type UserRole = 'admin' | 'operador' | 'financeiro' | 'prestador';
 
 export interface User {
   id: string;
@@ -15,7 +15,10 @@ export type FormaCobranca = 'Valor unitário' | 'Valor final' | 'Limite de valor
 export type NivelTarifa = 'Sistema' | 'Usuário';
 export type CategoriaTarifa = 'Deslocamento' | 'Tempo' | 'Adicional' | 'Equipamento' | 'Desconto' | 'Ajuste';
 export type StatusAtendimento = 'Aberto' | 'Em andamento' | 'Concluído' | 'Cancelado' | 'Faturado';
-export type StatusTabela = 'Rascunho' | 'Vigente' | 'Expirada';
+export type StatusTabela = 'Rascunho' | 'Vigente' | 'Expirada' | 'Em revisão';
+export type StatusContrato = 'Ativo' | 'Suspenso' | 'Encerrado' | 'Em negociação';
+export type HomologacaoStatus = 'Homologado' | 'Pendente' | 'Crítico';
+export type PrioridadeAtendimento = 'Normal' | 'Urgente' | 'Crítico';
 
 export interface Prestador {
   id: string;
@@ -38,6 +41,14 @@ export interface Prestador {
   areaCobertura: string;
   aceitaNoturno: boolean;
   aceitaRodoviario: boolean;
+  tipoParceiro: string;
+  cidadesCobertas: string[];
+  disponibilidade24h: boolean;
+  documentosObrigatorios: string[];
+  validadeDocumental: string;
+  homologacao: HomologacaoStatus;
+  scoreOperacional: number;
+  observacoesInternas: string;
 }
 
 export interface Tarifa {
@@ -99,10 +110,35 @@ export interface Atendimento {
   horasTrabalhadas: number;
   horasParadas: number;
   status: StatusAtendimento;
+  prioridade: PrioridadeAtendimento;
   observacoes: string;
   tarifas: AtendimentoTarifa[];
   valorTotal: number;
   timeline: { data: string; descricao: string }[];
+}
+
+export interface Contrato {
+  id: string;
+  prestadorId: string;
+  numero: string;
+  descricao: string;
+  plano: PlanoType;
+  tabelaVinculada: string;
+  dataInicio: string;
+  dataFim: string;
+  status: StatusContrato;
+  observacoes: string;
+  custoMedioEstimado: number;
+}
+
+export interface AuditLog {
+  id: string;
+  data: string;
+  usuario: string;
+  acao: string;
+  modulo: string;
+  descricao: string;
+  criticidade: 'info' | 'warning' | 'critical';
 }
 
 export interface ConfigEmpresa {
