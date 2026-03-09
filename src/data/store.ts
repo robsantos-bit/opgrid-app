@@ -55,3 +55,8 @@ export function deleteAtendimento(id: string) { saveAtendimentos(getAtendimentos
 // Config
 export function getConfig(): ConfigEmpresa { return load(KEYS.config, mockConfig); }
 export function saveConfig(data: ConfigEmpresa) { save(KEYS.config, data); }
+
+// Reset data
+export function resetAllData() {
+  Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+}
