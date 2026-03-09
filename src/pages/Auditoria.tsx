@@ -39,7 +39,7 @@ export default function Auditoria() {
       <div className="page-header">
         <div className="page-header-text">
           <h1>Auditoria</h1>
-          <p>Rastreabilidade completa de ações e alterações no sistema</p>
+          <p>Trilha de auditoria completa — rastreabilidade de todas as ações e alterações críticas</p>
         </div>
       </div>
 

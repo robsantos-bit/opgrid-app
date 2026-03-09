@@ -233,7 +233,7 @@ export default function Prestadores() {
       <div className="page-header">
         <div className="page-header-text">
           <h1>Prestadores</h1>
-          <p>Gerencie a rede credenciada com controle de homologação, conformidade e performance</p>
+          <p>Gestão 360° da rede — homologação, conformidade, score operacional e cobertura geográfica</p>
         </div>
         <div className="flex gap-2">
           <div className="flex border rounded-lg overflow-hidden">

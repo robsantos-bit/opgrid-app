@@ -69,7 +69,7 @@ export default function Contratos() {
       <div className="page-header">
         <div className="page-header-text">
           <h1>Contratos</h1>
-          <p>Gerencie os acordos comerciais com a rede credenciada</p>
+          <p>Acordos comerciais, vigência e custos — controle contratual da rede credenciada</p>
         </div>
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-1.5" />Novo Contrato</Button>
       </div>
