@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,58 +6,58 @@
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --background: 220 16% 97%;
+    --foreground: 222 28% 12%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 222 28% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 222 28% 12%;
 
-    --primary: 220 72% 50%;
+    --primary: 225 70% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 214 18% 93%;
-    --secondary-foreground: 220 20% 20%;
+    --secondary: 220 14% 93%;
+    --secondary-foreground: 222 20% 20%;
 
-    --muted: 214 18% 96%;
-    --muted-foreground: 215 14% 46%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 46%;
 
-    --accent: 174 62% 38%;
+    --accent: 172 58% 36%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 68% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 214 20% 91%;
-    --input: 214 20% 91%;
-    --ring: 220 72% 50%;
+    --border: 220 16% 90%;
+    --input: 220 16% 90%;
+    --ring: 225 70% 48%;
 
-    --radius: 0.5rem;
+    --radius: 0.625rem;
 
-    --sidebar-background: 222 25% 12%;
-    --sidebar-foreground: 210 20% 88%;
-    --sidebar-primary: 220 72% 58%;
+    --sidebar-background: 225 30% 11%;
+    --sidebar-foreground: 220 16% 88%;
+    --sidebar-primary: 225 70% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 18% 18%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 222 16% 20%;
-    --sidebar-ring: 220 72% 58%;
-    --sidebar-muted: 220 12% 40%;
+    --sidebar-accent: 225 20% 17%;
+    --sidebar-accent-foreground: 220 16% 92%;
+    --sidebar-border: 225 18% 18%;
+    --sidebar-ring: 225 70% 56%;
+    --sidebar-muted: 220 10% 42%;
 
-    --success: 152 60% 36%;
+    --success: 152 56% 38%;
     --success-foreground: 0 0% 100%;
-    --warning: 38 92% 50%;
+    --warning: 38 88% 50%;
     --warning-foreground: 30 10% 12%;
-    --info: 200 80% 50%;
+    --info: 205 78% 48%;
     --info-foreground: 0 0% 100%;
 
-    --chart-1: 220 72% 50%;
-    --chart-2: 174 62% 38%;
-    --chart-3: 38 92% 50%;
-    --chart-4: 152 60% 36%;
-    --chart-5: 280 60% 50%;
+    --chart-1: 225 70% 48%;
+    --chart-2: 172 58% 36%;
+    --chart-3: 38 88% 50%;
+    --chart-4: 152 56% 38%;
+    --chart-5: 280 56% 50%;
   }
 }
 
@@ -73,13 +73,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Typography scale */
-  h1 { @apply text-2xl font-semibold tracking-tight; }
+  h1 { @apply text-[1.5rem] font-bold tracking-tight leading-tight; }
   h2 { @apply text-xl font-semibold tracking-tight; }
   h3 { @apply text-lg font-semibold; }
   h4 { @apply text-base font-medium; }
 
-  /* Consistent input/button heights */
   input, select, textarea, button {
     font-family: inherit;
   }
@@ -91,10 +89,15 @@
     @apply flex items-center justify-between flex-wrap gap-3 mb-6;
   }
   .page-header-text h1 {
-    @apply text-2xl font-semibold text-foreground tracking-tight;
+    @apply text-[1.5rem] font-bold text-foreground tracking-tight;
   }
   .page-header-text p {
-    @apply text-sm text-muted-foreground mt-0.5;
+    @apply text-[13px] text-muted-foreground mt-0.5;
+  }
+
+  /* Section subtitle */
+  .section-subtitle {
+    @apply text-[13px] text-muted-foreground/70 italic mt-0.5;
   }
 
   /* Filter bar */
@@ -110,55 +113,102 @@
   .status-dot-inactive { @apply bg-muted-foreground/40; }
   .status-dot-blocked { @apply bg-destructive; }
 
-  /* KPI card */
+  /* KPI card — premium */
   .kpi-card {
-    @apply bg-card border rounded-xl p-4 flex items-center gap-4 transition-all duration-200 hover:shadow-sm;
+    @apply bg-card border rounded-xl p-5 flex items-center gap-4 transition-all duration-200 hover:shadow-md relative overflow-hidden;
+  }
+  .kpi-card::after {
+    content: '';
+    @apply absolute top-0 right-0 w-24 h-24 rounded-full opacity-[0.04] -translate-y-8 translate-x-8;
+    background: currentColor;
   }
   .kpi-icon {
-    @apply w-11 h-11 rounded-xl flex items-center justify-center shrink-0;
+    @apply w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm;
   }
   .kpi-label {
-    @apply text-[11px] font-medium text-muted-foreground uppercase tracking-wider leading-none mb-1;
+    @apply text-[11px] font-semibold text-muted-foreground uppercase tracking-wider leading-none mb-1.5;
   }
   .kpi-value {
-    @apply text-xl font-bold text-foreground leading-tight;
+    @apply text-[1.35rem] font-bold text-foreground leading-tight;
+  }
+
+  /* Card premium header */
+  .card-header-premium {
+    @apply flex items-center justify-between pb-1 pt-4 px-5;
+  }
+  .card-header-premium h3 {
+    @apply text-[13px] font-semibold text-muted-foreground tracking-tight;
+  }
+
+  /* Detail row */
+  .detail-row {
+    @apply flex justify-between py-2.5 border-b border-dashed border-border/50 text-[13px];
+  }
+  .detail-row-label {
+    @apply text-muted-foreground;
+  }
+  .detail-row-value {
+    @apply font-medium text-right;
+  }
+
+  /* Alert banner */
+  .alert-banner {
+    @apply flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-[13px] font-medium;
+  }
+  .alert-banner-critical {
+    @apply border-destructive/20 bg-destructive/5 text-destructive;
+  }
+  .alert-banner-warning {
+    @apply border-warning/20 bg-warning/5 text-warning;
+  }
+  .alert-banner-info {
+    @apply border-info/20 bg-info/5 text-info;
   }
 
   /* Empty state */
   .empty-state {
-    @apply flex flex-col items-center justify-center py-16 text-center;
+    @apply flex flex-col items-center justify-center py-20 text-center;
   }
   .empty-state-icon {
-    @apply w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3;
+    @apply w-14 h-14 rounded-2xl bg-muted flex items-center justify-center mb-4;
   }
   .empty-state-title {
-    @apply text-sm font-medium text-foreground mb-1;
+    @apply text-sm font-semibold text-foreground mb-1;
   }
   .empty-state-description {
-    @apply text-xs text-muted-foreground max-w-[240px];
+    @apply text-xs text-muted-foreground max-w-[260px];
   }
 }
 
 @layer utilities {
   .sidebar-gradient {
-    background: linear-gradient(180deg, hsl(222 25% 12%) 0%, hsl(222 28% 8%) 100%);
+    background: linear-gradient(180deg, hsl(225 30% 11%) 0%, hsl(225 32% 7%) 100%);
   }
   .card-hover {
-    @apply transition-all duration-200 hover:shadow-sm hover:border-border/80;
+    @apply transition-all duration-200 hover:shadow-md hover:border-border/80;
   }
   .table-row-hover {
     @apply transition-colors duration-100 hover:bg-muted/40;
   }
   .animate-fade-in {
-    animation: fade-in 0.25s ease-out;
+    animation: fade-in 0.3s ease-out;
   }
   @keyframes fade-in {
-    from { opacity: 0; transform: translateY(4px); }
+    from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
   }
 
+  .glass-effect {
+    @apply bg-card/80 backdrop-blur-md;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent;
+  }
+
   /* Scrollbar */
-  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar { width: 5px; height: 5px; }
   .scrollbar-thin::-webkit-scrollbar-track { background: transparent; }
-  .scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { @apply bg-border/60 rounded-full; }
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover { @apply bg-border; }
 }
