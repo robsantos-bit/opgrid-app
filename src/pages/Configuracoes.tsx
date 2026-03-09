@@ -11,7 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Save, RotateCcw } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
-const roleLabels: Record<string, string> = { admin: 'Administrador', operador: 'Operador', financeiro: 'Financeiro', prestador: 'Prestador' };
+const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
 
 export default function Configuracoes() {
   const { user, isAdmin } = useAuth();

@@ -35,7 +35,7 @@ export default function Relatorios() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div className="page-header"><div className="page-header-text"><h1>Relatórios</h1><p>Análises e relatórios gerenciais</p></div></div>
+      <div className="page-header"><div className="page-header-text"><h1>Relatórios</h1><p>Análises executivas de operação, custos e performance da rede credenciada</p></div></div>
 
       <Tabs defaultValue="prestadores">
         <TabsList className="h-9"><TabsTrigger value="prestadores" className="text-xs">Por Prestador</TabsTrigger><TabsTrigger value="faturamento" className="text-xs">Faturamento</TabsTrigger><TabsTrigger value="tarifas" className="text-xs">Tarifas</TabsTrigger></TabsList>

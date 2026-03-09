@@ -161,7 +161,7 @@ export default function Atendimentos() {
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
-        <div className="page-header-text"><h1>Atendimentos</h1><p>Central operacional de atendimentos da rede</p></div>
+        <div className="page-header-text"><h1>Operações</h1><p>Central operacional — gerencie atendimentos, despachos e execuções da rede</p></div>
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-1.5" />Novo Atendimento</Button>
       </div>
 

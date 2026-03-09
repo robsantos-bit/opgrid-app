@@ -69,8 +69,8 @@ export default function TabelaPrecos() {
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
         <div className="page-header-text">
-          <h1>Tabelas de Preço</h1>
-          <p>Configure valores de tarifa por prestador — controle comercial da rede</p>
+          <h1>Tabelas Comerciais</h1>
+          <p>Parametrize valores por prestador — padronize custos e garanta cobertura tarifária completa</p>
         </div>
       </div>
 

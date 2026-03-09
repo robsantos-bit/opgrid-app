@@ -60,7 +60,7 @@ export default function Faturamento() {
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
-        <div className="page-header-text"><h1>Faturamento</h1><p>Conferência financeira e auditoria operacional</p></div>
+        <div className="page-header-text"><h1>Faturamento</h1><p>Cockpit financeiro — conferência, divergências e aprovação de faturamento da rede</p></div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => toast.success('CSV exportado (simulado).')}><FileDown className="h-4 w-4 mr-1.5" />Exportar</Button>
           <Button onClick={handleFaturar} disabled={selected.size === 0}><CheckCircle2 className="h-4 w-4 mr-1.5" />Faturar ({selected.size})</Button>

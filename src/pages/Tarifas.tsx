@@ -94,7 +94,7 @@ export default function Tarifas() {
       <div className="page-header">
         <div className="page-header-text">
           <h1>Tarifas</h1>
-          <p>Padronize tarifas e reduza divergências na rede credenciada</p>
+          <p>Motor de governança comercial — padronize, versione e controle tarifas da rede</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden md:flex items-center gap-2 text-[12px] text-muted-foreground">
