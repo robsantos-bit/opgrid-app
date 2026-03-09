@@ -1,8 +1,10 @@
-import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, User } from '@/types';
+import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, User, Contrato, AuditLog } from '@/types';
 
 export const mockUsers: User[] = [
-  { id: 'u1', nome: 'Admin Demo', email: 'admin@demo.com', role: 'admin' },
+  { id: 'u1', nome: 'Rodrigo Almeida', email: 'admin@demo.com', role: 'admin' },
   { id: 'u2', nome: 'Carlos Veloz', email: 'prestador@demo.com', role: 'prestador', prestadorId: 'p1' },
+  { id: 'u3', nome: 'Juliana Ferraz', email: 'operador@demo.com', role: 'operador' },
+  { id: 'u4', nome: 'Marcos Contábil', email: 'financeiro@demo.com', role: 'financeiro' },
 ];
 
 export const mockPrestadores: Prestador[] = [
@@ -13,6 +15,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'Rua das Flores, 123 - Centro', cep: '01001-000', status: 'Ativo', plano: 'Pró',
     observacoes: 'Prestador desde 2020. Alta performance.', tiposServico: ['Guincho', 'Reboque', 'Resgate'],
     areaCobertura: 'Grande São Paulo e Interior', aceitaNoturno: true, aceitaRodoviario: true,
+    tipoParceiro: 'Credenciado', cidadesCobertas: ['São Paulo', 'Guarulhos', 'Osasco', 'Campinas'],
+    disponibilidade24h: true, documentosObrigatorios: ['CNPJ', 'Alvará', 'Seguro'], validadeDocumental: '2027-06-15',
+    homologacao: 'Homologado', scoreOperacional: 92, observacoesInternas: 'Excelente tempo de resposta.',
   },
   {
     id: 'p2', nomeFantasia: 'Reboque Express', razaoSocial: 'Express Guincho ME', documento: '98.765.432/0001-10',
@@ -21,6 +26,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'Av. Brasil, 5000 - Penha', cep: '21040-020', status: 'Ativo', plano: 'Básico',
     observacoes: '', tiposServico: ['Guincho', 'Reboque'],
     areaCobertura: 'Região Metropolitana RJ', aceitaNoturno: false, aceitaRodoviario: false,
+    tipoParceiro: 'Credenciado', cidadesCobertas: ['Rio de Janeiro', 'Niterói', 'São Gonçalo'],
+    disponibilidade24h: false, documentosObrigatorios: ['CNPJ'], validadeDocumental: '2026-12-01',
+    homologacao: 'Pendente', scoreOperacional: 68, observacoesInternas: 'Documentação pendente de atualização.',
   },
   {
     id: 'p3', nomeFantasia: 'Sul Guinchos', razaoSocial: 'Sul Guinchos EIRELI', documento: '11.222.333/0001-44',
@@ -29,6 +37,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'Rua Voluntários da Pátria, 800', cep: '90030-000', status: 'Ativo', plano: 'Pró',
     observacoes: 'Especialista em pesados e carga especial', tiposServico: ['Guincho', 'Reboque', 'Munck', 'Guindaste'],
     areaCobertura: 'RS inteiro e SC litoral', aceitaNoturno: true, aceitaRodoviario: true,
+    tipoParceiro: 'Estratégico', cidadesCobertas: ['Porto Alegre', 'Canoas', 'Gravataí', 'Caxias do Sul', 'Pelotas'],
+    disponibilidade24h: true, documentosObrigatorios: ['CNPJ', 'Alvará', 'Seguro', 'ANTT'], validadeDocumental: '2027-03-20',
+    homologacao: 'Homologado', scoreOperacional: 88, observacoesInternas: 'Forte em operações pesadas.',
   },
   {
     id: 'p4', nomeFantasia: 'Central Reboque MG', razaoSocial: 'Central Reboque LTDA', documento: '44.555.666/0001-77',
@@ -37,6 +48,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'Av. Afonso Pena, 2000', cep: '30130-001', status: 'Inativo', plano: 'Básico',
     observacoes: 'Contrato encerrado em jan/2026', tiposServico: ['Guincho'],
     areaCobertura: 'BH e Região Metropolitana', aceitaNoturno: false, aceitaRodoviario: false,
+    tipoParceiro: 'Credenciado', cidadesCobertas: ['Belo Horizonte', 'Contagem'],
+    disponibilidade24h: false, documentosObrigatorios: ['CNPJ'], validadeDocumental: '2025-12-31',
+    homologacao: 'Crítico', scoreOperacional: 35, observacoesInternas: 'Contrato não renovado. Documentação vencida.',
   },
   {
     id: 'p5', nomeFantasia: 'Norte Assistência', razaoSocial: 'Norte Assist. Veicular SA', documento: '77.888.999/0001-55',
@@ -45,6 +59,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'Av. Eduardo Ribeiro, 500', cep: '69010-001', status: 'Ativo', plano: 'Enterprise',
     observacoes: 'Operação 24h na região norte', tiposServico: ['Guincho', 'Reboque', 'Resgate', 'Patins'],
     areaCobertura: 'AM, PA, RR', aceitaNoturno: true, aceitaRodoviario: true,
+    tipoParceiro: 'Exclusivo', cidadesCobertas: ['Manaus', 'Belém', 'Boa Vista'],
+    disponibilidade24h: true, documentosObrigatorios: ['CNPJ', 'Alvará', 'Seguro', 'ANTT'], validadeDocumental: '2027-09-30',
+    homologacao: 'Homologado', scoreOperacional: 95, observacoesInternas: 'Parceiro exclusivo região norte. Excelente.',
   },
   {
     id: 'p6', nomeFantasia: 'Capital Guincho', razaoSocial: 'Capital Guincho e Reboque LTDA', documento: '55.666.777/0001-88',
@@ -53,6 +70,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'SIA Trecho 3, Lote 100', cep: '71200-030', status: 'Ativo', plano: 'Pró',
     observacoes: '', tiposServico: ['Guincho', 'Reboque'],
     areaCobertura: 'DF e Entorno', aceitaNoturno: true, aceitaRodoviario: false,
+    tipoParceiro: 'Credenciado', cidadesCobertas: ['Brasília', 'Taguatinga', 'Ceilândia'],
+    disponibilidade24h: true, documentosObrigatorios: ['CNPJ', 'Alvará'], validadeDocumental: '2027-01-15',
+    homologacao: 'Homologado', scoreOperacional: 82, observacoesInternas: '',
   },
   {
     id: 'p7', nomeFantasia: 'Litoral Socorro', razaoSocial: 'Litoral Socorro Veicular ME', documento: '88.999.111/0001-22',
@@ -61,6 +81,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'Rod. SC-401, km 5', cep: '88030-000', status: 'Bloqueado', plano: 'Básico',
     observacoes: 'Bloqueado por inadimplência', tiposServico: ['Guincho'],
     areaCobertura: 'Litoral SC', aceitaNoturno: false, aceitaRodoviario: false,
+    tipoParceiro: 'Credenciado', cidadesCobertas: ['Florianópolis', 'Balneário Camboriú'],
+    disponibilidade24h: false, documentosObrigatorios: ['CNPJ'], validadeDocumental: '2026-03-01',
+    homologacao: 'Crítico', scoreOperacional: 22, observacoesInternas: 'Inadimplente. Bloqueado até regularização.',
   },
   {
     id: 'p8', nomeFantasia: 'Rápido Reboque PR', razaoSocial: 'Rápido Reboque Curitiba LTDA', documento: '22.333.444/0001-66',
@@ -69,6 +92,9 @@ export const mockPrestadores: Prestador[] = [
     endereco: 'Rua XV de Novembro, 1500', cep: '80020-310', status: 'Ativo', plano: 'Pró',
     observacoes: '', tiposServico: ['Guincho', 'Reboque', 'Resgate'],
     areaCobertura: 'PR inteiro', aceitaNoturno: true, aceitaRodoviario: true,
+    tipoParceiro: 'Estratégico', cidadesCobertas: ['Curitiba', 'Londrina', 'Maringá', 'Cascavel'],
+    disponibilidade24h: true, documentosObrigatorios: ['CNPJ', 'Alvará', 'Seguro'], validadeDocumental: '2027-05-10',
+    homologacao: 'Homologado', scoreOperacional: 90, observacoesInternas: 'Rede forte em todo o PR.',
   },
 ];
 
@@ -127,7 +153,7 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a1', protocolo: 'ATD-2026-0001', dataHora: '2026-03-01T08:30:00', prestadorId: 'p1',
     clienteNome: 'João Silva', solicitante: 'Seguradora ABC', origem: 'Av. Paulista, 1000 - SP', destino: 'Rua Augusta, 500 - SP',
-    tipoAtendimento: 'Guincho', veiculo: 'Honda Civic 2022', placa: 'ABC-1D23',
+    tipoAtendimento: 'Guincho', veiculo: 'Honda Civic 2022', placa: 'ABC-1D23', prioridade: 'Normal',
     kmPrevisto: 12, km: 15, horasTrabalhadas: 1.5, horasParadas: 0.5, status: 'Concluído', observacoes: 'Pneu furado, veículo não ligava.',
     tarifas: [
       { tarifaId: 't1', quantidade: 1, valorUnitario: 150, valorTotal: 150 },
@@ -145,7 +171,7 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a2', protocolo: 'ATD-2026-0002', dataHora: '2026-03-02T14:00:00', prestadorId: 'p1',
     clienteNome: 'Maria Santos', solicitante: 'Particular', origem: 'Rua Oscar Freire, 200 - SP', destino: 'Marginal Pinheiros, km 15 - SP',
-    tipoAtendimento: 'Reboque', veiculo: 'Toyota Corolla 2023', placa: 'DEF-4G56',
+    tipoAtendimento: 'Reboque', veiculo: 'Toyota Corolla 2023', placa: 'DEF-4G56', prioridade: 'Normal',
     kmPrevisto: 20, km: 25, horasTrabalhadas: 2, horasParadas: 0, status: 'Concluído', observacoes: '',
     tarifas: [
       { tarifaId: 't1', quantidade: 1, valorUnitario: 150, valorTotal: 150 },
@@ -161,7 +187,7 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a3', protocolo: 'ATD-2026-0003', dataHora: '2026-03-05T10:00:00', prestadorId: 'p2',
     clienteNome: 'Carlos Oliveira', solicitante: 'Seguradora XYZ', origem: 'Copacabana, RJ', destino: 'Barra da Tijuca, RJ',
-    tipoAtendimento: 'Guincho', veiculo: 'VW Gol 2020', placa: 'GHI-7J89',
+    tipoAtendimento: 'Guincho', veiculo: 'VW Gol 2020', placa: 'GHI-7J89', prioridade: 'Urgente',
     kmPrevisto: 28, km: 30, horasTrabalhadas: 2, horasParadas: 0.5, status: 'Em andamento', observacoes: 'Trânsito intenso na Av. Niemeyer',
     tarifas: [
       { tarifaId: 't1', quantidade: 1, valorUnitario: 120, valorTotal: 120 },
@@ -176,18 +202,16 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a4', protocolo: 'ATD-2026-0004', dataHora: '2026-03-08T16:30:00', prestadorId: 'p3',
     clienteNome: 'Ana Pereira', solicitante: 'Particular', origem: 'Centro Histórico, POA', destino: 'Zona Norte, POA',
-    tipoAtendimento: 'Reboque', veiculo: 'Fiat Argo 2024', placa: 'KLM-0N12',
+    tipoAtendimento: 'Reboque', veiculo: 'Fiat Argo 2024', placa: 'KLM-0N12', prioridade: 'Normal',
     kmPrevisto: 18, km: 18, horasTrabalhadas: 1, horasParadas: 0, status: 'Aberto', observacoes: '',
     tarifas: [],
     valorTotal: 0,
-    timeline: [
-      { data: '2026-03-08T16:30:00', descricao: 'Atendimento aberto' },
-    ],
+    timeline: [{ data: '2026-03-08T16:30:00', descricao: 'Atendimento aberto' }],
   },
   {
     id: 'a5', protocolo: 'ATD-2026-0005', dataHora: '2026-03-03T22:15:00', prestadorId: 'p1',
     clienteNome: 'Roberto Almeida', solicitante: 'Seguradora ABC', origem: 'Rod. Anhanguera, km 40', destino: 'Oficina Central, Jundiaí',
-    tipoAtendimento: 'Guincho', veiculo: 'Hyundai HB20 2021', placa: 'OPQ-3R45',
+    tipoAtendimento: 'Guincho', veiculo: 'Hyundai HB20 2021', placa: 'OPQ-3R45', prioridade: 'Urgente',
     kmPrevisto: 35, km: 38, horasTrabalhadas: 2.5, horasParadas: 1, status: 'Faturado', observacoes: 'Atendimento noturno',
     tarifas: [
       { tarifaId: 't1', quantidade: 1, valorUnitario: 150, valorTotal: 150 },
@@ -207,7 +231,7 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a6', protocolo: 'ATD-2026-0006', dataHora: '2026-03-06T09:45:00', prestadorId: 'p5',
     clienteNome: 'Luciana Ferreira', solicitante: 'Particular', origem: 'Av. Eduardo Ribeiro, Manaus', destino: 'Distrito Industrial, Manaus',
-    tipoAtendimento: 'Reboque', veiculo: 'Chevrolet Onix 2023', placa: 'STU-6V78',
+    tipoAtendimento: 'Reboque', veiculo: 'Chevrolet Onix 2023', placa: 'STU-6V78', prioridade: 'Normal',
     kmPrevisto: 22, km: 24, horasTrabalhadas: 1.5, horasParadas: 0, status: 'Concluído', observacoes: '',
     tarifas: [
       { tarifaId: 't1', quantidade: 1, valorUnitario: 200, valorTotal: 200 },
@@ -223,7 +247,7 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a7', protocolo: 'ATD-2026-0007', dataHora: '2026-03-07T11:00:00', prestadorId: 'p6',
     clienteNome: 'Fernando Gomes', solicitante: 'Seguradora Delta', origem: 'Asa Sul, Brasília', destino: 'Taguatinga, DF',
-    tipoAtendimento: 'Guincho', veiculo: 'Renault Kwid 2022', placa: 'WXY-9Z01',
+    tipoAtendimento: 'Guincho', veiculo: 'Renault Kwid 2022', placa: 'WXY-9Z01', prioridade: 'Normal',
     kmPrevisto: 25, km: 27, horasTrabalhadas: 1.5, horasParadas: 0, status: 'Concluído', observacoes: '',
     tarifas: [
       { tarifaId: 't1', quantidade: 1, valorUnitario: 160, valorTotal: 160 },
@@ -239,7 +263,7 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a8', protocolo: 'ATD-2026-0008', dataHora: '2026-03-08T07:00:00', prestadorId: 'p8',
     clienteNome: 'Patricia Ribeiro', solicitante: 'Seguradora ABC', origem: 'Centro, Curitiba', destino: 'São José dos Pinhais, PR',
-    tipoAtendimento: 'Reboque', veiculo: 'Jeep Renegade 2024', placa: 'BCD-2E34',
+    tipoAtendimento: 'Reboque', veiculo: 'Jeep Renegade 2024', placa: 'BCD-2E34', prioridade: 'Normal',
     kmPrevisto: 20, km: 22, horasTrabalhadas: 1, horasParadas: 0, status: 'Concluído', observacoes: '',
     tarifas: [
       { tarifaId: 't1', quantidade: 1, valorUnitario: 140, valorTotal: 140 },
@@ -255,7 +279,7 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a9', protocolo: 'ATD-2026-0009', dataHora: '2026-03-04T15:30:00', prestadorId: 'p3',
     clienteNome: 'Marcos Vinícius', solicitante: 'Particular', origem: 'Canoas, RS', destino: 'Gravataí, RS',
-    tipoAtendimento: 'Guincho', veiculo: 'Ford Ka 2019', placa: 'FGH-5I67',
+    tipoAtendimento: 'Guincho', veiculo: 'Ford Ka 2019', placa: 'FGH-5I67', prioridade: 'Normal',
     kmPrevisto: 15, km: 16, horasTrabalhadas: 1, horasParadas: 0.5, status: 'Cancelado', observacoes: 'Cliente cancelou antes da chegada',
     tarifas: [],
     valorTotal: 0,
@@ -268,21 +292,76 @@ export const mockAtendimentos: Atendimento[] = [
   {
     id: 'a10', protocolo: 'ATD-2026-0010', dataHora: '2026-03-09T06:00:00', prestadorId: 'p1',
     clienteNome: 'Tatiana Mendes', solicitante: 'Seguradora XYZ', origem: 'Guarulhos, SP', destino: 'Osasco, SP',
-    tipoAtendimento: 'Reboque', veiculo: 'Nissan Kicks 2023', placa: 'JKL-8M90',
+    tipoAtendimento: 'Reboque', veiculo: 'Nissan Kicks 2023', placa: 'JKL-8M90', prioridade: 'Crítico',
     kmPrevisto: 45, km: 0, horasTrabalhadas: 0, horasParadas: 0, status: 'Aberto', observacoes: 'Aguardando acionamento',
     tarifas: [],
     valorTotal: 0,
+    timeline: [{ data: '2026-03-09T06:00:00', descricao: 'Atendimento aberto' }],
+  },
+  {
+    id: 'a11', protocolo: 'ATD-2026-0011', dataHora: '2026-02-25T14:00:00', prestadorId: 'p8',
+    clienteNome: 'Eduardo Nascimento', solicitante: 'Seguradora ABC', origem: 'Pinhais, PR', destino: 'Centro, Curitiba',
+    tipoAtendimento: 'Guincho', veiculo: 'Fiat Toro 2023', placa: 'MNO-1P23', prioridade: 'Normal',
+    kmPrevisto: 15, km: 14, horasTrabalhadas: 1, horasParadas: 0, status: 'Faturado', observacoes: '',
+    tarifas: [
+      { tarifaId: 't1', quantidade: 1, valorUnitario: 140, valorTotal: 140 },
+      { tarifaId: 't2', quantidade: 4, valorUnitario: 4.20, valorTotal: 16.80 },
+    ],
+    valorTotal: 156.80,
     timeline: [
-      { data: '2026-03-09T06:00:00', descricao: 'Atendimento aberto' },
+      { data: '2026-02-25T14:00:00', descricao: 'Atendimento aberto' },
+      { data: '2026-02-25T15:00:00', descricao: 'Serviço concluído' },
+      { data: '2026-02-28T10:00:00', descricao: 'Faturado' },
+    ],
+  },
+  {
+    id: 'a12', protocolo: 'ATD-2026-0012', dataHora: '2026-02-28T09:00:00', prestadorId: 'p6',
+    clienteNome: 'Silvia Rocha', solicitante: 'Particular', origem: 'Lago Sul, DF', destino: 'Asa Norte, DF',
+    tipoAtendimento: 'Reboque', veiculo: 'Volkswagen T-Cross 2024', placa: 'QRS-4T56', prioridade: 'Normal',
+    kmPrevisto: 18, km: 19, horasTrabalhadas: 1, horasParadas: 0, status: 'Faturado', observacoes: '',
+    tarifas: [
+      { tarifaId: 't1', quantidade: 1, valorUnitario: 160, valorTotal: 160 },
+      { tarifaId: 't2', quantidade: 9, valorUnitario: 4.80, valorTotal: 43.20 },
+    ],
+    valorTotal: 203.20,
+    timeline: [
+      { data: '2026-02-28T09:00:00', descricao: 'Atendimento aberto' },
+      { data: '2026-02-28T10:00:00', descricao: 'Serviço concluído' },
+      { data: '2026-03-01T09:00:00', descricao: 'Faturado' },
     ],
   },
 ];
 
+export const mockContratos: Contrato[] = [
+  { id: 'c1', prestadorId: 'p1', numero: 'CTR-2026-001', descricao: 'Contrato de prestação de serviços de guincho e reboque - Grande SP', plano: 'Pró', tabelaVinculada: 'Tabela SP Março/2026', dataInicio: '2026-01-01', dataFim: '2026-12-31', status: 'Ativo', observacoes: 'Renovação automática prevista.', custoMedioEstimado: 285.00 },
+  { id: 'c2', prestadorId: 'p2', numero: 'CTR-2026-002', descricao: 'Contrato básico de guincho - RJ Metropolitano', plano: 'Básico', tabelaVinculada: 'Tabela RJ Março/2026', dataInicio: '2026-01-01', dataFim: '2026-06-30', status: 'Ativo', observacoes: 'Pendente renegociação de valores.', custoMedioEstimado: 180.00 },
+  { id: 'c3', prestadorId: 'p3', numero: 'CTR-2026-003', descricao: 'Contrato estratégico - RS completo com equipamentos pesados', plano: 'Pró', tabelaVinculada: 'Tabela RS Março/2026', dataInicio: '2026-01-01', dataFim: '2027-06-30', status: 'Ativo', observacoes: 'Inclui guindaste e munck.', custoMedioEstimado: 420.00 },
+  { id: 'c4', prestadorId: 'p4', numero: 'CTR-2025-008', descricao: 'Contrato encerrado - BH básico', plano: 'Básico', tabelaVinculada: 'Tabela MG 2025', dataInicio: '2025-01-01', dataFim: '2025-12-31', status: 'Encerrado', observacoes: 'Não renovado por baixa performance.', custoMedioEstimado: 155.00 },
+  { id: 'c5', prestadorId: 'p5', numero: 'CTR-2026-004', descricao: 'Contrato exclusivo - Região Norte', plano: 'Enterprise', tabelaVinculada: 'Tabela Norte Março/2026', dataInicio: '2026-01-01', dataFim: '2027-12-31', status: 'Ativo', observacoes: 'Parceria exclusiva.', custoMedioEstimado: 350.00 },
+  { id: 'c6', prestadorId: 'p7', numero: 'CTR-2025-012', descricao: 'Contrato suspenso por inadimplência', plano: 'Básico', tabelaVinculada: '', dataInicio: '2025-06-01', dataFim: '2026-05-31', status: 'Suspenso', observacoes: 'Débito de 3 meses. Aguardando regularização.', custoMedioEstimado: 0 },
+  { id: 'c7', prestadorId: 'p8', numero: 'CTR-2026-005', descricao: 'Contrato renegociação - PR amplo', plano: 'Pró', tabelaVinculada: '', dataInicio: '2026-04-01', dataFim: '2027-03-31', status: 'Em negociação', observacoes: 'Renegociando valores de Km excedente.', custoMedioEstimado: 260.00 },
+];
+
+export const mockAuditLogs: AuditLog[] = [
+  { id: 'al1', data: '2026-03-09T08:30:00', usuario: 'Rodrigo Almeida', acao: 'Login', modulo: 'Autenticação', descricao: 'Login realizado com sucesso', criticidade: 'info' },
+  { id: 'al2', data: '2026-03-09T06:00:00', usuario: 'Sistema', acao: 'Criação', modulo: 'Atendimentos', descricao: 'Atendimento ATD-2026-0010 criado automaticamente', criticidade: 'info' },
+  { id: 'al3', data: '2026-03-08T17:00:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Prestadores', descricao: 'Status de Litoral Socorro alterado para Bloqueado', criticidade: 'critical' },
+  { id: 'al4', data: '2026-03-08T09:15:00', usuario: 'Juliana Ferraz', acao: 'Alteração', modulo: 'Atendimentos', descricao: 'ATD-2026-0008 marcado como Concluído', criticidade: 'info' },
+  { id: 'al5', data: '2026-03-07T14:30:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Tarifas', descricao: 'Valor de Km Excedente atualizado para prestador p6', criticidade: 'warning' },
+  { id: 'al6', data: '2026-03-07T11:00:00', usuario: 'Sistema', acao: 'Criação', modulo: 'Atendimentos', descricao: 'Atendimento ATD-2026-0007 criado', criticidade: 'info' },
+  { id: 'al7', data: '2026-03-06T16:00:00', usuario: 'Marcos Contábil', acao: 'Faturamento', modulo: 'Faturamento', descricao: 'ATD-2026-0005 faturado — R$ 551,00', criticidade: 'info' },
+  { id: 'al8', data: '2026-03-06T10:00:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Tabelas de Preço', descricao: 'Tabela de preços do prestador Norte Assistência atualizada', criticidade: 'warning' },
+  { id: 'al9', data: '2026-03-05T08:00:00', usuario: 'Rodrigo Almeida', acao: 'Criação', modulo: 'Contratos', descricao: 'Contrato CTR-2026-005 criado para Rápido Reboque PR', criticidade: 'info' },
+  { id: 'al10', data: '2026-03-04T16:00:00', usuario: 'Sistema', acao: 'Cancelamento', modulo: 'Atendimentos', descricao: 'ATD-2026-0009 cancelado pelo cliente', criticidade: 'warning' },
+  { id: 'al11', data: '2026-03-03T22:30:00', usuario: 'Juliana Ferraz', acao: 'Despacho', modulo: 'Atendimentos', descricao: 'ATD-2026-0005 despachado — atendimento noturno', criticidade: 'info' },
+  { id: 'al12', data: '2026-03-01T09:00:00', usuario: 'Marcos Contábil', acao: 'Faturamento', modulo: 'Faturamento', descricao: 'Lote de faturamento fev/2026 processado — 2 atendimentos', criticidade: 'info' },
+];
+
 export const mockConfig: ConfigEmpresa = {
-  nomeEmpresa: 'Gestor de Tarifas e Prestadores',
+  nomeEmpresa: 'RedeControl',
   cnpj: '00.000.000/0001-00',
   telefone: '(11) 3000-0000',
-  email: 'contato@gestortarifas.com.br',
+  email: 'contato@redecontrol.com.br',
   endereco: 'Av. Principal, 1000 - São Paulo/SP',
   parametroKmMinimo: 5,
   parametroHoraMinima: 1,

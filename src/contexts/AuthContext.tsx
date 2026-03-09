@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '@/types';
+import { User, UserRole } from '@/types';
 import { mockUsers } from '@/data/mockData';
 
 interface AuthContextType {
@@ -7,21 +7,27 @@ interface AuthContextType {
   login: (email: string, password: string) => boolean;
   logout: () => void;
   isAdmin: boolean;
+  hasAccess: (modules: string[]) => boolean;
 }
+
+const roleAccess: Record<UserRole, string[]> = {
+  admin: ['dashboard', 'prestadores', 'tarifas', 'tabela-precos', 'atendimentos', 'faturamento', 'relatorios', 'contratos', 'auditoria', 'configuracoes'],
+  operador: ['dashboard', 'prestadores', 'atendimentos', 'tarifas', 'tabela-precos'],
+  financeiro: ['dashboard', 'faturamento', 'relatorios', 'atendimentos', 'contratos'],
+  prestador: ['dashboard', 'atendimentos', 'faturamento', 'tarifas'],
+};
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(() => {
-    try {
-      const raw = localStorage.getItem('gtp_user');
-      return raw ? JSON.parse(raw) : null;
-    } catch { return null; }
+    try { const raw = localStorage.getItem('rc_user'); return raw ? JSON.parse(raw) : null; }
+    catch { return null; }
   });
 
   useEffect(() => {
-    if (user) localStorage.setItem('gtp_user', JSON.stringify(user));
-    else localStorage.removeItem('gtp_user');
+    if (user) localStorage.setItem('rc_user', JSON.stringify(user));
+    else localStorage.removeItem('rc_user');
   }, [user]);
 
   const login = (email: string, _password: string): boolean => {
@@ -31,9 +37,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => setUser(null);
+  const hasAccess = (modules: string[]) => {
+    if (!user) return false;
+    const access = roleAccess[user.role];
+    return modules.some(m => access.includes(m));
+  };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin: user?.role === 'admin' }}>
+    <AuthContext.Provider value={{ user, login, logout, isAdmin: user?.role === 'admin', hasAccess }}>
       {children}
     </AuthContext.Provider>
   );

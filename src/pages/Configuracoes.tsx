@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { getConfig, saveConfig, resetAllData } from '@/data/store';
@@ -11,6 +10,8 @@ import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Save, RotateCcw } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+
+const roleLabels: Record<string, string> = { admin: 'Administrador', operador: 'Operador', financeiro: 'Financeiro', prestador: 'Prestador' };
 
 export default function Configuracoes() {
   const { user, isAdmin } = useAuth();
@@ -29,6 +30,7 @@ export default function Configuracoes() {
           <TabsTrigger value="empresa" className="text-xs">Empresa</TabsTrigger>
           <TabsTrigger value="parametros" className="text-xs">Parâmetros</TabsTrigger>
           <TabsTrigger value="perfil" className="text-xs">Meu Perfil</TabsTrigger>
+          {isAdmin && <TabsTrigger value="permissoes" className="text-xs">Permissões</TabsTrigger>}
           {isAdmin && <TabsTrigger value="sistema" className="text-xs">Sistema</TabsTrigger>}
         </TabsList>
 
@@ -52,10 +54,28 @@ export default function Configuracoes() {
         <TabsContent value="perfil" className="mt-4">
           <Card className="max-w-xl"><CardHeader className="pb-2"><CardTitle className="text-sm">Meu Perfil</CardTitle></CardHeader><CardContent className="space-y-3">
             <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={user?.nome || ''} readOnly className="bg-muted" /></div><div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={user?.email || ''} readOnly className="bg-muted" /></div></div>
-            <div className="space-y-1"><Label className="text-xs">Perfil</Label><Input value={user?.role === 'admin' ? 'Administrador' : 'Prestador'} readOnly className="bg-muted" /></div>
+            <div className="space-y-1"><Label className="text-xs">Perfil</Label><Input value={roleLabels[user?.role || ''] || ''} readOnly className="bg-muted" /></div>
             <p className="text-[11px] text-muted-foreground">Para alterar dados de perfil, contate o administrador.</p>
           </CardContent></Card>
         </TabsContent>
+
+        {isAdmin && <TabsContent value="permissoes" className="mt-4">
+          <Card className="max-w-xl"><CardHeader className="pb-2"><CardTitle className="text-sm">Permissões por Perfil</CardTitle></CardHeader><CardContent>
+            <div className="space-y-4 text-[13px]">
+              {[
+                { role: 'Administrador', access: 'Acesso completo a todos os módulos' },
+                { role: 'Operador', access: 'Dashboard, Prestadores, Atendimentos, Tarifas, Tabelas de Preço' },
+                { role: 'Financeiro', access: 'Dashboard, Faturamento, Relatórios, Atendimentos, Contratos' },
+                { role: 'Prestador', access: 'Dashboard, Atendimentos próprios, Faturamento próprio, Tarifas' },
+              ].map(p => (
+                <div key={p.role} className="flex justify-between items-start py-2 border-b border-dashed border-border/60">
+                  <span className="font-medium">{p.role}</span>
+                  <span className="text-muted-foreground text-right max-w-[300px]">{p.access}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent></Card>
+        </TabsContent>}
 
         {isAdmin && <TabsContent value="sistema" className="mt-4">
           <Card className="max-w-xl"><CardHeader className="pb-2"><CardTitle className="text-sm">Manutenção</CardTitle></CardHeader><CardContent>
