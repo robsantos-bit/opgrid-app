@@ -52,61 +52,50 @@ export default function TabelaPrecos() {
   const handleSave = () => {
     if (!selectedPrestador) return;
     const tabelaItems: TabelaPrecoItem[] = tarifas.map(t => ({
-      id: `tp${Date.now()}_${t.id}`,
-      prestadorId: selectedPrestador,
-      tarifaId: t.id,
-      valor: items[t.id]?.valor || 0,
-      franquia: items[t.id]?.franquia || 0,
-      valorExcedente: items[t.id]?.valorExcedente || 0,
-      minimo: items[t.id]?.minimo || 0,
-      observacao: items[t.id]?.observacao || '',
-      ativo: items[t.id]?.ativo ?? true,
+      id: `tp${Date.now()}_${t.id}`, prestadorId: selectedPrestador, tarifaId: t.id,
+      valor: items[t.id]?.valor || 0, franquia: items[t.id]?.franquia || 0,
+      valorExcedente: items[t.id]?.valorExcedente || 0, minimo: items[t.id]?.minimo || 0,
+      observacao: items[t.id]?.observacao || '', ativo: items[t.id]?.ativo ?? true,
     }));
     saveTabelaPrecoPrestador(selectedPrestador, tabelaItems);
-    toast.success('Tabela de preços salva com sucesso!');
+    toast.success('Tabela de preços salva!');
   };
 
   const prestador = prestadores.find(p => p.id === selectedPrestador);
-  const withoutValue = selectedPrestador ? tarifas.filter(t => !items[t.id]?.valor || items[t.id].valor === 0).length : 0;
+  const withoutValue = selectedPrestador ? tarifas.filter(t => !items[t.id]?.valor).length : 0;
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">Tabelas de Preço</h1>
-        <p className="text-sm text-muted-foreground">Configure os valores de tarifa por prestador</p>
+    <div className="space-y-5 animate-fade-in">
+      <div className="page-header">
+        <div className="page-header-text">
+          <h1>Tabelas de Preço</h1>
+          <p>Configure os valores de tarifa por prestador</p>
+        </div>
       </div>
 
       <Card>
-        <CardContent className="p-4">
-          <div className="flex items-end gap-4 flex-wrap">
-            <div className="space-y-1.5 flex-1 min-w-[250px]">
-              <Label>Selecione o Prestador</Label>
+        <CardContent className="p-3">
+          <div className="flex items-end gap-3 flex-wrap">
+            <div className="space-y-1 flex-1 min-w-[250px]">
+              <Label className="text-xs">Prestador</Label>
               <Select value={selectedPrestador} onValueChange={loadPrestador}>
-                <SelectTrigger><SelectValue placeholder="Escolha um prestador..." /></SelectTrigger>
-                <SelectContent>
-                  {prestadores.map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.nomeFantasia} — {p.cidade}/{p.uf} ({p.plano})</SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectTrigger className="h-9"><SelectValue placeholder="Escolha um prestador..." /></SelectTrigger>
+                <SelectContent>{prestadores.map(p => <SelectItem key={p.id} value={p.id}>{p.nomeFantasia} — {p.cidade}/{p.uf}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             {selectedPrestador && (
               <>
-                <div className="space-y-1.5 min-w-[200px]">
-                  <Label>Copiar de</Label>
-                  <div className="flex gap-2">
+                <div className="space-y-1 min-w-[180px]">
+                  <Label className="text-xs">Copiar de</Label>
+                  <div className="flex gap-1.5">
                     <Select value={cloneSource} onValueChange={setCloneSource}>
-                      <SelectTrigger className="w-[200px]"><SelectValue placeholder="Outro prestador..." /></SelectTrigger>
-                      <SelectContent>
-                        {prestadores.filter(p => p.id !== selectedPrestador).map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.nomeFantasia}</SelectItem>
-                        ))}
-                      </SelectContent>
+                      <SelectTrigger className="w-[180px] h-9"><SelectValue placeholder="Outro prestador..." /></SelectTrigger>
+                      <SelectContent>{prestadores.filter(p => p.id !== selectedPrestador).map(p => <SelectItem key={p.id} value={p.id}>{p.nomeFantasia}</SelectItem>)}</SelectContent>
                     </Select>
-                    <Button variant="outline" size="icon" onClick={handleClone} disabled={!cloneSource}><Copy className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="icon" onClick={handleClone} disabled={!cloneSource}><Copy className="h-3.5 w-3.5" /></Button>
                   </div>
                 </div>
-                <Button onClick={handleSave}><Save className="h-4 w-4 mr-2" />Salvar Tabela</Button>
+                <Button onClick={handleSave}><Save className="h-4 w-4 mr-1.5" />Salvar</Button>
               </>
             )}
           </div>
@@ -114,61 +103,45 @@ export default function TabelaPrecos() {
       </Card>
 
       {selectedPrestador && withoutValue > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm bg-warning/5 border-warning/20">
-          <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+        <div className="flex items-center gap-2 rounded-lg border border-warning/20 bg-warning/5 px-3.5 py-2 text-[13px]">
+          <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
           <span>{withoutValue} tarifa(s) sem valor definido</span>
         </div>
       )}
 
       {selectedPrestador && (
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              Tarifas de {prestador?.nomeFantasia}
-              <Badge variant="outline">{prestador?.plano}</Badge>
+          <CardHeader className="pb-1 pt-4 px-4">
+            <CardTitle className="text-[13px] font-medium flex items-center gap-2 text-muted-foreground">
+              {prestador?.nomeFantasia} <Badge variant="outline">{prestador?.plano}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto scrollbar-thin">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[180px]">Tarifa</TableHead>
-                    <TableHead className="min-w-[80px]">Cat.</TableHead>
-                    <TableHead className="min-w-[110px]">Valor (R$)</TableHead>
-                    <TableHead className="min-w-[100px]">Franquia</TableHead>
-                    <TableHead className="min-w-[110px]">Excedente</TableHead>
-                    <TableHead className="min-w-[110px]">Mínimo (R$)</TableHead>
-                    <TableHead className="min-w-[160px]">Observação</TableHead>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider min-w-[160px]">Tarifa</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider min-w-[70px]">Cat.</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider min-w-[100px]">Valor (R$)</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider min-w-[90px]">Franquia</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider min-w-[100px]">Excedente</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider min-w-[100px]">Mínimo</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider min-w-[140px]">Observação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {tarifas.map(t => {
                     const hasValue = items[t.id]?.valor > 0;
                     return (
-                      <TableRow key={t.id} className={`table-row-hover ${!hasValue ? 'bg-warning/5' : ''}`}>
-                        <TableCell className="font-medium text-sm">{t.nome}</TableCell>
+                      <TableRow key={t.id} className={`table-row-hover ${!hasValue ? 'bg-warning/[0.03]' : ''}`}>
+                        <TableCell className="font-medium text-[13px]">{t.nome}</TableCell>
                         <TableCell><Badge variant="outline" className="text-[10px]">{t.categoria}</Badge></TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" min="0" className="w-24 h-8 text-sm"
-                            value={items[t.id]?.valor || ''} onChange={e => updateItem(t.id, 'valor', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="1" min="0" className="w-20 h-8 text-sm"
-                            value={items[t.id]?.franquia || ''} onChange={e => updateItem(t.id, 'franquia', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" min="0" className="w-24 h-8 text-sm"
-                            value={items[t.id]?.valorExcedente || ''} onChange={e => updateItem(t.id, 'valorExcedente', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" min="0" className="w-24 h-8 text-sm"
-                            value={items[t.id]?.minimo || ''} onChange={e => updateItem(t.id, 'minimo', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input className="w-36 h-8 text-sm" value={items[t.id]?.observacao || ''}
-                            onChange={e => updateItem(t.id, 'observacao', e.target.value)} />
-                        </TableCell>
+                        <TableCell><Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums" value={items[t.id]?.valor || ''} onChange={e => updateItem(t.id, 'valor', parseFloat(e.target.value) || 0)} /></TableCell>
+                        <TableCell><Input type="number" step="1" min="0" className="w-20 h-8 text-xs tabular-nums" value={items[t.id]?.franquia || ''} onChange={e => updateItem(t.id, 'franquia', parseFloat(e.target.value) || 0)} /></TableCell>
+                        <TableCell><Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums" value={items[t.id]?.valorExcedente || ''} onChange={e => updateItem(t.id, 'valorExcedente', parseFloat(e.target.value) || 0)} /></TableCell>
+                        <TableCell><Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums" value={items[t.id]?.minimo || ''} onChange={e => updateItem(t.id, 'minimo', parseFloat(e.target.value) || 0)} /></TableCell>
+                        <TableCell><Input className="w-32 h-8 text-xs" value={items[t.id]?.observacao || ''} onChange={e => updateItem(t.id, 'observacao', e.target.value)} /></TableCell>
                       </TableRow>
                     );
                   })}

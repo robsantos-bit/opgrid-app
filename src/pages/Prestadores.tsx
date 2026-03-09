@@ -15,8 +15,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { getPrestadores, addPrestador, updatePrestador, deletePrestador, getAtendimentos, getTabelaPrecoPrestador, getTarifas } from '@/data/store';
-import { Prestador, PlanoType, StatusType } from '@/types';
-import { Plus, Pencil, Trash2, Search, Eye, LayoutGrid, List, ChevronLeft } from 'lucide-react';
+import { Prestador, StatusType } from '@/types';
+import { Plus, Pencil, Trash2, Search, Eye, LayoutGrid, List, ChevronLeft, MapPin, Phone } from 'lucide-react';
 
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'];
 const TIPOS_SERVICO = ['Guincho', 'Reboque', 'Resgate', 'Patins', 'Munck', 'Guindaste', 'Carga Especial'];
@@ -29,10 +29,10 @@ const emptyPrestador = (): Partial<Prestador> => ({
 
 const statusBadge = (status: StatusType) => {
   switch (status) {
-    case 'Ativo': return 'default';
-    case 'Inativo': return 'secondary';
-    case 'Bloqueado': return 'destructive';
-    default: return 'secondary';
+    case 'Ativo': return 'success' as const;
+    case 'Inativo': return 'secondary' as const;
+    case 'Bloqueado': return 'destructive' as const;
+    default: return 'secondary' as const;
   }
 };
 
@@ -68,16 +68,15 @@ export default function Prestadores() {
 
   const handleSave = () => {
     if (!editing?.nomeFantasia || !editing.documento || !editing.email) {
-      toast.error('Preencha os campos obrigatórios: Nome Fantasia, Documento e E-mail.');
+      toast.error('Preencha os campos obrigatórios.');
       return;
     }
     if (editing.id) {
       updatePrestador(editing as Prestador);
-      toast.success('Prestador atualizado com sucesso!');
+      toast.success('Prestador atualizado.');
     } else {
-      const newP: Prestador = { ...editing as Prestador, id: `p${Date.now()}` };
-      addPrestador(newP);
-      toast.success('Prestador cadastrado com sucesso!');
+      addPrestador({ ...editing as Prestador, id: `p${Date.now()}` });
+      toast.success('Prestador cadastrado.');
     }
     setData(getPrestadores());
     setModalOpen(false);
@@ -90,9 +89,7 @@ export default function Prestadores() {
     toast.success('Prestador removido.');
   };
 
-  const updateField = (field: string, value: any) => {
-    setEditing(prev => prev ? { ...prev, [field]: value } : prev);
-  };
+  const updateField = (field: string, value: any) => setEditing(prev => prev ? { ...prev, [field]: value } : prev);
 
   const toggleServico = (servico: string) => {
     setEditing(prev => {
@@ -106,48 +103,71 @@ export default function Prestadores() {
   if (detailPrestador) {
     const atds = getAtendimentos().filter(a => a.prestadorId === detailPrestador.id);
     const precos = getTabelaPrecoPrestador(detailPrestador.id);
-    const tarifas = getTarifas();
+    const allTarifas = getTarifas();
     const faturamento = atds.filter(a => a.status === 'Concluído' || a.status === 'Faturado').reduce((s, a) => s + a.valorTotal, 0);
 
     return (
-      <div className="space-y-4 animate-fade-in">
+      <div className="space-y-5 animate-fade-in">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => setDetailPrestador(null)}><ChevronLeft className="h-4 w-4" /></Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">{detailPrestador.nomeFantasia}</h1>
-            <p className="text-sm text-muted-foreground">{detailPrestador.razaoSocial}</p>
+          <Button variant="ghost" size="icon" onClick={() => setDetailPrestador(null)} className="h-8 w-8"><ChevronLeft className="h-4 w-4" /></Button>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="truncate">{detailPrestador.nomeFantasia}</h1>
+              <Badge variant={statusBadge(detailPrestador.status)}>{detailPrestador.status}</Badge>
+              <Badge variant="outline">{detailPrestador.plano}</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground truncate">{detailPrestador.razaoSocial}</p>
           </div>
-          <Badge variant={statusBadge(detailPrestador.status)} className="ml-auto">{detailPrestador.status}</Badge>
-          <Badge variant="outline">{detailPrestador.plano}</Badge>
+          <Button variant="outline" size="sm" onClick={() => { openEdit(detailPrestador); }}><Pencil className="h-3.5 w-3.5 mr-1.5" />Editar</Button>
         </div>
 
         <Tabs defaultValue="dados">
-          <TabsList>
-            <TabsTrigger value="dados">Dados Gerais</TabsTrigger>
-            <TabsTrigger value="tarifas">Tarifas ({precos.length})</TabsTrigger>
-            <TabsTrigger value="atendimentos">Atendimentos ({atds.length})</TabsTrigger>
-            <TabsTrigger value="faturamento">Faturamento</TabsTrigger>
+          <TabsList className="h-9">
+            <TabsTrigger value="dados" className="text-xs">Dados Gerais</TabsTrigger>
+            <TabsTrigger value="tarifas" className="text-xs">Tarifas ({precos.length})</TabsTrigger>
+            <TabsTrigger value="atendimentos" className="text-xs">Atendimentos ({atds.length})</TabsTrigger>
+            <TabsTrigger value="faturamento" className="text-xs">Faturamento</TabsTrigger>
           </TabsList>
           <TabsContent value="dados" className="mt-4">
             <Card>
-              <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div><span className="text-muted-foreground">Documento:</span> <span className="font-medium ml-1">{detailPrestador.documento}</span></div>
-                <div><span className="text-muted-foreground">Inscrição Estadual:</span> <span className="font-medium ml-1">{detailPrestador.inscricaoEstadual || '-'}</span></div>
-                <div><span className="text-muted-foreground">Responsável:</span> <span className="font-medium ml-1">{detailPrestador.responsavel}</span></div>
-                <div><span className="text-muted-foreground">E-mail:</span> <span className="font-medium ml-1">{detailPrestador.email}</span></div>
-                <div><span className="text-muted-foreground">Telefone:</span> <span className="font-medium ml-1">{detailPrestador.telefone}</span></div>
-                <div><span className="text-muted-foreground">Telefone 2:</span> <span className="font-medium ml-1">{detailPrestador.telefone2 || '-'}</span></div>
-                <div><span className="text-muted-foreground">Endereço:</span> <span className="font-medium ml-1">{detailPrestador.endereco}</span></div>
-                <div><span className="text-muted-foreground">Cidade/UF:</span> <span className="font-medium ml-1">{detailPrestador.cidade}/{detailPrestador.uf}</span></div>
-                <div><span className="text-muted-foreground">CEP:</span> <span className="font-medium ml-1">{detailPrestador.cep}</span></div>
-                <div><span className="text-muted-foreground">Área Cobertura:</span> <span className="font-medium ml-1">{detailPrestador.areaCobertura || '-'}</span></div>
-                <div><span className="text-muted-foreground">Aceita Noturno:</span> <Badge variant={detailPrestador.aceitaNoturno ? 'default' : 'secondary'} className="ml-1">{detailPrestador.aceitaNoturno ? 'Sim' : 'Não'}</Badge></div>
-                <div><span className="text-muted-foreground">Aceita Rodoviário:</span> <Badge variant={detailPrestador.aceitaRodoviario ? 'default' : 'secondary'} className="ml-1">{detailPrestador.aceitaRodoviario ? 'Sim' : 'Não'}</Badge></div>
+              <CardContent className="p-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-[13px]">
+                  {[
+                    ['CNPJ/CPF', detailPrestador.documento],
+                    ['Inscrição Estadual', detailPrestador.inscricaoEstadual || '—'],
+                    ['Responsável', detailPrestador.responsavel],
+                    ['E-mail', detailPrestador.email],
+                    ['Telefone', detailPrestador.telefone],
+                    ['Telefone 2', detailPrestador.telefone2 || '—'],
+                    ['Endereço', detailPrestador.endereco],
+                    ['Cidade/UF', `${detailPrestador.cidade}/${detailPrestador.uf}`],
+                    ['CEP', detailPrestador.cep],
+                    ['Área de Cobertura', detailPrestador.areaCobertura || '—'],
+                  ].map(([label, val]) => (
+                    <div key={label} className="flex justify-between py-1.5 border-b border-dashed border-border/60">
+                      <span className="text-muted-foreground">{label}</span>
+                      <span className="font-medium text-right">{val}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between py-1.5 border-b border-dashed border-border/60">
+                    <span className="text-muted-foreground">Noturno</span>
+                    <Badge variant={detailPrestador.aceitaNoturno ? 'success' : 'secondary'}>{detailPrestador.aceitaNoturno ? 'Sim' : 'Não'}</Badge>
+                  </div>
+                  <div className="flex justify-between py-1.5 border-b border-dashed border-border/60">
+                    <span className="text-muted-foreground">Rodoviário</span>
+                    <Badge variant={detailPrestador.aceitaRodoviario ? 'success' : 'secondary'}>{detailPrestador.aceitaRodoviario ? 'Sim' : 'Não'}</Badge>
+                  </div>
+                </div>
                 {detailPrestador.tiposServico.length > 0 && (
-                  <div className="col-span-2"><span className="text-muted-foreground">Serviços:</span> <span className="ml-1">{detailPrestador.tiposServico.map(s => <Badge key={s} variant="outline" className="mr-1 mb-1">{s}</Badge>)}</span></div>
+                  <div className="mt-4 flex flex-wrap gap-1.5">
+                    <span className="text-[13px] text-muted-foreground mr-1">Serviços:</span>
+                    {detailPrestador.tiposServico.map(s => <Badge key={s} variant="outline">{s}</Badge>)}
+                  </div>
                 )}
                 {detailPrestador.observacoes && (
-                  <div className="col-span-2"><span className="text-muted-foreground">Observações:</span> <span className="font-medium ml-1">{detailPrestador.observacoes}</span></div>
+                  <div className="mt-4 p-3 rounded-lg bg-muted/50 text-[13px]">
+                    <span className="text-muted-foreground">Observações: </span>{detailPrestador.observacoes}
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -156,23 +176,21 @@ export default function Prestadores() {
             <Card>
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tarifa</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Franquia</TableHead>
-                      <TableHead>Mínimo</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider">Tarifa</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-right">Valor</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-right">Franquia</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-right">Mínimo</TableHead>
+                  </TableRow></TableHeader>
                   <TableBody>
                     {precos.length === 0 ? (
-                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">Nenhuma tarifa configurada</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center py-12 text-muted-foreground text-sm">Nenhuma tarifa configurada</TableCell></TableRow>
                     ) : precos.map(tp => (
-                      <TableRow key={tp.id}>
-                        <TableCell className="font-medium">{tarifas.find(t => t.id === tp.tarifaId)?.nome || tp.tarifaId}</TableCell>
-                        <TableCell>R$ {tp.valor.toFixed(2)}</TableCell>
-                        <TableCell>{tp.franquia || '-'}</TableCell>
-                        <TableCell>R$ {tp.minimo.toFixed(2)}</TableCell>
+                      <TableRow key={tp.id} className="table-row-hover">
+                        <TableCell className="font-medium text-[13px]">{allTarifas.find(t => t.id === tp.tarifaId)?.nome || tp.tarifaId}</TableCell>
+                        <TableCell className="text-right tabular-nums text-[13px]">R$ {tp.valor.toFixed(2)}</TableCell>
+                        <TableCell className="text-right tabular-nums text-[13px]">{tp.franquia || '—'}</TableCell>
+                        <TableCell className="text-right tabular-nums text-[13px]">R$ {tp.minimo.toFixed(2)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -184,25 +202,23 @@ export default function Prestadores() {
             <Card>
               <CardContent className="p-0">
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Protocolo</TableHead>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                  <TableHeader><TableRow className="hover:bg-transparent">
+                    <TableHead className="text-[11px] uppercase tracking-wider">Protocolo</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider">Cliente</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider hidden md:table-cell">Data</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+                    <TableHead className="text-[11px] uppercase tracking-wider text-right">Valor</TableHead>
+                  </TableRow></TableHeader>
                   <TableBody>
                     {atds.length === 0 ? (
-                      <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Nenhum atendimento</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center py-12 text-muted-foreground text-sm">Nenhum atendimento</TableCell></TableRow>
                     ) : atds.map(a => (
-                      <TableRow key={a.id}>
-                        <TableCell className="font-mono text-sm">{a.protocolo}</TableCell>
-                        <TableCell>{a.clienteNome}</TableCell>
-                        <TableCell>{new Date(a.dataHora).toLocaleDateString('pt-BR')}</TableCell>
-                        <TableCell><Badge variant={a.status === 'Concluído' || a.status === 'Faturado' ? 'default' : a.status === 'Cancelado' ? 'destructive' : 'secondary'}>{a.status}</Badge></TableCell>
-                        <TableCell className="text-right font-medium">R$ {a.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                      <TableRow key={a.id} className="table-row-hover">
+                        <TableCell className="font-mono text-xs">{a.protocolo}</TableCell>
+                        <TableCell className="text-[13px]">{a.clienteNome}</TableCell>
+                        <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground">{new Date(a.dataHora).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell><Badge variant={a.status === 'Concluído' || a.status === 'Faturado' ? 'success' : a.status === 'Cancelado' ? 'destructive' : 'secondary'}>{a.status}</Badge></TableCell>
+                        <TableCell className="text-right font-medium tabular-nums text-[13px]">R$ {a.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -211,10 +227,16 @@ export default function Prestadores() {
             </Card>
           </TabsContent>
           <TabsContent value="faturamento" className="mt-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Total Faturado</p><p className="text-xl font-bold">R$ {faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p></CardContent></Card>
-              <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Atendimentos</p><p className="text-xl font-bold">{atds.length}</p></CardContent></Card>
-              <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Ticket Médio</p><p className="text-xl font-bold">R$ {atds.length > 0 ? (faturamento / atds.filter(a => a.valorTotal > 0).length || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}</p></CardContent></Card>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {[
+                { label: 'Total Faturado', value: `R$ ${faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, bg: 'bg-success/10', color: 'text-success' },
+                { label: 'Atendimentos', value: atds.length, bg: 'bg-primary/10', color: 'text-primary' },
+                { label: 'Ticket Médio', value: `R$ ${atds.filter(a => a.valorTotal > 0).length > 0 ? (faturamento / atds.filter(a => a.valorTotal > 0).length).toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : '0,00'}`, bg: 'bg-info/10', color: 'text-info' },
+              ].map(k => (
+                <div key={k.label} className="kpi-card">
+                  <div><p className="kpi-label">{k.label}</p><p className="kpi-value">{k.value}</p></div>
+                </div>
+              ))}
             </div>
           </TabsContent>
         </Tabs>
@@ -223,30 +245,30 @@ export default function Prestadores() {
   }
 
   return (
-    <div className="space-y-4 animate-fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Prestadores</h1>
-          <p className="text-sm text-muted-foreground">Gerencie os prestadores de serviço cadastrados</p>
+    <div className="space-y-5 animate-fade-in">
+      <div className="page-header">
+        <div className="page-header-text">
+          <h1>Prestadores</h1>
+          <p>Gerencie os prestadores de serviço cadastrados</p>
         </div>
         <div className="flex gap-2">
-          <div className="flex border rounded-md">
-            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9 rounded-r-none" onClick={() => setViewMode('table')}><List className="h-4 w-4" /></Button>
-            <Button variant={viewMode === 'cards' ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9 rounded-l-none" onClick={() => setViewMode('cards')}><LayoutGrid className="h-4 w-4" /></Button>
+          <div className="flex border rounded-lg overflow-hidden">
+            <Button variant={viewMode === 'table' ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9 rounded-none" onClick={() => setViewMode('table')}><List className="h-4 w-4" /></Button>
+            <Button variant={viewMode === 'cards' ? 'secondary' : 'ghost'} size="icon" className="h-9 w-9 rounded-none" onClick={() => setViewMode('cards')}><LayoutGrid className="h-4 w-4" /></Button>
           </div>
-          <Button onClick={openNew}><Plus className="h-4 w-4 mr-2" />Novo Prestador</Button>
+          <Button onClick={openNew}><Plus className="h-4 w-4 mr-1.5" />Novo Prestador</Button>
         </div>
       </div>
 
       <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-wrap gap-3">
+        <CardContent className="p-3">
+          <div className="filter-bar">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Buscar por nome, documento ou e-mail..." className="pl-10" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input placeholder="Buscar por nome, documento ou e-mail..." className="pl-9" value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} />
             </div>
             <Select value={filterStatus} onValueChange={v => { setFilterStatus(v); setPage(0); }}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Status" /></SelectTrigger>
+              <SelectTrigger className="w-[130px] h-9"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos Status</SelectItem>
                 <SelectItem value="Ativo">Ativo</SelectItem>
@@ -255,7 +277,7 @@ export default function Prestadores() {
               </SelectContent>
             </Select>
             <Select value={filterPlano} onValueChange={v => { setFilterPlano(v); setPage(0); }}>
-              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Plano" /></SelectTrigger>
+              <SelectTrigger className="w-[130px] h-9"><SelectValue placeholder="Plano" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos Planos</SelectItem>
                 <SelectItem value="Básico">Básico</SelectItem>
@@ -264,7 +286,7 @@ export default function Prestadores() {
               </SelectContent>
             </Select>
             <Select value={filterUf} onValueChange={v => { setFilterUf(v); setPage(0); }}>
-              <SelectTrigger className="w-[100px]"><SelectValue placeholder="UF" /></SelectTrigger>
+              <SelectTrigger className="w-[90px] h-9"><SelectValue placeholder="UF" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">UF</SelectItem>
                 {UFS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
@@ -275,23 +297,22 @@ export default function Prestadores() {
       </Card>
 
       {viewMode === 'cards' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {paged.map(p => (
-            <Card key={p.id} className="card-hover cursor-pointer" onClick={() => setDetailPrestador(p)}>
+            <Card key={p.id} className="card-hover cursor-pointer group" onClick={() => setDetailPrestador(p)}>
               <CardContent className="p-4 space-y-3">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="font-medium text-foreground">{p.nomeFantasia}</p>
-                    <p className="text-xs text-muted-foreground">{p.razaoSocial}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-[13px] truncate">{p.nomeFantasia}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{p.razaoSocial}</p>
                   </div>
                   <Badge variant={statusBadge(p.status)}>{p.status}</Badge>
                 </div>
-                <Separator />
-                <div className="text-sm space-y-1">
-                  <p className="text-muted-foreground">{p.cidade}/{p.uf} · {p.telefone}</p>
-                  <p className="text-muted-foreground">{p.email}</p>
+                <div className="text-[12px] text-muted-foreground space-y-1">
+                  <div className="flex items-center gap-1.5"><MapPin className="h-3 w-3" />{p.cidade}/{p.uf}</div>
+                  <div className="flex items-center gap-1.5"><Phone className="h-3 w-3" />{p.telefone}</div>
                 </div>
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between pt-1 border-t">
                   <Badge variant="outline">{p.plano}</Badge>
                   <div className="flex gap-1">
                     {p.aceitaNoturno && <Badge variant="secondary" className="text-[10px]">Noturno</Badge>}
@@ -301,51 +322,47 @@ export default function Prestadores() {
               </CardContent>
             </Card>
           ))}
-          {paged.length === 0 && <p className="col-span-3 text-center py-8 text-muted-foreground">Nenhum prestador encontrado</p>}
+          {paged.length === 0 && <div className="col-span-3 empty-state"><div className="empty-state-title">Nenhum prestador encontrado</div></div>}
         </div>
       ) : (
         <Card>
           <CardContent className="p-0">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Nome Fantasia</TableHead>
-                  <TableHead className="hidden md:table-cell">Documento</TableHead>
-                  <TableHead className="hidden lg:table-cell">Cidade/UF</TableHead>
-                  <TableHead className="hidden xl:table-cell">Responsável</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Plano</TableHead>
-                  <TableHead className="text-right">Ações</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="text-[11px] uppercase tracking-wider">Nome Fantasia</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider hidden md:table-cell">Documento</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider hidden lg:table-cell">Cidade/UF</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider hidden xl:table-cell">Responsável</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider">Plano</TableHead>
+                  <TableHead className="text-[11px] uppercase tracking-wider text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paged.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center py-8 text-muted-foreground">Nenhum prestador encontrado</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-sm">Nenhum prestador encontrado</TableCell></TableRow>
                 ) : paged.map(p => (
-                  <TableRow key={p.id} className="table-row-hover">
+                  <TableRow key={p.id} className="table-row-hover cursor-pointer" onClick={() => setDetailPrestador(p)}>
                     <TableCell>
-                      <div>
-                        <p className="font-medium">{p.nomeFantasia}</p>
-                        <p className="text-xs text-muted-foreground">{p.email}</p>
-                      </div>
+                      <p className="font-medium text-[13px]">{p.nomeFantasia}</p>
+                      <p className="text-[11px] text-muted-foreground">{p.email}</p>
                     </TableCell>
-                    <TableCell className="hidden md:table-cell font-mono text-sm">{p.documento}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{p.cidade}/{p.uf}</TableCell>
-                    <TableCell className="hidden xl:table-cell">{p.responsavel}</TableCell>
+                    <TableCell className="hidden md:table-cell font-mono text-xs text-muted-foreground">{p.documento}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-[13px]">{p.cidade}/{p.uf}</TableCell>
+                    <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{p.responsavel}</TableCell>
                     <TableCell><Badge variant={statusBadge(p.status)}>{p.status}</Badge></TableCell>
                     <TableCell><Badge variant="outline">{p.plano}</Badge></TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => setDetailPrestador(p)}><Eye className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); openEdit(p); }}><Pencil className="h-4 w-4" /></Button>
+                      <div className="flex justify-end gap-0.5" onClick={e => e.stopPropagation()}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setDetailPrestador(p)}><Eye className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-3.5 w-3.5" /></Button>
                         <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                          </AlertDialogTrigger>
+                          <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button></AlertDialogTrigger>
                           <AlertDialogContent>
                             <AlertDialogHeader>
                               <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
-                              <AlertDialogDescription>Deseja realmente excluir o prestador "{p.nomeFantasia}"? Esta ação não pode ser desfeita.</AlertDialogDescription>
+                              <AlertDialogDescription>Excluir "{p.nomeFantasia}"? Esta ação não pode ser desfeita.</AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -364,96 +381,84 @@ export default function Prestadores() {
       )}
 
       {totalPages > 1 && (
-        <div className="flex items-center justify-between">
-          <p className="text-sm text-muted-foreground">{filtered.length} registro(s)</p>
-          <div className="flex gap-1">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-muted-foreground">{filtered.length} registro(s)</span>
+          <div className="flex items-center gap-1">
             <Button variant="outline" size="sm" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
-            <span className="flex items-center px-3 text-sm">{page + 1} / {totalPages}</span>
+            <span className="px-3 text-muted-foreground">{page + 1} de {totalPages}</span>
             <Button variant="outline" size="sm" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Próxima</Button>
           </div>
         </div>
       )}
 
-      {/* Modal */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-thin">
           <DialogHeader>
             <DialogTitle>{editing?.id ? 'Editar Prestador' : 'Novo Prestador'}</DialogTitle>
           </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label>Nome Fantasia *</Label><Input value={editing?.nomeFantasia || ''} onChange={e => updateField('nomeFantasia', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Razão Social</Label><Input value={editing?.razaoSocial || ''} onChange={e => updateField('razaoSocial', e.target.value)} /></div>
+          <div className="grid gap-3.5 py-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Nome Fantasia *</Label><Input value={editing?.nomeFantasia || ''} onChange={e => updateField('nomeFantasia', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Razão Social</Label><Input value={editing?.razaoSocial || ''} onChange={e => updateField('razaoSocial', e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5"><Label>CNPJ/CPF *</Label><Input value={editing?.documento || ''} onChange={e => updateField('documento', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Inscrição Estadual</Label><Input value={editing?.inscricaoEstadual || ''} onChange={e => updateField('inscricaoEstadual', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Responsável</Label><Input value={editing?.responsavel || ''} onChange={e => updateField('responsavel', e.target.value)} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1"><Label className="text-xs">CNPJ/CPF *</Label><Input value={editing?.documento || ''} onChange={e => updateField('documento', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Inscrição Estadual</Label><Input value={editing?.inscricaoEstadual || ''} onChange={e => updateField('inscricaoEstadual', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Responsável</Label><Input value={editing?.responsavel || ''} onChange={e => updateField('responsavel', e.target.value)} /></div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label>Telefone</Label><Input value={editing?.telefone || ''} onChange={e => updateField('telefone', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label>Telefone 2</Label><Input value={editing?.telefone2 || ''} onChange={e => updateField('telefone2', e.target.value)} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Telefone</Label><Input value={editing?.telefone || ''} onChange={e => updateField('telefone', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Telefone 2</Label><Input value={editing?.telefone2 || ''} onChange={e => updateField('telefone2', e.target.value)} /></div>
             </div>
-            <div className="space-y-1.5"><Label>E-mail *</Label><Input type="email" value={editing?.email || ''} onChange={e => updateField('email', e.target.value)} /></div>
+            <div className="space-y-1"><Label className="text-xs">E-mail *</Label><Input type="email" value={editing?.email || ''} onChange={e => updateField('email', e.target.value)} /></div>
             <Separator />
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5"><Label>Endereço</Label><Input value={editing?.endereco || ''} onChange={e => updateField('endereco', e.target.value)} /></div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Endereço</Label><Input value={editing?.endereco || ''} onChange={e => updateField('endereco', e.target.value)} /></div>
               <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1.5"><Label>Cidade</Label><Input value={editing?.cidade || ''} onChange={e => updateField('cidade', e.target.value)} /></div>
-                <div className="space-y-1.5"><Label>UF</Label>
+                <div className="space-y-1"><Label className="text-xs">Cidade</Label><Input value={editing?.cidade || ''} onChange={e => updateField('cidade', e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">UF</Label>
                   <Select value={editing?.uf || 'SP'} onValueChange={v => updateField('uf', v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>{UFS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-1.5"><Label>CEP</Label><Input value={editing?.cep || ''} onChange={e => updateField('cep', e.target.value)} /></div>
+                <div className="space-y-1"><Label className="text-xs">CEP</Label><Input value={editing?.cep || ''} onChange={e => updateField('cep', e.target.value)} /></div>
               </div>
             </div>
             <Separator />
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5"><Label>Plano</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Plano</Label>
                 <Select value={editing?.plano || 'Básico'} onValueChange={v => updateField('plano', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Básico">Básico</SelectItem>
-                    <SelectItem value="Pró">Pró</SelectItem>
-                    <SelectItem value="Enterprise">Enterprise</SelectItem>
-                  </SelectContent>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Básico">Básico</SelectItem><SelectItem value="Pró">Pró</SelectItem><SelectItem value="Enterprise">Enterprise</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5"><Label>Status</Label>
+              <div className="space-y-1"><Label className="text-xs">Status</Label>
                 <Select value={editing?.status || 'Ativo'} onValueChange={v => updateField('status', v)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Ativo">Ativo</SelectItem>
-                    <SelectItem value="Inativo">Inativo</SelectItem>
-                    <SelectItem value="Bloqueado">Bloqueado</SelectItem>
-                  </SelectContent>
+                  <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="Ativo">Ativo</SelectItem><SelectItem value="Inativo">Inativo</SelectItem><SelectItem value="Bloqueado">Bloqueado</SelectItem></SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5"><Label>Área de Cobertura</Label><Input value={editing?.areaCobertura || ''} onChange={e => updateField('areaCobertura', e.target.value)} /></div>
+              <div className="space-y-1"><Label className="text-xs">Área de Cobertura</Label><Input value={editing?.areaCobertura || ''} onChange={e => updateField('areaCobertura', e.target.value)} /></div>
             </div>
-
-            <div className="space-y-2">
-              <Label>Tipos de Serviço</Label>
-              <div className="flex flex-wrap gap-3">
+            <div className="space-y-1.5">
+              <Label className="text-xs">Tipos de Serviço</Label>
+              <div className="flex flex-wrap gap-x-4 gap-y-2">
                 {TIPOS_SERVICO.map(s => (
-                  <label key={s} className="flex items-center gap-2 text-sm">
-                    <Checkbox checked={editing?.tiposServico?.includes(s)} onCheckedChange={() => toggleServico(s)} />
+                  <label key={s} className="flex items-center gap-1.5 text-[13px] cursor-pointer">
+                    <Checkbox checked={editing?.tiposServico?.includes(s)} onCheckedChange={() => toggleServico(s)} className="h-4 w-4" />
                     {s}
                   </label>
                 ))}
               </div>
             </div>
-
             <div className="flex gap-6">
-              <div className="flex items-center gap-2"><Switch checked={editing?.aceitaNoturno || false} onCheckedChange={v => updateField('aceitaNoturno', v)} /><Label>Aceita noturno</Label></div>
-              <div className="flex items-center gap-2"><Switch checked={editing?.aceitaRodoviario || false} onCheckedChange={v => updateField('aceitaRodoviario', v)} /><Label>Aceita rodoviário</Label></div>
+              <label className="flex items-center gap-2 text-[13px] cursor-pointer"><Switch checked={editing?.aceitaNoturno || false} onCheckedChange={v => updateField('aceitaNoturno', v)} />Aceita noturno</label>
+              <label className="flex items-center gap-2 text-[13px] cursor-pointer"><Switch checked={editing?.aceitaRodoviario || false} onCheckedChange={v => updateField('aceitaRodoviario', v)} />Aceita rodoviário</label>
             </div>
-
-            <div className="space-y-1.5"><Label>Observações</Label><Textarea value={editing?.observacoes || ''} onChange={e => updateField('observacoes', e.target.value)} rows={3} /></div>
+            <div className="space-y-1"><Label className="text-xs">Observações</Label><Textarea value={editing?.observacoes || ''} onChange={e => updateField('observacoes', e.target.value)} rows={2} /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave}>Salvar</Button>
           </DialogFooter>

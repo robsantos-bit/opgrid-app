@@ -4,10 +4,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { getPrestadores, getAtendimentos, getTarifas, getTabelaPrecos } from '@/data/store';
 import { Users, Tag, ClipboardList, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
 
-const COLORS = ['hsl(220,72%,45%)', 'hsl(174,62%,42%)', 'hsl(38,92%,50%)', 'hsl(152,60%,40%)', 'hsl(280,60%,50%)'];
+const COLORS = ['hsl(220,72%,50%)', 'hsl(174,62%,38%)', 'hsl(38,92%,50%)', 'hsl(152,60%,36%)', 'hsl(280,60%,50%)'];
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -23,15 +23,14 @@ export default function Dashboard() {
   const faturamento = concluidos.reduce((s, a) => s + a.valorTotal, 0);
   const ticketMedio = concluidos.length > 0 ? faturamento / concluidos.length : 0;
 
-  // Alerts
   const prestadoresInativos = prestadores.filter(p => p.status !== 'Ativo');
   const tarifasSemValor = tarifas.filter(t => t.situacao === 'Ativo' && !tabelaPrecos.some(tp => tp.tarifaId === t.id && tp.valor > 0));
   const atdPendentes = atendimentos.filter(a => a.status === 'Concluído');
 
   const alerts = [
-    ...(prestadoresInativos.length > 0 ? [{ text: `${prestadoresInativos.length} prestador(es) inativo(s)/bloqueado(s)`, type: 'warning' as const }] : []),
-    ...(tarifasSemValor.length > 0 ? [{ text: `${tarifasSemValor.length} tarifa(s) sem valor definido`, type: 'warning' as const }] : []),
-    ...(atdPendentes.length > 0 ? [{ text: `${atdPendentes.length} atendimento(s) pendente(s) de faturamento`, type: 'info' as const }] : []),
+    ...(prestadoresInativos.length > 0 ? [{ text: `${prestadoresInativos.length} prestador(es) inativo(s) ou bloqueado(s)` }] : []),
+    ...(tarifasSemValor.length > 0 ? [{ text: `${tarifasSemValor.length} tarifa(s) ativa(s) sem valor configurado` }] : []),
+    ...(atdPendentes.length > 0 ? [{ text: `${atdPendentes.length} atendimento(s) concluído(s) pendente(s) de faturamento` }] : []),
   ];
 
   const statusData = [
@@ -43,68 +42,62 @@ export default function Dashboard() {
   const atdPorPrestador = prestadores.filter(p => p.status === 'Ativo').slice(0, 6).map(p => ({
     name: p.nomeFantasia.length > 10 ? p.nomeFantasia.slice(0, 10) + '…' : p.nomeFantasia,
     faturamento: atendimentos.filter(a => a.prestadorId === p.id && (a.status === 'Concluído' || a.status === 'Faturado')).reduce((s, a) => s + a.valorTotal, 0),
-    atendimentos: atendimentos.filter(a => a.prestadorId === p.id).length,
   }));
 
   const kpis = [
-    { label: 'Prestadores Ativos', value: prestadoresAtivos, icon: Users, color: 'text-primary' },
-    { label: 'Tarifas Ativas', value: tarifasAtivas, icon: Tag, color: 'text-accent' },
-    { label: 'Atendimentos no Mês', value: atdMes, icon: ClipboardList, color: 'text-warning' },
-    { label: 'Ticket Médio', value: `R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, color: 'text-info' },
-    { label: 'Faturamento Previsto', value: `R$ ${faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: DollarSign, color: 'text-success' },
+    { label: 'Prestadores Ativos', value: prestadoresAtivos, icon: Users, bg: 'bg-primary/10', color: 'text-primary' },
+    { label: 'Tarifas Ativas', value: tarifasAtivas, icon: Tag, bg: 'bg-accent/10', color: 'text-accent' },
+    { label: 'Atendimentos', value: atdMes, icon: ClipboardList, bg: 'bg-warning/10', color: 'text-warning' },
+    { label: 'Ticket Médio', value: `R$ ${ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: TrendingUp, bg: 'bg-info/10', color: 'text-info' },
+    { label: 'Faturamento', value: `R$ ${faturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, icon: DollarSign, bg: 'bg-success/10', color: 'text-success' },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">Bem-vindo, {user?.nome}. Visão geral do sistema.</p>
+        <h1>Dashboard</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Bem-vindo, {user?.nome}.</p>
       </div>
 
-      {/* Alerts */}
       {alerts.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {alerts.map((a, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm bg-warning/5 border-warning/20">
-              <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
-              <span className="text-foreground">{a.text}</span>
+            <div key={i} className="flex items-center gap-2.5 rounded-lg border border-warning/20 bg-warning/5 px-3.5 py-2 text-[13px]">
+              <AlertTriangle className="h-3.5 w-3.5 text-warning shrink-0" />
+              <span>{a.text}</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {kpis.map(k => (
-          <Card key={k.label} className="card-hover">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-lg bg-muted flex items-center justify-center ${k.color}`}>
-                <k.icon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-[11px] text-muted-foreground truncate">{k.label}</p>
-                <p className="text-lg font-bold text-foreground truncate">{k.value}</p>
-              </div>
-            </CardContent>
-          </Card>
+          <div key={k.label} className="kpi-card">
+            <div className={`kpi-icon ${k.bg} ${k.color}`}>
+              <k.icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="kpi-label">{k.label}</p>
+              <p className="kpi-value">{k.value}</p>
+            </div>
+          </div>
         ))}
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Faturamento por Prestador</CardTitle>
+          <CardHeader className="pb-1 pt-4 px-4">
+            <CardTitle className="text-[13px] font-medium text-muted-foreground">Faturamento por Prestador</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64">
+          <CardContent className="px-2 pb-3">
+            <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={atdPorPrestador}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214,20%,88%)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                  <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip formatter={(v: number) => [`R$ ${v.toFixed(2)}`, 'Faturamento']} />
-                  <Bar dataKey="faturamento" fill="hsl(220,72%,45%)" radius={[4, 4, 0, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(214,20%,91%)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(215,14%,46%)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'hsl(215,14%,46%)' }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(v: number) => [`R$ ${v.toFixed(2)}`, 'Faturamento']} contentStyle={{ borderRadius: '8px', border: '1px solid hsl(214,20%,91%)', fontSize: 12 }} />
+                  <Bar dataKey="faturamento" fill="hsl(220,72%,50%)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -112,17 +105,17 @@ export default function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Status dos Prestadores</CardTitle>
+          <CardHeader className="pb-1 pt-4 px-4">
+            <CardTitle className="text-[13px] font-medium text-muted-foreground">Status dos Prestadores</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="h-64 flex items-center justify-center">
+          <CardContent className="px-2 pb-3">
+            <div className="h-56 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`}>
+                  <Pie data={statusData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={false} style={{ fontSize: 11 }}>
                     {statusData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={{ borderRadius: '8px', border: '1px solid hsl(214,20%,91%)', fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -130,35 +123,34 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Recent */}
       <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Últimos Atendimentos</CardTitle>
+        <CardHeader className="pb-1 pt-4 px-4">
+          <CardTitle className="text-[13px] font-medium text-muted-foreground">Últimos Atendimentos</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead>Protocolo</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead className="hidden md:table-cell">Prestador</TableHead>
-                <TableHead className="hidden lg:table-cell">Data</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Valor</TableHead>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-[11px] font-medium uppercase tracking-wider">Protocolo</TableHead>
+                <TableHead className="text-[11px] font-medium uppercase tracking-wider">Cliente</TableHead>
+                <TableHead className="text-[11px] font-medium uppercase tracking-wider hidden md:table-cell">Prestador</TableHead>
+                <TableHead className="text-[11px] font-medium uppercase tracking-wider hidden lg:table-cell">Data</TableHead>
+                <TableHead className="text-[11px] font-medium uppercase tracking-wider">Status</TableHead>
+                <TableHead className="text-[11px] font-medium uppercase tracking-wider text-right">Valor</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {atendimentos.slice(0, 6).map(a => {
                 const prest = prestadores.find(p => p.id === a.prestadorId);
-                const statusVariant = a.status === 'Concluído' || a.status === 'Faturado' ? 'default' : a.status === 'Cancelado' ? 'destructive' : 'secondary';
+                const sv = a.status === 'Concluído' || a.status === 'Faturado' ? 'success' : a.status === 'Cancelado' ? 'destructive' : a.status === 'Aberto' ? 'warning' : 'info';
                 return (
                   <TableRow key={a.id} className="table-row-hover">
-                    <TableCell className="font-mono text-sm">{a.protocolo}</TableCell>
-                    <TableCell>{a.clienteNome}</TableCell>
-                    <TableCell className="hidden md:table-cell">{prest?.nomeFantasia || '-'}</TableCell>
-                    <TableCell className="hidden lg:table-cell text-sm">{new Date(a.dataHora).toLocaleDateString('pt-BR')}</TableCell>
-                    <TableCell><Badge variant={statusVariant} className="text-xs">{a.status}</Badge></TableCell>
-                    <TableCell className="text-right font-medium">R$ {a.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
+                    <TableCell className="font-mono text-xs">{a.protocolo}</TableCell>
+                    <TableCell className="text-[13px]">{a.clienteNome}</TableCell>
+                    <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground">{prest?.nomeFantasia || '-'}</TableCell>
+                    <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{new Date(a.dataHora).toLocaleDateString('pt-BR')}</TableCell>
+                    <TableCell><Badge variant={sv as any}>{a.status}</Badge></TableCell>
+                    <TableCell className="text-right text-[13px] font-medium tabular-nums">R$ {a.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                   </TableRow>
                 );
               })}
