@@ -366,7 +366,7 @@ export default function Prestadores() {
               <div className="space-y-1.5"><Label className="text-xs font-medium">Razão Social</Label><Input value={editing?.razaoSocial || ''} onChange={e => updateField('razaoSocial', e.target.value)} /></div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs font-medium">CNPJ/CPF *</Label><Input value={editing?.documento || ''} onChange={e => updateField('documento', e.target.value)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">CNPJ/CPF *</Label><div className="relative"><Input value={editing?.documento || ''} onChange={e => handleCnpjChange(e.target.value)} />{cnpjLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}</div></div>
               <div className="space-y-1.5"><Label className="text-xs font-medium">Insc. Estadual</Label><Input value={editing?.inscricaoEstadual || ''} onChange={e => updateField('inscricaoEstadual', e.target.value)} /></div>
               <div className="space-y-1.5"><Label className="text-xs font-medium">Responsável</Label><Input value={editing?.responsavel || ''} onChange={e => updateField('responsavel', e.target.value)} /></div>
             </div>

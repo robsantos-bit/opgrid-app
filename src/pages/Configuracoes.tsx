@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 import { getConfig, saveConfig, resetAllData } from '@/data/store';
 import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw, Loader2 } from 'lucide-react';
+import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
