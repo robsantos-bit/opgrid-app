@@ -67,26 +67,13 @@ export default function AcompanhamentoCliente() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const atendimento = atendimentos.find(a => a.id === id);
-  // Also try matching by solicitacao
   const solicitacao = solicitacoes.find(s => s.id === id || s.atendimentoId === id);
-
-  if (!atendimento && !solicitacao) {
-    return (
-      <MobileShell>
-        <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-            <Shield className="h-8 w-8 text-muted-foreground" />
-          </div>
-          <h2 className="text-lg font-bold mb-1">Solicitação não encontrada</h2>
-          <p className="text-sm text-muted-foreground max-w-[280px]">Este link pode ter expirado ou a solicitação não existe mais.</p>
-        </div>
-      </MobileShell>
-    );
-  }
 
   const clientStatus: StatusAcompanhamentoCliente = atendimento
     ? deriveClientStatus(atendimento)
-    : (solicitacao?.status === 'Cancelada' ? 'Atendimento cancelado' : 'Solicitação recebida');
+    : solicitacao
+      ? (solicitacao.status === 'Cancelada' ? 'Atendimento cancelado' : 'Solicitação recebida')
+      : 'Solicitação recebida';
 
   const cfg = statusConfig[clientStatus];
   const StatusIcon = cfg.icon;
