@@ -33,9 +33,21 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const visibleNav = navItems.filter(item => hasAccess([item.module]));
 
-  // Simulate siren toggling for demo
+  const sirenPlayedRef = useRef(false);
+
+  // Simulate siren toggling for demo — plays real audio alert
   useEffect(() => {
-    const interval = setInterval(() => setSirenActive(prev => !prev), 8000);
+    const interval = setInterval(() => {
+      setSirenActive(prev => {
+        const next = !prev;
+        if (next && !sirenPlayedRef.current) {
+          playCentralSiren(2.5);
+          sirenPlayedRef.current = true;
+          setTimeout(() => { sirenPlayedRef.current = false; }, 10000);
+        }
+        return next;
+      });
+    }, 8000);
     return () => clearInterval(interval);
   }, []);
 
