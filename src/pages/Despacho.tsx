@@ -74,25 +74,33 @@ export default function CentralDespacho() {
     { label: 'Disponíveis', value: prestadoresOnline.length, icon: Radio, bg: 'bg-info/10', color: 'text-info', sub: 'online e aptos' },
   ];
 
-  // Initialize map
+  // Initialize map once (container is always mounted via forceMount)
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
-    const map = L.map(mapContainerRef.current, { center: [-14.235, -51.9253], zoom: 4, zoomControl: true });
+    if (!mapContainerRef.current) return;
+    if (mapRef.current) return;
+
+    const map = L.map(mapContainerRef.current, { center: [-23.55, -46.63], zoom: 5, zoomControl: true });
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap',
     }).addTo(map);
     mapRef.current = map;
+
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Update map markers when tab is 'mapa'
+  // Update markers and invalidate size when tab becomes active
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+
+    if (activeTab === 'mapa') {
+      setTimeout(() => map.invalidateSize(), 100);
+      setTimeout(() => map.invalidateSize(), 400);
+    }
+
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
-    // Prestadores online
     prestadores.filter(p => p.localizacao && p.status === 'Ativo').forEach(p => {
       const loc = p.localizacao!;
       const color = loc.statusRastreamento === 'Online' ? '#22c55e' : loc.statusRastreamento === 'A caminho' ? '#3b82f6' : loc.statusRastreamento === 'Em atendimento' ? '#f59e0b' : '#6b7280';
@@ -106,7 +114,6 @@ export default function CentralDespacho() {
       markersRef.current.push(marker);
     });
 
-    // Solicitações ativas (origens)
     solicitacoes.filter(s => s.origemCoord && !['Finalizada', 'Cancelada'].includes(s.status)).forEach(s => {
       const marker = L.marker([s.origemCoord!.lat, s.origemCoord!.lng], {
         icon: L.divIcon({
@@ -117,8 +124,6 @@ export default function CentralDespacho() {
       }).addTo(map).bindPopup(`<div style="font-size:12px;"><b>${s.protocolo}</b><br/>${s.clienteNome}<br/>${s.motivo}</div>`);
       markersRef.current.push(marker);
     });
-
-    setTimeout(() => map.invalidateSize(), 100);
   }, [activeTab, prestadores, solicitacoes]);
 
   return (
@@ -221,7 +226,7 @@ export default function CentralDespacho() {
           )}
         </TabsContent>
 
-        <TabsContent value="mapa" className="mt-4">
+        <TabsContent value="mapa" forceMount className={`mt-4 ${activeTab !== 'mapa' ? 'hidden' : ''}`}>
           <Card className="overflow-hidden">
             <div className="h-[calc(100vh-420px)] min-h-[400px] relative">
               <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />

@@ -187,7 +187,11 @@
   .scrollbar-thin::-webkit-scrollbar-thumb:hover { @apply bg-border; }
 }
 
-/* Leaflet overrides */
+/* Leaflet overrides — fix Tailwind base reset breaking tiles */
+.leaflet-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
 .leaflet-container {
   font-family: 'Inter', system-ui, sans-serif !important;
   background: hsl(220 20% 97%) !important;
