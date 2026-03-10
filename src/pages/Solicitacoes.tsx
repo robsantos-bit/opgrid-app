@@ -11,7 +11,7 @@ import { Solicitacao, StatusSolicitacao } from '@/types';
 import {
   MessageSquare, Clock, CheckCircle2, AlertTriangle, Search, X, Phone, MapPin,
   Car, FileText, ArrowRight, DollarSign, Send, Ban, Timer, Smartphone, Link2,
-  ChevronRight, MessageCircle, Zap, Eye
+  ChevronRight, MessageCircle, Zap, Eye, Bell
 } from 'lucide-react';
 
 const statusConfig: Record<StatusSolicitacao, { label: string; variant: 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'; dotColor: string }> = {
@@ -97,6 +97,14 @@ export default function Solicitacoes() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {/* Siren indicator */}
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-destructive border border-destructive/20 bg-destructive/5 rounded-md px-2.5 py-1 font-medium">
+            <div className="relative">
+              <Bell className="h-3 w-3 animate-siren-glow" />
+              <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-destructive rounded-full animate-siren-pulse" />
+            </div>
+            <span>Sirene ativa</span>
+          </div>
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-success border border-success/20 bg-success/5 rounded-md px-2.5 py-1 font-medium">
             <Zap className="h-3 w-3" /><span>WhatsApp conectado</span>
           </div>
