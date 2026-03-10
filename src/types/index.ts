@@ -21,6 +21,155 @@ export type HomologacaoStatus = 'Homologado' | 'Pendente' | 'Crítico';
 export type PrioridadeAtendimento = 'Normal' | 'Urgente' | 'Crítico';
 export type StatusRastreamento = 'Online' | 'A caminho' | 'Em atendimento' | 'Offline' | 'Indisponível' | 'Sem sinal';
 
+// ===== NOVOS TIPOS: Solicitação via WhatsApp =====
+
+export type MotivoSolicitacao =
+  | 'Pane elétrica'
+  | 'Pane mecânica'
+  | 'Pneu furado'
+  | 'Bateria descarregada'
+  | 'Colisão'
+  | 'Remoção simples'
+  | 'Veículo sem partida'
+  | 'Veículo travado'
+  | 'Outro';
+
+export type StatusSolicitacao =
+  | 'Recebida'
+  | 'Em cotação'
+  | 'Aguardando aceite'
+  | 'Convertida em OS'
+  | 'Despachada'
+  | 'Em atendimento'
+  | 'Finalizada'
+  | 'Cancelada';
+
+export type StatusProposta = 'Aguardando aceite' | 'Aceita' | 'Recusada' | 'Expirada';
+
+export interface Solicitacao {
+  id: string;
+  protocolo: string;
+  dataHora: string;
+  canal: 'WhatsApp' | 'Telefone' | 'Web';
+  // Dados do cliente
+  clienteNome: string;
+  clienteTelefone: string;
+  clienteWhatsApp: string;
+  // Veículo
+  veiculoPlaca: string;
+  veiculoModelo: string;
+  // Localização
+  origemEndereco: string;
+  origemCoord?: { lat: number; lng: number };
+  destinoEndereco: string;
+  destinoCoord?: { lat: number; lng: number };
+  // Problema
+  motivo: MotivoSolicitacao;
+  observacoes: string;
+  fotos: string[];
+  // Cotação
+  distanciaEstimadaKm: number;
+  valorEstimado: number;
+  composicaoCusto: CotacaoItem[];
+  // Status
+  status: StatusSolicitacao;
+  statusProposta: StatusProposta;
+  propostaEnviadaEm?: string;
+  propostaRespondidaEm?: string;
+  // Vinculações
+  atendimentoId?: string;
+  despachoId?: string;
+  // Link do cliente
+  linkAcompanhamento: string;
+  // Timeline
+  timeline: { data: string; descricao: string; tipo: 'sistema' | 'cliente' | 'operador' }[];
+}
+
+export interface CotacaoItem {
+  descricao: string;
+  valor: number;
+  tipo: 'base' | 'km' | 'adicional' | 'desconto';
+}
+
+// ===== NOVOS TIPOS: Despacho Automático =====
+
+export type StatusDespacho = 'Aguardando' | 'Ofertas enviadas' | 'Aceito' | 'Sem prestador' | 'Expirado' | 'Cancelado';
+
+export type MotivoRecusaOferta =
+  | 'Muito longe'
+  | 'Indisponível'
+  | 'Valor insuficiente'
+  | 'Sem equipamento adequado'
+  | 'Fora da área'
+  | 'Problema operacional'
+  | 'Outro';
+
+export type StatusOferta = 'Pendente' | 'Aceita' | 'Recusada' | 'Expirada' | 'Encerrada';
+
+export interface OfertaPrestador {
+  id: string;
+  despachoId: string;
+  prestadorId: string;
+  rodada: number;
+  status: StatusOferta;
+  enviadaEm: string;
+  respondidaEm?: string;
+  motivoRecusa?: MotivoRecusaOferta;
+  tempoLimiteMinutos: number;
+  distanciaEstimadaKm: number;
+  tempoEstimadoMinutos: number;
+  valorServico: number;
+  linkOferta: string;
+}
+
+export interface Despacho {
+  id: string;
+  solicitacaoId: string;
+  atendimentoId?: string;
+  rodadaAtual: number;
+  status: StatusDespacho;
+  criadoEm: string;
+  atualizadoEm: string;
+  ofertas: OfertaPrestador[];
+  prestadorAceitoId?: string;
+  tempoMedioAceiteMinutos?: number;
+  observacoes: string;
+}
+
+// ===== NOVOS TIPOS: Portal do Prestador =====
+
+export type StatusOsPrestador = 'Aceito' | 'A caminho' | 'Cheguei ao local' | 'Em remoção' | 'Concluído' | 'Cancelado';
+
+export interface ChecklistItem {
+  id: string;
+  label: string;
+  checked: boolean;
+}
+
+export const CHECKLIST_PADRAO: Omit<ChecklistItem, 'id'>[] = [
+  { label: 'Veículo acessível', checked: false },
+  { label: 'Roda travada', checked: false },
+  { label: 'Veículo rebaixado', checked: false },
+  { label: 'Documentos no local', checked: false },
+  { label: 'Chave em mãos', checked: false },
+  { label: 'Acompanhará remoção', checked: false },
+  { label: 'Itens pessoais retirados', checked: false },
+];
+
+// ===== NOVOS TIPOS: Link de Acompanhamento do Cliente =====
+
+export type StatusAcompanhamentoCliente =
+  | 'Solicitação recebida'
+  | 'Aguardando prestador'
+  | 'Prestador confirmado'
+  | 'Prestador a caminho'
+  | 'Prestador chegou ao local'
+  | 'Atendimento em andamento'
+  | 'Atendimento concluído'
+  | 'Atendimento cancelado';
+
+// ===== TIPOS EXISTENTES (mantidos) =====
+
 export interface PrestadorLocalizacao {
   lat: number;
   lng: number;
@@ -130,6 +279,16 @@ export interface Atendimento {
   timeline: { data: string; descricao: string }[];
   origemCoord?: { lat: number; lng: number };
   destinoCoord?: { lat: number; lng: number };
+  // Novos campos de vinculação
+  solicitacaoId?: string;
+  despachoId?: string;
+  statusPrestador?: StatusOsPrestador;
+  checklist?: ChecklistItem[];
+  fotosAnexos?: string[];
+  horaChegada?: string;
+  horaConclusao?: string;
+  linkPrestador?: string;
+  linkCliente?: string;
 }
 
 export interface Contrato {
