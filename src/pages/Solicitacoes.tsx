@@ -141,6 +141,51 @@ export default function Solicitacoes() {
           <Button onClick={() => setNovaOpen(true)} size="sm" className="gap-1.5 text-xs">
             <Plus className="h-3.5 w-3.5" />Nova solicitação
           </Button>
+          {/* Notification bell */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="relative h-8 w-8 p-0">
+                <Bell className="h-3.5 w-3.5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-[9px] font-bold flex items-center justify-center animate-siren-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[340px] p-0" align="end">
+              <div className="flex items-center justify-between px-3 py-2.5 border-b">
+                <p className="text-xs font-bold">Notificações</p>
+                {unreadCount > 0 && (
+                  <button onClick={handleMarkRead} className="text-[10px] text-primary font-medium hover:underline">
+                    Marcar como lidas
+                  </button>
+                )}
+              </div>
+              <div className="max-h-[300px] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-muted-foreground">Nenhuma notificação</div>
+                ) : (
+                  notifications.slice(0, 20).map(n => (
+                    <div key={n.id} className={`px-3 py-2.5 border-b last:border-b-0 text-xs ${!n.read ? 'bg-primary/5' : ''}`}>
+                      <div className="flex items-start gap-2">
+                        <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                          n.type === 'oferta_aceita' ? 'bg-success' : n.type === 'oferta_recusada' ? 'bg-destructive' : 'bg-info'
+                        }`} />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[11px]">{n.title}</p>
+                          <p className="text-muted-foreground text-[10px] mt-0.5">{n.message}</p>
+                          <p className="text-muted-foreground/50 text-[9px] mt-1">
+                            {new Date(n.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           {/* Siren indicator */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-destructive border border-destructive/20 bg-destructive/5 rounded-md px-2.5 py-1 font-medium">
             <div className="relative">
