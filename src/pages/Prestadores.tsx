@@ -50,7 +50,22 @@ export default function Prestadores() {
   const [page, setPage] = useState(0);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [detailPrestador, setDetailPrestador] = useState<Prestador | null>(null);
+  const { lookupCep, loading: cepLoading } = useCepLookup();
   const perPage = 10;
+
+  const handlePrestadorCep = async (value: string) => {
+    updateField('cep', value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const result = await lookupCep(value);
+      if (result) {
+        updateField('endereco', [result.logradouro, result.bairro].filter(Boolean).join(', '));
+        updateField('cidade', result.localidade);
+        updateField('uf', result.uf);
+        toast.success('Endereço preenchido automaticamente!');
+      }
+    }
+  };
 
   const filtered = useMemo(() => {
     return data.filter(p => {
