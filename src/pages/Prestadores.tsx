@@ -18,6 +18,7 @@ import { getPrestadores, addPrestador, updatePrestador, deletePrestador, getAten
 import { Prestador, StatusType, HomologacaoStatus } from '@/types';
 import { Plus, Pencil, Trash2, Search, Eye, LayoutGrid, List, ChevronLeft, MapPin, Phone, Shield, Star, Award, AlertTriangle, Tag, ClipboardList, Users, Loader2 } from 'lucide-react';
 import { useCepLookup } from '@/hooks/useCepLookup';
+import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'];
 const TIPOS_SERVICO = ['Guincho', 'Reboque', 'Resgate', 'Patins', 'Munck', 'Guindaste', 'Carga Especial'];
