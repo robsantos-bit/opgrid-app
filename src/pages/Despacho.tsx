@@ -10,7 +10,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   Radar, Clock, CheckCircle2, XCircle, AlertTriangle, Send, Timer, Target,
-  MapPin, Phone, Truck, Radio, Eye, ChevronRight, RotateCcw, Ban, Zap
+  MapPin, Phone, Truck, Radio, Eye, ChevronRight, RotateCcw, Ban, Zap, Bell
 } from 'lucide-react';
 
 const statusVariant: Record<StatusDespacho, 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'> = {
