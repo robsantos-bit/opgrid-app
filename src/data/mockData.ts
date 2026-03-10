@@ -1,4 +1,4 @@
-import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, User, Contrato, AuditLog } from '@/types';
+import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, User, Contrato, AuditLog, Solicitacao, Despacho } from '@/types';
 
 export const mockUsers: User[] = [
   { id: 'u1', nome: 'Rodrigo Almeida', email: 'admin@demo.com', role: 'admin' },
@@ -76,20 +76,222 @@ export const mockTabelaPrecos: TabelaPrecoItem[] = [
 ];
 
 export const mockAtendimentos: Atendimento[] = [
-  { id: 'a1', protocolo: 'ATD-2026-0001', dataHora: '2026-03-01T08:30:00', prestadorId: 'p1', clienteNome: 'João Silva', solicitante: 'Seguradora ABC', origem: 'Av. Paulista, 1000 - SP', destino: 'Rua Augusta, 500 - SP', tipoAtendimento: 'Guincho', veiculo: 'Honda Civic 2022', placa: 'ABC-1D23', prioridade: 'Normal', kmPrevisto: 12, km: 15, horasTrabalhadas: 1.5, horasParadas: 0.5, status: 'Concluído', observacoes: 'Pneu furado, veículo não ligava.', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 150, valorTotal: 150 }, { tarifaId: 't2', quantidade: 5, valorUnitario: 4.50, valorTotal: 22.50 }, { tarifaId: 't3', quantidade: 1.5, valorUnitario: 80, valorTotal: 120 }], valorTotal: 292.50, timeline: [{ data: '2026-03-01T08:30:00', descricao: 'Atendimento aberto' }, { data: '2026-03-01T08:45:00', descricao: 'Prestador acionado' }, { data: '2026-03-01T09:10:00', descricao: 'Chegou ao local' }, { data: '2026-03-01T10:00:00', descricao: 'Serviço concluído' }], origemCoord: { lat: -23.5631, lng: -46.6544 }, destinoCoord: { lat: -23.5534, lng: -46.6558 } },
+  { id: 'a1', protocolo: 'ATD-2026-0001', dataHora: '2026-03-01T08:30:00', prestadorId: 'p1', clienteNome: 'João Silva', solicitante: 'Seguradora ABC', origem: 'Av. Paulista, 1000 - SP', destino: 'Rua Augusta, 500 - SP', tipoAtendimento: 'Guincho', veiculo: 'Honda Civic 2022', placa: 'ABC-1D23', prioridade: 'Normal', kmPrevisto: 12, km: 15, horasTrabalhadas: 1.5, horasParadas: 0.5, status: 'Concluído', observacoes: 'Pneu furado, veículo não ligava.', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 150, valorTotal: 150 }, { tarifaId: 't2', quantidade: 5, valorUnitario: 4.50, valorTotal: 22.50 }, { tarifaId: 't3', quantidade: 1.5, valorUnitario: 80, valorTotal: 120 }], valorTotal: 292.50, timeline: [{ data: '2026-03-01T08:30:00', descricao: 'Atendimento aberto' }, { data: '2026-03-01T08:45:00', descricao: 'Prestador acionado' }, { data: '2026-03-01T09:10:00', descricao: 'Chegou ao local' }, { data: '2026-03-01T10:00:00', descricao: 'Serviço concluído' }], origemCoord: { lat: -23.5631, lng: -46.6544 }, destinoCoord: { lat: -23.5534, lng: -46.6558 }, solicitacaoId: 's1', statusPrestador: 'Concluído', linkPrestador: '/prestador/os/a1', linkCliente: '/acompanhar/a1' },
   { id: 'a2', protocolo: 'ATD-2026-0002', dataHora: '2026-03-02T14:00:00', prestadorId: 'p1', clienteNome: 'Maria Santos', solicitante: 'Particular', origem: 'Rua Oscar Freire, 200 - SP', destino: 'Marginal Pinheiros, km 15 - SP', tipoAtendimento: 'Reboque', veiculo: 'Toyota Corolla 2023', placa: 'DEF-4G56', prioridade: 'Normal', kmPrevisto: 20, km: 25, horasTrabalhadas: 2, horasParadas: 0, status: 'Concluído', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 150, valorTotal: 150 }, { tarifaId: 't2', quantidade: 15, valorUnitario: 4.50, valorTotal: 67.50 }], valorTotal: 217.50, timeline: [{ data: '2026-03-02T14:00:00', descricao: 'Atendimento aberto' }, { data: '2026-03-02T14:30:00', descricao: 'Prestador a caminho' }, { data: '2026-03-02T16:00:00', descricao: 'Serviço concluído' }] },
-  { id: 'a3', protocolo: 'ATD-2026-0003', dataHora: '2026-03-05T10:00:00', prestadorId: 'p2', clienteNome: 'Carlos Oliveira', solicitante: 'Seguradora XYZ', origem: 'Copacabana, RJ', destino: 'Barra da Tijuca, RJ', tipoAtendimento: 'Guincho', veiculo: 'VW Gol 2020', placa: 'GHI-7J89', prioridade: 'Urgente', kmPrevisto: 28, km: 30, horasTrabalhadas: 2, horasParadas: 0.5, status: 'Em andamento', observacoes: 'Trânsito intenso na Av. Niemeyer', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 120, valorTotal: 120 }, { tarifaId: 't2', quantidade: 25, valorUnitario: 3.80, valorTotal: 95 }], valorTotal: 215, timeline: [{ data: '2026-03-05T10:00:00', descricao: 'Atendimento aberto' }, { data: '2026-03-05T10:20:00', descricao: 'Prestador acionado' }], origemCoord: { lat: -22.9711, lng: -43.1822 }, destinoCoord: { lat: -23.0003, lng: -43.3650 } },
+  { id: 'a3', protocolo: 'ATD-2026-0003', dataHora: '2026-03-05T10:00:00', prestadorId: 'p2', clienteNome: 'Carlos Oliveira', solicitante: 'Seguradora XYZ', origem: 'Copacabana, RJ', destino: 'Barra da Tijuca, RJ', tipoAtendimento: 'Guincho', veiculo: 'VW Gol 2020', placa: 'GHI-7J89', prioridade: 'Urgente', kmPrevisto: 28, km: 30, horasTrabalhadas: 2, horasParadas: 0.5, status: 'Em andamento', observacoes: 'Trânsito intenso na Av. Niemeyer', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 120, valorTotal: 120 }, { tarifaId: 't2', quantidade: 25, valorUnitario: 3.80, valorTotal: 95 }], valorTotal: 215, timeline: [{ data: '2026-03-05T10:00:00', descricao: 'Atendimento aberto' }, { data: '2026-03-05T10:20:00', descricao: 'Prestador acionado' }], origemCoord: { lat: -22.9711, lng: -43.1822 }, destinoCoord: { lat: -23.0003, lng: -43.3650 }, solicitacaoId: 's3', statusPrestador: 'Em remoção', linkPrestador: '/prestador/os/a3', linkCliente: '/acompanhar/a3' },
   { id: 'a4', protocolo: 'ATD-2026-0004', dataHora: '2026-03-08T16:30:00', prestadorId: 'p3', clienteNome: 'Ana Pereira', solicitante: 'Particular', origem: 'Centro Histórico, POA', destino: 'Zona Norte, POA', tipoAtendimento: 'Reboque', veiculo: 'Fiat Argo 2024', placa: 'KLM-0N12', prioridade: 'Normal', kmPrevisto: 18, km: 18, horasTrabalhadas: 1, horasParadas: 0, status: 'Aberto', observacoes: '', tarifas: [], valorTotal: 0, timeline: [{ data: '2026-03-08T16:30:00', descricao: 'Atendimento aberto' }], origemCoord: { lat: -30.0277, lng: -51.2287 } },
   { id: 'a5', protocolo: 'ATD-2026-0005', dataHora: '2026-03-03T22:15:00', prestadorId: 'p1', clienteNome: 'Roberto Almeida', solicitante: 'Seguradora ABC', origem: 'Rod. Anhanguera, km 40', destino: 'Oficina Central, Jundiaí', tipoAtendimento: 'Guincho', veiculo: 'Hyundai HB20 2021', placa: 'OPQ-3R45', prioridade: 'Urgente', kmPrevisto: 35, km: 38, horasTrabalhadas: 2.5, horasParadas: 1, status: 'Faturado', observacoes: 'Atendimento noturno', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 150, valorTotal: 150 }, { tarifaId: 't2', quantidade: 28, valorUnitario: 4.50, valorTotal: 126 }, { tarifaId: 't3', quantidade: 2.5, valorUnitario: 80, valorTotal: 200 }, { tarifaId: 't11', quantidade: 1, valorUnitario: 75, valorTotal: 75 }], valorTotal: 551, timeline: [{ data: '2026-03-03T22:15:00', descricao: 'Atendimento aberto' }, { data: '2026-03-03T22:30:00', descricao: 'Prestador acionado (noturno)' }, { data: '2026-03-03T23:00:00', descricao: 'Chegou ao local' }, { data: '2026-03-04T00:45:00', descricao: 'Serviço concluído' }, { data: '2026-03-06T09:00:00', descricao: 'Faturado' }] },
   { id: 'a6', protocolo: 'ATD-2026-0006', dataHora: '2026-03-06T09:45:00', prestadorId: 'p5', clienteNome: 'Luciana Ferreira', solicitante: 'Particular', origem: 'Av. Eduardo Ribeiro, Manaus', destino: 'Distrito Industrial, Manaus', tipoAtendimento: 'Reboque', veiculo: 'Chevrolet Onix 2023', placa: 'STU-6V78', prioridade: 'Normal', kmPrevisto: 22, km: 24, horasTrabalhadas: 1.5, horasParadas: 0, status: 'Concluído', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 200, valorTotal: 200 }, { tarifaId: 't2', quantidade: 4, valorUnitario: 6.00, valorTotal: 24 }], valorTotal: 224, timeline: [{ data: '2026-03-06T09:45:00', descricao: 'Atendimento aberto' }, { data: '2026-03-06T10:15:00', descricao: 'Prestador a caminho' }, { data: '2026-03-06T11:15:00', descricao: 'Serviço concluído' }] },
   { id: 'a7', protocolo: 'ATD-2026-0007', dataHora: '2026-03-07T11:00:00', prestadorId: 'p6', clienteNome: 'Fernando Gomes', solicitante: 'Seguradora Delta', origem: 'Asa Sul, Brasília', destino: 'Taguatinga, DF', tipoAtendimento: 'Guincho', veiculo: 'Renault Kwid 2022', placa: 'WXY-9Z01', prioridade: 'Normal', kmPrevisto: 25, km: 27, horasTrabalhadas: 1.5, horasParadas: 0, status: 'Concluído', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 160, valorTotal: 160 }, { tarifaId: 't2', quantidade: 17, valorUnitario: 4.80, valorTotal: 81.60 }], valorTotal: 241.60, timeline: [{ data: '2026-03-07T11:00:00', descricao: 'Atendimento aberto' }, { data: '2026-03-07T11:30:00', descricao: 'Prestador acionado' }, { data: '2026-03-07T12:30:00', descricao: 'Serviço concluído' }] },
   { id: 'a8', protocolo: 'ATD-2026-0008', dataHora: '2026-03-08T07:00:00', prestadorId: 'p8', clienteNome: 'Patricia Ribeiro', solicitante: 'Seguradora ABC', origem: 'Centro, Curitiba', destino: 'São José dos Pinhais, PR', tipoAtendimento: 'Reboque', veiculo: 'Jeep Renegade 2024', placa: 'BCD-2E34', prioridade: 'Normal', kmPrevisto: 20, km: 22, horasTrabalhadas: 1, horasParadas: 0, status: 'Concluído', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 140, valorTotal: 140 }, { tarifaId: 't2', quantidade: 12, valorUnitario: 4.20, valorTotal: 50.40 }], valorTotal: 190.40, timeline: [{ data: '2026-03-08T07:00:00', descricao: 'Atendimento aberto' }, { data: '2026-03-08T07:20:00', descricao: 'Prestador a caminho' }, { data: '2026-03-08T08:00:00', descricao: 'Serviço concluído' }] },
   { id: 'a9', protocolo: 'ATD-2026-0009', dataHora: '2026-03-04T15:30:00', prestadorId: 'p3', clienteNome: 'Marcos Vinícius', solicitante: 'Particular', origem: 'Canoas, RS', destino: 'Gravataí, RS', tipoAtendimento: 'Guincho', veiculo: 'Ford Ka 2019', placa: 'FGH-5I67', prioridade: 'Normal', kmPrevisto: 15, km: 16, horasTrabalhadas: 1, horasParadas: 0.5, status: 'Cancelado', observacoes: 'Cliente cancelou antes da chegada', tarifas: [], valorTotal: 0, timeline: [{ data: '2026-03-04T15:30:00', descricao: 'Atendimento aberto' }, { data: '2026-03-04T15:45:00', descricao: 'Prestador acionado' }, { data: '2026-03-04T16:00:00', descricao: 'Cancelado pelo cliente' }] },
-  { id: 'a10', protocolo: 'ATD-2026-0010', dataHora: '2026-03-09T06:00:00', prestadorId: 'p1', clienteNome: 'Tatiana Mendes', solicitante: 'Seguradora XYZ', origem: 'Guarulhos, SP', destino: 'Osasco, SP', tipoAtendimento: 'Reboque', veiculo: 'Nissan Kicks 2023', placa: 'JKL-8M90', prioridade: 'Crítico', kmPrevisto: 45, km: 0, horasTrabalhadas: 0, horasParadas: 0, status: 'Aberto', observacoes: 'Aguardando acionamento', tarifas: [], valorTotal: 0, timeline: [{ data: '2026-03-09T06:00:00', descricao: 'Atendimento aberto' }], origemCoord: { lat: -23.4543, lng: -46.5322 } },
+  { id: 'a10', protocolo: 'ATD-2026-0010', dataHora: '2026-03-09T06:00:00', prestadorId: 'p1', clienteNome: 'Tatiana Mendes', solicitante: 'Seguradora XYZ', origem: 'Guarulhos, SP', destino: 'Osasco, SP', tipoAtendimento: 'Reboque', veiculo: 'Nissan Kicks 2023', placa: 'JKL-8M90', prioridade: 'Crítico', kmPrevisto: 45, km: 0, horasTrabalhadas: 0, horasParadas: 0, status: 'Aberto', observacoes: 'Aguardando acionamento', tarifas: [], valorTotal: 0, timeline: [{ data: '2026-03-09T06:00:00', descricao: 'Atendimento aberto' }], origemCoord: { lat: -23.4543, lng: -46.5322 }, solicitacaoId: 's5', linkCliente: '/acompanhar/a10' },
   { id: 'a11', protocolo: 'ATD-2026-0011', dataHora: '2026-02-25T14:00:00', prestadorId: 'p8', clienteNome: 'Eduardo Nascimento', solicitante: 'Seguradora ABC', origem: 'Pinhais, PR', destino: 'Centro, Curitiba', tipoAtendimento: 'Guincho', veiculo: 'Fiat Toro 2023', placa: 'MNO-1P23', prioridade: 'Normal', kmPrevisto: 15, km: 14, horasTrabalhadas: 1, horasParadas: 0, status: 'Faturado', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 140, valorTotal: 140 }, { tarifaId: 't2', quantidade: 4, valorUnitario: 4.20, valorTotal: 16.80 }], valorTotal: 156.80, timeline: [{ data: '2026-02-25T14:00:00', descricao: 'Atendimento aberto' }, { data: '2026-02-25T15:00:00', descricao: 'Serviço concluído' }, { data: '2026-02-28T10:00:00', descricao: 'Faturado' }] },
   { id: 'a12', protocolo: 'ATD-2026-0012', dataHora: '2026-02-28T09:00:00', prestadorId: 'p6', clienteNome: 'Silvia Rocha', solicitante: 'Particular', origem: 'Lago Sul, DF', destino: 'Asa Norte, DF', tipoAtendimento: 'Reboque', veiculo: 'Volkswagen T-Cross 2024', placa: 'QRS-4T56', prioridade: 'Normal', kmPrevisto: 18, km: 19, horasTrabalhadas: 1, horasParadas: 0, status: 'Faturado', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 160, valorTotal: 160 }, { tarifaId: 't2', quantidade: 9, valorUnitario: 4.80, valorTotal: 43.20 }], valorTotal: 203.20, timeline: [{ data: '2026-02-28T09:00:00', descricao: 'Atendimento aberto' }, { data: '2026-02-28T10:00:00', descricao: 'Serviço concluído' }, { data: '2026-03-01T09:00:00', descricao: 'Faturado' }] },
-  { id: 'a13', protocolo: 'ATD-2026-0013', dataHora: '2026-03-09T08:30:00', prestadorId: 'p9', clienteNome: 'Amanda Costa', solicitante: 'Seguradora Delta', origem: 'Boa Viagem, Recife', destino: 'Olinda, PE', tipoAtendimento: 'Guincho', veiculo: 'Hyundai Creta 2024', placa: 'UVW-1X23', prioridade: 'Normal', kmPrevisto: 15, km: 17, horasTrabalhadas: 1, horasParadas: 0, status: 'Em andamento', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 135, valorTotal: 135 }, { tarifaId: 't2', quantidade: 7, valorUnitario: 3.90, valorTotal: 27.30 }], valorTotal: 162.30, timeline: [{ data: '2026-03-09T08:30:00', descricao: 'Atendimento aberto' }, { data: '2026-03-09T08:50:00', descricao: 'Prestador a caminho' }], origemCoord: { lat: -8.1215, lng: -34.9028 }, destinoCoord: { lat: -7.9989, lng: -34.8411 } },
+  { id: 'a13', protocolo: 'ATD-2026-0013', dataHora: '2026-03-09T08:30:00', prestadorId: 'p9', clienteNome: 'Amanda Costa', solicitante: 'Seguradora Delta', origem: 'Boa Viagem, Recife', destino: 'Olinda, PE', tipoAtendimento: 'Guincho', veiculo: 'Hyundai Creta 2024', placa: 'UVW-1X23', prioridade: 'Normal', kmPrevisto: 15, km: 17, horasTrabalhadas: 1, horasParadas: 0, status: 'Em andamento', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 135, valorTotal: 135 }, { tarifaId: 't2', quantidade: 7, valorUnitario: 3.90, valorTotal: 27.30 }], valorTotal: 162.30, timeline: [{ data: '2026-03-09T08:30:00', descricao: 'Atendimento aberto' }, { data: '2026-03-09T08:50:00', descricao: 'Prestador a caminho' }], origemCoord: { lat: -8.1215, lng: -34.9028 }, destinoCoord: { lat: -7.9989, lng: -34.8411 }, solicitacaoId: 's4', statusPrestador: 'A caminho', linkPrestador: '/prestador/os/a13', linkCliente: '/acompanhar/a13' },
   { id: 'a14', protocolo: 'ATD-2026-0014', dataHora: '2026-03-08T19:00:00', prestadorId: 'p10', clienteNome: 'Thiago Mendes', solicitante: 'Particular', origem: 'Centro, Goiânia', destino: 'Aparecida de Goiânia, GO', tipoAtendimento: 'Reboque', veiculo: 'Fiat Mobi 2022', placa: 'YZA-4B56', prioridade: 'Normal', kmPrevisto: 12, km: 13, horasTrabalhadas: 1, horasParadas: 0, status: 'Concluído', observacoes: '', tarifas: [{ tarifaId: 't1', quantidade: 1, valorUnitario: 110, valorTotal: 110 }, { tarifaId: 't2', quantidade: 5, valorUnitario: 3.50, valorTotal: 17.50 }], valorTotal: 127.50, timeline: [{ data: '2026-03-08T19:00:00', descricao: 'Atendimento aberto' }, { data: '2026-03-08T19:30:00', descricao: 'Prestador acionado' }, { data: '2026-03-08T20:30:00', descricao: 'Serviço concluído' }] },
+];
+
+// ===== NOVAS SOLICITAÇÕES VIA WHATSAPP =====
+
+export const mockSolicitacoes: Solicitacao[] = [
+  {
+    id: 's1', protocolo: 'SOL-2026-0001', dataHora: '2026-03-01T08:10:00', canal: 'WhatsApp',
+    clienteNome: 'João Silva', clienteTelefone: '(11) 99888-1111', clienteWhatsApp: '5511998881111',
+    veiculoPlaca: 'ABC-1D23', veiculoModelo: 'Honda Civic 2022',
+    origemEndereco: 'Av. Paulista, 1000 - SP', origemCoord: { lat: -23.5631, lng: -46.6544 },
+    destinoEndereco: 'Rua Augusta, 500 - SP', destinoCoord: { lat: -23.5534, lng: -46.6558 },
+    motivo: 'Pneu furado', observacoes: 'Veículo não liga após trocar pneu.', fotos: [],
+    distanciaEstimadaKm: 12, valorEstimado: 292.50,
+    composicaoCusto: [
+      { descricao: 'Tarifa base (saída)', valor: 150, tipo: 'base' },
+      { descricao: 'Km deslocamento (12 km)', valor: 54, tipo: 'km' },
+      { descricao: 'Hora trabalhada (est. 1.5h)', valor: 88.50, tipo: 'adicional' },
+    ],
+    status: 'Finalizada', statusProposta: 'Aceita',
+    propostaEnviadaEm: '2026-03-01T08:15:00', propostaRespondidaEm: '2026-03-01T08:18:00',
+    atendimentoId: 'a1', despachoId: 'd1', linkAcompanhamento: '/acompanhar/a1',
+    timeline: [
+      { data: '2026-03-01T08:10:00', descricao: 'Solicitação recebida via WhatsApp', tipo: 'sistema' },
+      { data: '2026-03-01T08:12:00', descricao: 'Dados coletados automaticamente', tipo: 'sistema' },
+      { data: '2026-03-01T08:15:00', descricao: 'Orçamento enviado ao cliente — R$ 292,50', tipo: 'sistema' },
+      { data: '2026-03-01T08:18:00', descricao: 'Cliente aceitou o orçamento', tipo: 'cliente' },
+      { data: '2026-03-01T08:19:00', descricao: 'OS gerada — ATD-2026-0001', tipo: 'sistema' },
+      { data: '2026-03-01T08:20:00', descricao: 'Despacho automático iniciado', tipo: 'sistema' },
+    ],
+  },
+  {
+    id: 's2', protocolo: 'SOL-2026-0002', dataHora: '2026-03-09T14:30:00', canal: 'WhatsApp',
+    clienteNome: 'Fernanda Lima', clienteTelefone: '(11) 97777-2222', clienteWhatsApp: '5511977772222',
+    veiculoPlaca: 'XYZ-9K88', veiculoModelo: 'VW Polo 2023',
+    origemEndereco: 'Av. Brigadeiro Faria Lima, 2000 - SP', origemCoord: { lat: -23.5742, lng: -46.6884 },
+    destinoEndereco: 'Rua Teodoro Sampaio, 800 - SP', destinoCoord: { lat: -23.5563, lng: -46.6700 },
+    motivo: 'Bateria descarregada', observacoes: 'Carro ficou parado 3 dias e não liga.', fotos: [],
+    distanciaEstimadaKm: 8, valorEstimado: 186.00,
+    composicaoCusto: [
+      { descricao: 'Tarifa base (saída)', valor: 150, tipo: 'base' },
+      { descricao: 'Km deslocamento (8 km)', valor: 36, tipo: 'km' },
+    ],
+    status: 'Aguardando aceite', statusProposta: 'Aguardando aceite',
+    propostaEnviadaEm: '2026-03-09T14:35:00',
+    linkAcompanhamento: '/acompanhar/s2',
+    timeline: [
+      { data: '2026-03-09T14:30:00', descricao: 'Solicitação recebida via WhatsApp', tipo: 'sistema' },
+      { data: '2026-03-09T14:33:00', descricao: 'Dados coletados — bateria descarregada', tipo: 'sistema' },
+      { data: '2026-03-09T14:35:00', descricao: 'Orçamento enviado ao cliente — R$ 186,00', tipo: 'sistema' },
+    ],
+  },
+  {
+    id: 's3', protocolo: 'SOL-2026-0003', dataHora: '2026-03-05T09:45:00', canal: 'WhatsApp',
+    clienteNome: 'Carlos Oliveira', clienteTelefone: '(21) 96666-3333', clienteWhatsApp: '5521966663333',
+    veiculoPlaca: 'GHI-7J89', veiculoModelo: 'VW Gol 2020',
+    origemEndereco: 'Copacabana, RJ', origemCoord: { lat: -22.9711, lng: -43.1822 },
+    destinoEndereco: 'Barra da Tijuca, RJ', destinoCoord: { lat: -23.0003, lng: -43.3650 },
+    motivo: 'Pane mecânica', observacoes: 'Motor fez barulho estranho e parou.', fotos: [],
+    distanciaEstimadaKm: 28, valorEstimado: 215.00,
+    composicaoCusto: [
+      { descricao: 'Tarifa base (saída)', valor: 120, tipo: 'base' },
+      { descricao: 'Km deslocamento (28 km)', valor: 95, tipo: 'km' },
+    ],
+    status: 'Em atendimento', statusProposta: 'Aceita',
+    propostaEnviadaEm: '2026-03-05T09:50:00', propostaRespondidaEm: '2026-03-05T09:53:00',
+    atendimentoId: 'a3', despachoId: 'd2', linkAcompanhamento: '/acompanhar/a3',
+    timeline: [
+      { data: '2026-03-05T09:45:00', descricao: 'Solicitação recebida via WhatsApp', tipo: 'sistema' },
+      { data: '2026-03-05T09:50:00', descricao: 'Orçamento enviado — R$ 215,00', tipo: 'sistema' },
+      { data: '2026-03-05T09:53:00', descricao: 'Cliente aceitou', tipo: 'cliente' },
+      { data: '2026-03-05T10:00:00', descricao: 'OS gerada e despachada', tipo: 'sistema' },
+    ],
+  },
+  {
+    id: 's4', protocolo: 'SOL-2026-0004', dataHora: '2026-03-09T08:15:00', canal: 'WhatsApp',
+    clienteNome: 'Amanda Costa', clienteTelefone: '(81) 95555-4444', clienteWhatsApp: '5581955554444',
+    veiculoPlaca: 'UVW-1X23', veiculoModelo: 'Hyundai Creta 2024',
+    origemEndereco: 'Boa Viagem, Recife', origemCoord: { lat: -8.1215, lng: -34.9028 },
+    destinoEndereco: 'Olinda, PE', destinoCoord: { lat: -7.9989, lng: -34.8411 },
+    motivo: 'Colisão', observacoes: 'Batida leve dianteira, carro não anda.', fotos: [],
+    distanciaEstimadaKm: 15, valorEstimado: 162.30,
+    composicaoCusto: [
+      { descricao: 'Tarifa base (saída)', valor: 135, tipo: 'base' },
+      { descricao: 'Km deslocamento (15 km)', valor: 27.30, tipo: 'km' },
+    ],
+    status: 'Despachada', statusProposta: 'Aceita',
+    propostaEnviadaEm: '2026-03-09T08:20:00', propostaRespondidaEm: '2026-03-09T08:22:00',
+    atendimentoId: 'a13', despachoId: 'd3', linkAcompanhamento: '/acompanhar/a13',
+    timeline: [
+      { data: '2026-03-09T08:15:00', descricao: 'Solicitação via WhatsApp', tipo: 'sistema' },
+      { data: '2026-03-09T08:20:00', descricao: 'Orçamento enviado — R$ 162,30', tipo: 'sistema' },
+      { data: '2026-03-09T08:22:00', descricao: 'Aceito pelo cliente', tipo: 'cliente' },
+      { data: '2026-03-09T08:25:00', descricao: 'Despacho automático — 2 prestadores acionados', tipo: 'sistema' },
+    ],
+  },
+  {
+    id: 's5', protocolo: 'SOL-2026-0005', dataHora: '2026-03-09T05:45:00', canal: 'Telefone',
+    clienteNome: 'Tatiana Mendes', clienteTelefone: '(11) 94444-5555', clienteWhatsApp: '5511944445555',
+    veiculoPlaca: 'JKL-8M90', veiculoModelo: 'Nissan Kicks 2023',
+    origemEndereco: 'Guarulhos, SP', origemCoord: { lat: -23.4543, lng: -46.5322 },
+    destinoEndereco: 'Osasco, SP',
+    motivo: 'Veículo sem partida', observacoes: 'Veículo não dá partida desde ontem.', fotos: [],
+    distanciaEstimadaKm: 45, valorEstimado: 307.50,
+    composicaoCusto: [
+      { descricao: 'Tarifa base (saída)', valor: 150, tipo: 'base' },
+      { descricao: 'Km deslocamento (45 km)', valor: 157.50, tipo: 'km' },
+    ],
+    status: 'Convertida em OS', statusProposta: 'Aceita',
+    propostaEnviadaEm: '2026-03-09T05:50:00', propostaRespondidaEm: '2026-03-09T05:55:00',
+    atendimentoId: 'a10', despachoId: 'd4', linkAcompanhamento: '/acompanhar/a10',
+    timeline: [
+      { data: '2026-03-09T05:45:00', descricao: 'Solicitação recebida por telefone', tipo: 'operador' },
+      { data: '2026-03-09T05:50:00', descricao: 'Orçamento enviado via WhatsApp', tipo: 'sistema' },
+      { data: '2026-03-09T05:55:00', descricao: 'Aceito pelo cliente', tipo: 'cliente' },
+      { data: '2026-03-09T06:00:00', descricao: 'OS gerada — ATD-2026-0010', tipo: 'sistema' },
+    ],
+  },
+  {
+    id: 's6', protocolo: 'SOL-2026-0006', dataHora: '2026-03-10T07:20:00', canal: 'WhatsApp',
+    clienteNome: 'Ricardo Mendes', clienteTelefone: '(11) 93333-6666', clienteWhatsApp: '5511933336666',
+    veiculoPlaca: 'LMN-5O67', veiculoModelo: 'Chevrolet Tracker 2024',
+    origemEndereco: 'Av. Rebouças, 1500 - SP', origemCoord: { lat: -23.5617, lng: -46.6711 },
+    destinoEndereco: 'Santo Amaro, SP',
+    motivo: 'Pane elétrica', observacoes: 'Painel apagou durante condução.', fotos: [],
+    distanciaEstimadaKm: 14, valorEstimado: 213.00,
+    composicaoCusto: [
+      { descricao: 'Tarifa base (saída)', valor: 150, tipo: 'base' },
+      { descricao: 'Km deslocamento (14 km)', valor: 63, tipo: 'km' },
+    ],
+    status: 'Recebida', statusProposta: 'Aguardando aceite',
+    linkAcompanhamento: '/acompanhar/s6',
+    timeline: [
+      { data: '2026-03-10T07:20:00', descricao: 'Solicitação recebida via WhatsApp', tipo: 'sistema' },
+      { data: '2026-03-10T07:22:00', descricao: 'Coletando dados do cliente...', tipo: 'sistema' },
+    ],
+  },
+  {
+    id: 's7', protocolo: 'SOL-2026-0007', dataHora: '2026-03-09T18:00:00', canal: 'WhatsApp',
+    clienteNome: 'Juliana Martins', clienteTelefone: '(21) 92222-7777', clienteWhatsApp: '5521922227777',
+    veiculoPlaca: 'PQR-3S45', veiculoModelo: 'Fiat Pulse 2023',
+    origemEndereco: 'Leblon, RJ', origemCoord: { lat: -22.9833, lng: -43.2247 },
+    destinoEndereco: 'Botafogo, RJ',
+    motivo: 'Remoção simples', observacoes: '', fotos: [],
+    distanciaEstimadaKm: 6, valorEstimado: 142.80,
+    composicaoCusto: [
+      { descricao: 'Tarifa base (saída)', valor: 120, tipo: 'base' },
+      { descricao: 'Km deslocamento (6 km)', valor: 22.80, tipo: 'km' },
+    ],
+    status: 'Cancelada', statusProposta: 'Recusada',
+    propostaEnviadaEm: '2026-03-09T18:05:00', propostaRespondidaEm: '2026-03-09T18:30:00',
+    linkAcompanhamento: '/acompanhar/s7',
+    timeline: [
+      { data: '2026-03-09T18:00:00', descricao: 'Solicitação via WhatsApp', tipo: 'sistema' },
+      { data: '2026-03-09T18:05:00', descricao: 'Orçamento enviado — R$ 142,80', tipo: 'sistema' },
+      { data: '2026-03-09T18:30:00', descricao: 'Cliente recusou o orçamento', tipo: 'cliente' },
+    ],
+  },
+];
+
+// ===== NOVOS DESPACHOS =====
+
+export const mockDespachos: Despacho[] = [
+  {
+    id: 'd1', solicitacaoId: 's1', atendimentoId: 'a1', rodadaAtual: 1, status: 'Aceito',
+    criadoEm: '2026-03-01T08:19:00', atualizadoEm: '2026-03-01T08:25:00',
+    prestadorAceitoId: 'p1', tempoMedioAceiteMinutos: 3,
+    ofertas: [
+      { id: 'of1', despachoId: 'd1', prestadorId: 'p1', rodada: 1, status: 'Aceita', enviadaEm: '2026-03-01T08:20:00', respondidaEm: '2026-03-01T08:23:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 4.2, tempoEstimadoMinutos: 12, valorServico: 292.50, linkOferta: '/prestador/oferta/of1' },
+      { id: 'of2', despachoId: 'd1', prestadorId: 'p6', rodada: 1, status: 'Encerrada', enviadaEm: '2026-03-01T08:20:00', respondidaEm: '2026-03-01T08:23:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 18.5, tempoEstimadoMinutos: 35, valorServico: 292.50, linkOferta: '/prestador/oferta/of2' },
+    ],
+    observacoes: '',
+  },
+  {
+    id: 'd2', solicitacaoId: 's3', atendimentoId: 'a3', rodadaAtual: 1, status: 'Aceito',
+    criadoEm: '2026-03-05T09:55:00', atualizadoEm: '2026-03-05T10:02:00',
+    prestadorAceitoId: 'p2', tempoMedioAceiteMinutos: 5,
+    ofertas: [
+      { id: 'of3', despachoId: 'd2', prestadorId: 'p2', rodada: 1, status: 'Aceita', enviadaEm: '2026-03-05T09:56:00', respondidaEm: '2026-03-05T10:01:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 6.8, tempoEstimadoMinutos: 18, valorServico: 215, linkOferta: '/prestador/oferta/of3' },
+    ],
+    observacoes: '',
+  },
+  {
+    id: 'd3', solicitacaoId: 's4', atendimentoId: 'a13', rodadaAtual: 1, status: 'Aceito',
+    criadoEm: '2026-03-09T08:25:00', atualizadoEm: '2026-03-09T08:30:00',
+    prestadorAceitoId: 'p9', tempoMedioAceiteMinutos: 4,
+    ofertas: [
+      { id: 'of4', despachoId: 'd3', prestadorId: 'p9', rodada: 1, status: 'Aceita', enviadaEm: '2026-03-09T08:26:00', respondidaEm: '2026-03-09T08:30:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 3.5, tempoEstimadoMinutos: 10, valorServico: 162.30, linkOferta: '/prestador/oferta/of4' },
+      { id: 'of5', despachoId: 'd3', prestadorId: 'p10', rodada: 1, status: 'Encerrada', enviadaEm: '2026-03-09T08:26:00', respondidaEm: '2026-03-09T08:30:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 180, tempoEstimadoMinutos: 200, valorServico: 162.30, linkOferta: '/prestador/oferta/of5' },
+    ],
+    observacoes: '',
+  },
+  {
+    id: 'd4', solicitacaoId: 's5', rodadaAtual: 2, status: 'Aguardando',
+    criadoEm: '2026-03-09T06:00:00', atualizadoEm: '2026-03-09T06:15:00',
+    ofertas: [
+      { id: 'of6', despachoId: 'd4', prestadorId: 'p1', rodada: 1, status: 'Expirada', enviadaEm: '2026-03-09T06:01:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 8, tempoEstimadoMinutos: 20, valorServico: 307.50, linkOferta: '/prestador/oferta/of6' },
+      { id: 'of7', despachoId: 'd4', prestadorId: 'p8', rodada: 1, status: 'Recusada', enviadaEm: '2026-03-09T06:01:00', respondidaEm: '2026-03-09T06:04:00', motivoRecusa: 'Muito longe', tempoLimiteMinutos: 5, distanciaEstimadaKm: 400, tempoEstimadoMinutos: 320, valorServico: 307.50, linkOferta: '/prestador/oferta/of7' },
+      { id: 'of8', despachoId: 'd4', prestadorId: 'p5', rodada: 2, status: 'Pendente', enviadaEm: '2026-03-09T06:10:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 2800, tempoEstimadoMinutos: 999, valorServico: 307.50, linkOferta: '/prestador/oferta/of8' },
+      { id: 'of9', despachoId: 'd4', prestadorId: 'p6', rodada: 2, status: 'Pendente', enviadaEm: '2026-03-09T06:10:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 950, tempoEstimadoMinutos: 600, valorServico: 307.50, linkOferta: '/prestador/oferta/of9' },
+    ],
+    observacoes: 'Rodada 1 sem aceite. Rodada 2 em andamento.',
+  },
 ];
 
 export const mockContratos: Contrato[] = [
@@ -105,20 +307,19 @@ export const mockContratos: Contrato[] = [
 ];
 
 export const mockAuditLogs: AuditLog[] = [
-  { id: 'al1', data: '2026-03-09T08:30:00', usuario: 'Rodrigo Almeida', acao: 'Login', modulo: 'Autenticação', descricao: 'Login realizado com sucesso', criticidade: 'info' },
-  { id: 'al2', data: '2026-03-09T06:00:00', usuario: 'Sistema', acao: 'Criação', modulo: 'Operações', descricao: 'Atendimento ATD-2026-0010 criado automaticamente', criticidade: 'info' },
-  { id: 'al3', data: '2026-03-08T17:00:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Prestadores', descricao: 'Status de Litoral Socorro alterado para Bloqueado', criticidade: 'critical' },
-  { id: 'al4', data: '2026-03-08T09:15:00', usuario: 'Juliana Ferraz', acao: 'Alteração', modulo: 'Operações', descricao: 'ATD-2026-0008 marcado como Concluído', criticidade: 'info' },
-  { id: 'al5', data: '2026-03-07T14:30:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Tarifas', descricao: 'Valor de Km Excedente atualizado para prestador p6', criticidade: 'warning' },
-  { id: 'al6', data: '2026-03-07T11:00:00', usuario: 'Sistema', acao: 'Criação', modulo: 'Operações', descricao: 'Atendimento ATD-2026-0007 criado', criticidade: 'info' },
-  { id: 'al7', data: '2026-03-06T16:00:00', usuario: 'Marcos Contábil', acao: 'Faturamento', modulo: 'Faturamento', descricao: 'ATD-2026-0005 faturado — R$ 551,00', criticidade: 'info' },
-  { id: 'al8', data: '2026-03-06T10:00:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Tabelas Comerciais', descricao: 'Tabela de preços do prestador Norte Assistência atualizada', criticidade: 'warning' },
-  { id: 'al9', data: '2026-03-05T08:00:00', usuario: 'Rodrigo Almeida', acao: 'Criação', modulo: 'Contratos', descricao: 'Contrato CTR-2026-005 criado para Rápido Reboque PR', criticidade: 'info' },
-  { id: 'al10', data: '2026-03-04T16:00:00', usuario: 'Sistema', acao: 'Cancelamento', modulo: 'Operações', descricao: 'ATD-2026-0009 cancelado pelo cliente', criticidade: 'warning' },
-  { id: 'al11', data: '2026-03-03T22:30:00', usuario: 'Juliana Ferraz', acao: 'Despacho', modulo: 'Operações', descricao: 'ATD-2026-0005 despachado — atendimento noturno', criticidade: 'info' },
-  { id: 'al12', data: '2026-03-01T09:00:00', usuario: 'Marcos Contábil', acao: 'Faturamento', modulo: 'Faturamento', descricao: 'Lote de faturamento fev/2026 processado — 2 atendimentos', criticidade: 'info' },
-  { id: 'al13', data: '2026-03-09T09:00:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Prestadores', descricao: 'Nordeste Guinchos adicionado à rede credenciada', criticidade: 'info' },
-  { id: 'al14', data: '2026-03-08T15:00:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Contratos', descricao: 'Contrato CTR-2026-007 criado para Goiás Assistência', criticidade: 'info' },
+  { id: 'al1', data: '2026-03-10T07:22:00', usuario: 'Sistema', acao: 'Solicitação', modulo: 'Solicitações', descricao: 'SOL-2026-0006 recebida via WhatsApp — Pane elétrica', criticidade: 'info' },
+  { id: 'al2', data: '2026-03-09T14:35:00', usuario: 'Sistema', acao: 'Orçamento', modulo: 'Solicitações', descricao: 'Orçamento R$ 186,00 enviado ao cliente Fernanda Lima', criticidade: 'info' },
+  { id: 'al3', data: '2026-03-09T08:30:00', usuario: 'Sistema', acao: 'Despacho', modulo: 'Despacho', descricao: 'Prestador Nordeste Guinchos aceitou oferta para OS ATD-2026-0013', criticidade: 'info' },
+  { id: 'al4', data: '2026-03-09T06:04:00', usuario: 'Rápido Reboque PR', acao: 'Recusa', modulo: 'Despacho', descricao: 'Oferta recusada — motivo: Muito longe', criticidade: 'warning' },
+  { id: 'al5', data: '2026-03-09T06:01:00', usuario: 'Sistema', acao: 'Despacho', modulo: 'Despacho', descricao: 'Rodada 1 de despacho iniciada para SOL-2026-0005 — 2 prestadores acionados', criticidade: 'info' },
+  { id: 'al6', data: '2026-03-09T05:55:00', usuario: 'Tatiana Mendes', acao: 'Aceite', modulo: 'Solicitações', descricao: 'Cliente aceitou orçamento de R$ 307,50 — OS gerada', criticidade: 'info' },
+  { id: 'al7', data: '2026-03-08T17:00:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Prestadores', descricao: 'Status de Litoral Socorro alterado para Bloqueado', criticidade: 'critical' },
+  { id: 'al8', data: '2026-03-08T09:15:00', usuario: 'Juliana Ferraz', acao: 'Alteração', modulo: 'Operações', descricao: 'ATD-2026-0008 marcado como Concluído', criticidade: 'info' },
+  { id: 'al9', data: '2026-03-07T14:30:00', usuario: 'Rodrigo Almeida', acao: 'Alteração', modulo: 'Tarifas', descricao: 'Valor de Km Excedente atualizado para prestador p6', criticidade: 'warning' },
+  { id: 'al10', data: '2026-03-06T16:00:00', usuario: 'Marcos Contábil', acao: 'Faturamento', modulo: 'Faturamento', descricao: 'ATD-2026-0005 faturado — R$ 551,00', criticidade: 'info' },
+  { id: 'al11', data: '2026-03-05T10:00:00', usuario: 'Sistema', acao: 'Despacho', modulo: 'Despacho', descricao: 'Prestador Reboque Express aceitou oferta — OS ATD-2026-0003', criticidade: 'info' },
+  { id: 'al12', data: '2026-03-01T08:23:00', usuario: 'Auto Socorro Veloz', acao: 'Aceite', modulo: 'Despacho', descricao: 'Oferta aceita em 3 min — OS ATD-2026-0001', criticidade: 'info' },
+  { id: 'al13', data: '2026-03-01T08:18:00', usuario: 'João Silva', acao: 'Aceite', modulo: 'Solicitações', descricao: 'Cliente aceitou orçamento R$ 292,50 via WhatsApp', criticidade: 'info' },
 ];
 
 export const mockConfig: ConfigEmpresa = {
