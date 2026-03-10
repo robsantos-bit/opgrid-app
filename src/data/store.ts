@@ -1,5 +1,5 @@
-import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, Contrato, AuditLog, Solicitacao, Despacho } from '@/types';
-import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig, mockContratos, mockAuditLogs, mockSolicitacoes, mockDespachos } from './mockData';
+import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, Contrato, AuditLog, Solicitacao, Despacho, User } from '@/types';
+import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig, mockContratos, mockAuditLogs, mockSolicitacoes, mockDespachos, mockUsers } from './mockData';
 
 const KEYS = {
   prestadores: 'rc_prestadores',
