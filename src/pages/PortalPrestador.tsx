@@ -56,9 +56,66 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     }
   }, [status, expired, sirenPlayed]);
 
-  const handleAceitar = () => setStatus('Aceita');
+  const handleAceitar = () => {
+    setStatus('Aceita');
+    // Persist to store
+    const despachos = getDespachos();
+    const desp = despachos.find(d => d.id === oferta.despachoId);
+    if (desp) {
+      const now = new Date().toISOString();
+      desp.ofertas = desp.ofertas.map(o => o.id === oferta.id ? { ...o, status: 'Aceita' as const, respondidaEm: now } : o);
+      desp.status = 'Aceito';
+      desp.prestadorAceitoId = oferta.prestadorId;
+      desp.atualizadoEm = now;
+      updateDespacho(desp);
+      // Update solicitacao
+      const sols = getSolicitacoes();
+      const sol = sols.find(s => s.id === desp.solicitacaoId);
+      if (sol) {
+        sol.status = 'Em atendimento';
+        sol.statusProposta = 'Aceita';
+        sol.propostaRespondidaEm = now;
+        sol.timeline.push({ data: now, descricao: `Prestador ${prestador?.nomeFantasia || ''} aceitou a oferta`, tipo: 'sistema' });
+        updateSolicitacao(sol);
+      }
+      // Fire notification
+      addNotification({
+        type: 'oferta_aceita',
+        title: '✅ Oferta aceita!',
+        message: `${prestador?.nomeFantasia || 'Prestador'} aceitou a oferta para ${solicitacao?.protocolo || 'solicitação'}`,
+        solicitacaoId: desp.solicitacaoId,
+        prestadorNome: prestador?.nomeFantasia,
+      });
+    }
+  };
+
   const handleRecusar = () => { setShowRecusa(true); };
-  const confirmRecusa = () => { setStatus('Recusada'); setShowRecusa(false); };
+
+  const confirmRecusa = () => {
+    setStatus('Recusada');
+    setShowRecusa(false);
+    // Persist to store
+    const despachos = getDespachos();
+    const desp = despachos.find(d => d.id === oferta.despachoId);
+    if (desp) {
+      const now = new Date().toISOString();
+      desp.ofertas = desp.ofertas.map(o => o.id === oferta.id ? { ...o, status: 'Recusada' as const, respondidaEm: now, motivoRecusa: (motivoRecusa || 'Outro') as any } : o);
+      const allResolved = desp.ofertas.every(o => o.status !== 'Pendente');
+      if (allResolved && !desp.ofertas.some(o => o.status === 'Aceita')) {
+        desp.status = 'Sem prestador';
+      }
+      desp.atualizadoEm = now;
+      updateDespacho(desp);
+      // Fire notification
+      addNotification({
+        type: 'oferta_recusada',
+        title: '❌ Oferta recusada',
+        message: `${prestador?.nomeFantasia || 'Prestador'} recusou a oferta para ${solicitacao?.protocolo || 'solicitação'}. Motivo: ${motivoRecusa || 'Não informado'}`,
+        solicitacaoId: desp.solicitacaoId,
+        prestadorNome: prestador?.nomeFantasia,
+      });
+    }
+  };
 
   if (expired && status === 'Pendente') {
     return (
