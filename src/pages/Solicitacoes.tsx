@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,9 @@ import { Solicitacao, StatusSolicitacao } from '@/types';
 import {
   MessageSquare, Clock, CheckCircle2, AlertTriangle, Search, X, Phone, MapPin,
   Car, FileText, ArrowRight, DollarSign, Send, Ban, Timer, Smartphone, Link2,
-  ChevronRight, MessageCircle, Zap, Eye, Bell
+  ChevronRight, MessageCircle, Zap, Eye, Bell, Plus
 } from 'lucide-react';
+import NovaSolicitacaoDialog from '@/components/NovaSolicitacaoDialog';
 
 const statusConfig: Record<StatusSolicitacao, { label: string; variant: 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'; dotColor: string }> = {
   'Recebida': { label: 'Recebida', variant: 'info', dotColor: 'bg-info' },
@@ -50,11 +51,14 @@ function formatDate(dateStr: string) {
 }
 
 export default function Solicitacoes() {
-  const solicitacoes = useMemo(() => getSolicitacoes(), []);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const solicitacoes = useMemo(() => getSolicitacoes(), [refreshKey]);
   const [selectedSol, setSelectedSol] = useState<Solicitacao | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterCanal, setFilterCanal] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [novaOpen, setNovaOpen] = useState(false);
+  const handleCreated = useCallback(() => setRefreshKey(k => k + 1), []);
 
   const filtered = useMemo(() => {
     return solicitacoes
@@ -97,6 +101,9 @@ export default function Solicitacoes() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Button onClick={() => setNovaOpen(true)} size="sm" className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" />Nova solicitação
+          </Button>
           {/* Siren indicator */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-destructive border border-destructive/20 bg-destructive/5 rounded-md px-2.5 py-1 font-medium">
             <div className="relative">
@@ -229,6 +236,9 @@ export default function Solicitacoes() {
           {selectedSol && <SolicitacaoDetail sol={selectedSol} />}
         </SheetContent>
       </Sheet>
+
+      {/* New solicitation dialog */}
+      <NovaSolicitacaoDialog open={novaOpen} onOpenChange={setNovaOpen} onCreated={handleCreated} />
     </div>
   );
 }
