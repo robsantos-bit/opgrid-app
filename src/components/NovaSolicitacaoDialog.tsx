@@ -170,7 +170,6 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
       { data: now, descricao: `Despacho automático para ${activePrestadores.map(p => p.nomeFantasia).join(' e ')}`, tipo: 'sistema' },
     );
     // Re-save with updated status
-    const { saveSolicitacoes, getSolicitacoes } = await import('@/data/store');
     saveSolicitacoes(getSolicitacoes().map(s => s.id === id ? solicitacao : s));
 
     // Play siren to simulate real-time alert
