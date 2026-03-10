@@ -124,10 +124,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Smartphone className="h-3 w-3" /><span>Sem app</span>
             </div>
 
+            {/* Mute toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleMute}
+              title={sirenMuted ? 'Ativar som da sirene' : 'Silenciar sirene'}
+            >
+              {sirenMuted ? (
+                <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <Volume2 className="h-3.5 w-3.5 text-foreground" />
+              )}
+            </Button>
+
             {/* Siren bell */}
             <Button variant="ghost" size="icon" className="relative h-8 w-8">
-              <Bell className={`h-3.5 w-3.5 ${sirenActive ? 'text-destructive animate-siren-glow' : 'text-muted-foreground'}`} />
-              {sirenActive && (
+              <Bell className={`h-3.5 w-3.5 ${sirenActive && !sirenMuted ? 'text-destructive animate-siren-glow' : 'text-muted-foreground'}`} />
+              {sirenActive && !sirenMuted && (
                 <>
                   <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-destructive rounded-full animate-siren-pulse" />
                   <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-destructive rounded-full" />
