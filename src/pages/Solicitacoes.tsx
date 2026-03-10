@@ -11,8 +11,9 @@ import { Solicitacao, StatusSolicitacao } from '@/types';
 import {
   MessageSquare, Clock, CheckCircle2, AlertTriangle, Search, X, Phone, MapPin,
   Car, FileText, ArrowRight, DollarSign, Send, Ban, Timer, Smartphone, Link2,
-  ChevronRight, MessageCircle, Zap, Eye, Bell
+  ChevronRight, MessageCircle, Zap, Eye, Bell, Plus
 } from 'lucide-react';
+import NovaSolicitacaoDialog from '@/components/NovaSolicitacaoDialog';
 
 const statusConfig: Record<StatusSolicitacao, { label: string; variant: 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'; dotColor: string }> = {
   'Recebida': { label: 'Recebida', variant: 'info', dotColor: 'bg-info' },
