@@ -52,7 +52,27 @@ export default function Prestadores() {
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [detailPrestador, setDetailPrestador] = useState<Prestador | null>(null);
   const { lookupCep, loading: cepLoading } = useCepLookup();
+  const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
   const perPage = 10;
+
+  const handleCnpjChange = async (value: string) => {
+    updateField('documento', value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 14) {
+      const result = await lookupCnpj(value);
+      if (result) {
+        if (result.razao_social) updateField('razaoSocial', result.razao_social);
+        if (result.nome_fantasia) updateField('nomeFantasia', result.nome_fantasia);
+        if (result.telefone) updateField('telefone', result.telefone);
+        if (result.email) updateField('email', result.email);
+        if (result.logradouro) updateField('endereco', [result.logradouro, result.numero, result.bairro].filter(Boolean).join(', '));
+        if (result.municipio) updateField('cidade', result.municipio);
+        if (result.uf) updateField('uf', result.uf);
+        if (result.cep) updateField('cep', result.cep);
+        toast.success('Dados do CNPJ preenchidos automaticamente!');
+      }
+    }
+  };
 
   const handlePrestadorCep = async (value: string) => {
     updateField('cep', value);
