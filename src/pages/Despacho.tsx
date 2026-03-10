@@ -74,69 +74,56 @@ export default function CentralDespacho() {
     { label: 'Disponíveis', value: prestadoresOnline.length, icon: Radio, bg: 'bg-info/10', color: 'text-info', sub: 'online e aptos' },
   ];
 
-  // Initialize map only when mapa tab is active
+  // Initialize map once (container is always mounted via forceMount)
   useEffect(() => {
-    if (activeTab !== 'mapa') return;
     if (!mapContainerRef.current) return;
+    if (mapRef.current) return;
 
-    // Small delay to ensure DOM is fully laid out after tab switch
-    const initTimer = setTimeout(() => {
-      if (!mapContainerRef.current) return;
+    const map = L.map(mapContainerRef.current, { center: [-23.55, -46.63], zoom: 5, zoomControl: true });
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; OpenStreetMap',
+    }).addTo(map);
+    mapRef.current = map;
 
-      // Destroy previous instance if exists
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
 
-      const container = mapContainerRef.current;
-      const map = L.map(container, { center: [-23.55, -46.63], zoom: 5, zoomControl: true });
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap',
-      }).addTo(map);
-      mapRef.current = map;
+  // Update markers and invalidate size when tab becomes active
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
 
-      // Add markers
-      markersRef.current = [];
-
-      // Prestadores online
-      prestadores.filter(p => p.localizacao && p.status === 'Ativo').forEach(p => {
-        const loc = p.localizacao!;
-        const color = loc.statusRastreamento === 'Online' ? '#22c55e' : loc.statusRastreamento === 'A caminho' ? '#3b82f6' : loc.statusRastreamento === 'Em atendimento' ? '#f59e0b' : '#6b7280';
-        const marker = L.marker([loc.lat, loc.lng], {
-          icon: L.divIcon({
-            className: 'custom-marker',
-            html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
-            iconSize: [14, 14], iconAnchor: [7, 7],
-          }),
-        }).addTo(map).bindPopup(`<div style="font-size:12px;"><b>${p.nomeFantasia}</b><br/>${p.cidade}/${p.uf}<br/><span style="color:${color}">${loc.statusRastreamento}</span></div>`);
-        markersRef.current.push(marker);
-      });
-
-      // Solicitações ativas (origens)
-      solicitacoes.filter(s => s.origemCoord && !['Finalizada', 'Cancelada'].includes(s.status)).forEach(s => {
-        const marker = L.marker([s.origemCoord!.lat, s.origemCoord!.lng], {
-          icon: L.divIcon({
-            className: 'custom-marker',
-            html: `<div style="width:20px;height:20px;border-radius:4px;background:#ef4444;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:bold;">!</div>`,
-            iconSize: [20, 20], iconAnchor: [10, 10],
-          }),
-        }).addTo(map).bindPopup(`<div style="font-size:12px;"><b>${s.protocolo}</b><br/>${s.clienteNome}<br/>${s.motivo}</div>`);
-        markersRef.current.push(marker);
-      });
-
-      // Multiple invalidateSize calls to handle layout timing
+    if (activeTab === 'mapa') {
       setTimeout(() => map.invalidateSize(), 100);
-      setTimeout(() => map.invalidateSize(), 500);
-    }, 50);
+      setTimeout(() => map.invalidateSize(), 400);
+    }
 
-    return () => {
-      clearTimeout(initTimer);
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    prestadores.filter(p => p.localizacao && p.status === 'Ativo').forEach(p => {
+      const loc = p.localizacao!;
+      const color = loc.statusRastreamento === 'Online' ? '#22c55e' : loc.statusRastreamento === 'A caminho' ? '#3b82f6' : loc.statusRastreamento === 'Em atendimento' ? '#f59e0b' : '#6b7280';
+      const marker = L.marker([loc.lat, loc.lng], {
+        icon: L.divIcon({
+          className: 'custom-marker',
+          html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+          iconSize: [14, 14], iconAnchor: [7, 7],
+        }),
+      }).addTo(map).bindPopup(`<div style="font-size:12px;"><b>${p.nomeFantasia}</b><br/>${p.cidade}/${p.uf}<br/><span style="color:${color}">${loc.statusRastreamento}</span></div>`);
+      markersRef.current.push(marker);
+    });
+
+    solicitacoes.filter(s => s.origemCoord && !['Finalizada', 'Cancelada'].includes(s.status)).forEach(s => {
+      const marker = L.marker([s.origemCoord!.lat, s.origemCoord!.lng], {
+        icon: L.divIcon({
+          className: 'custom-marker',
+          html: `<div style="width:20px;height:20px;border-radius:4px;background:#ef4444;border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;color:white;font-size:10px;font-weight:bold;">!</div>`,
+          iconSize: [20, 20], iconAnchor: [10, 10],
+        }),
+      }).addTo(map).bindPopup(`<div style="font-size:12px;"><b>${s.protocolo}</b><br/>${s.clienteNome}<br/>${s.motivo}</div>`);
+      markersRef.current.push(marker);
+    });
   }, [activeTab, prestadores, solicitacoes]);
 
   return (
