@@ -349,6 +349,7 @@ export default function WhatsAppSimulador() {
             type: 'solicitacao_nova',
             title: 'Nova OS via WhatsApp',
             message: `${state.nome} — ${state.motivo} — ${state.modelo}`,
+            solicitacaoId: solId,
           });
 
           setState(s => ({
