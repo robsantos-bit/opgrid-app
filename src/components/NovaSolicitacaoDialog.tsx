@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { addSolicitacao, getPrestadores, addDespacho, saveSolicitacoes, getSolicitacoes } from '@/data/store';
 import { Solicitacao, MotivoSolicitacao, Despacho, OfertaPrestador } from '@/types';
-import { MessageCircle, MapPin, Car, User, Phone, FileText, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { MessageCircle, MapPin, Car, User, Phone, FileText, Zap, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { playCentralSiren } from '@/lib/sirenSound';
 import { toast } from 'sonner';
+import { useCepLookup } from '@/hooks/useCepLookup';
+import { usePlacaLookup } from '@/hooks/usePlacaLookup';
 
 const motivos: MotivoSolicitacao[] = [
   'Pane elétrica', 'Pane mecânica', 'Pneu furado', 'Bateria descarregada',
