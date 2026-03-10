@@ -4,22 +4,22 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Search, Building2, ChevronDown, User, Settings, LogOut, Hexagon, Map } from 'lucide-react';
+import { Bell, Search, Building2, ChevronDown, User, Settings, LogOut, Hexagon, MessageSquare } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
 
 const navItems = [
   { label: 'Visão Geral', path: '/', module: 'dashboard' },
+  { label: 'Solicitações', path: '/solicitacoes', module: 'solicitacoes' },
+  { label: 'Despacho', path: '/despacho', module: 'despacho' },
   { label: 'Operações', path: '/atendimentos', module: 'atendimentos' },
   { label: 'Mapa', path: '/mapa', module: 'atendimentos' },
   { label: 'Prestadores', path: '/prestadores', module: 'prestadores' },
   { label: 'Tarifas', path: '/tarifas', module: 'tarifas' },
   { label: 'Tabelas', path: '/tabela-precos', module: 'tabela-precos' },
-  { label: 'Contratos', path: '/contratos', module: 'contratos' },
   { label: 'Faturamento', path: '/faturamento', module: 'faturamento' },
   { label: 'Auditoria', path: '/auditoria', module: 'auditoria' },
-  { label: 'Relatórios', path: '/relatorios', module: 'relatorios' },
 ];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
@@ -44,7 +44,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
               <div className="hidden sm:block">
                 <p className="text-[14px] font-bold tracking-tight leading-none">OpGrid</p>
-                <p className="text-[9px] text-muted-foreground leading-none mt-0.5 font-medium tracking-wide uppercase">Hub Operacional</p>
+                <p className="text-[9px] text-muted-foreground leading-none mt-0.5 font-medium tracking-wide uppercase">Guincho & Assistência 24h</p>
               </div>
             </Link>
 
@@ -83,7 +83,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             )}
 
             <div className="hidden xl:flex items-center gap-1.5 text-[11px] text-muted-foreground border rounded-md px-2.5 py-1 bg-muted/20 font-medium">
-              <Building2 className="h-3 w-3" /><span>Matriz</span>
+              <MessageSquare className="h-3 w-3" /><span>WhatsApp ativo</span>
             </div>
 
             <Button variant="ghost" size="icon" className="relative h-8 w-8">

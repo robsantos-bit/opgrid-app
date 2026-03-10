@@ -1,5 +1,5 @@
-import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, Contrato, AuditLog } from '@/types';
-import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig, mockContratos, mockAuditLogs } from './mockData';
+import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, Contrato, AuditLog, Solicitacao, Despacho } from '@/types';
+import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig, mockContratos, mockAuditLogs, mockSolicitacoes, mockDespachos } from './mockData';
 
 const KEYS = {
   prestadores: 'rc_prestadores',
@@ -9,6 +9,8 @@ const KEYS = {
   config: 'rc_config',
   contratos: 'rc_contratos',
   auditLogs: 'rc_audit_logs',
+  solicitacoes: 'rc_solicitacoes',
+  despachos: 'rc_despachos',
 };
 
 function load<T>(key: string, fallback: T): T {
@@ -53,6 +55,18 @@ export function getContratos(): Contrato[] { return load(KEYS.contratos, mockCon
 export function saveContratos(data: Contrato[]) { save(KEYS.contratos, data); }
 export function addContrato(c: Contrato) { const all = getContratos(); all.push(c); saveContratos(all); }
 export function updateContrato(c: Contrato) { saveContratos(getContratos().map(x => x.id === c.id ? c : x)); }
+
+// Solicitações
+export function getSolicitacoes(): Solicitacao[] { return load(KEYS.solicitacoes, mockSolicitacoes); }
+export function saveSolicitacoes(data: Solicitacao[]) { save(KEYS.solicitacoes, data); }
+export function addSolicitacao(s: Solicitacao) { const all = getSolicitacoes(); all.push(s); saveSolicitacoes(all); }
+export function updateSolicitacao(s: Solicitacao) { saveSolicitacoes(getSolicitacoes().map(x => x.id === s.id ? s : x)); }
+
+// Despachos
+export function getDespachos(): Despacho[] { return load(KEYS.despachos, mockDespachos); }
+export function saveDespachos(data: Despacho[]) { save(KEYS.despachos, data); }
+export function addDespacho(d: Despacho) { const all = getDespachos(); all.push(d); saveDespachos(all); }
+export function updateDespacho(d: Despacho) { saveDespachos(getDespachos().map(x => x.id === d.id ? d : x)); }
 
 // Audit Logs
 export function getAuditLogs(): AuditLog[] { return load(KEYS.auditLogs, mockAuditLogs); }
