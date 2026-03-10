@@ -239,7 +239,7 @@ export default function CentralDespacho() {
           )}
         </TabsContent>
 
-        <TabsContent value="mapa" className="mt-4">
+        <TabsContent value="mapa" forceMount className={`mt-4 ${activeTab !== 'mapa' ? 'hidden' : ''}`}>
           <Card className="overflow-hidden">
             <div className="h-[calc(100vh-420px)] min-h-[400px] relative">
               <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
