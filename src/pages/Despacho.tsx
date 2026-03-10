@@ -429,6 +429,39 @@ function DespachoDetail({ despacho: d, getSolicitacao, getPrestadorNome, getPres
           ))}
         </div>
 
+        {/* Click to Chat */}
+        <div>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Clique para conversar</p>
+          <div className="space-y-1.5">
+            {d.ofertas.map(o => {
+              const p = getPrestador(o.prestadorId);
+              if (!p || !sol) return null;
+              return (
+                <Button
+                  key={o.id}
+                  variant="outline" size="sm" className="w-full justify-start text-xs gap-2 h-9 border-success/30 hover:bg-success/5"
+                  onClick={() => window.open(waPrestadorOfertaLink(p, sol, o.linkOferta, o.valorServico, window.location.origin), '_blank')}
+                >
+                  <MessageCircle className="h-3.5 w-3.5 text-success" />
+                  <span className="flex-1 text-left truncate">Enviar oferta → {p.nomeFantasia}</span>
+                  <Badge variant="outline" className="text-[8px] shrink-0">wa.me</Badge>
+                </Button>
+              );
+            })}
+            {sol && sol.clienteWhatsApp && d.prestadorAceitoId && (
+              <Button
+                variant="outline" size="sm" className="w-full justify-start text-xs gap-2 h-9 border-info/30 hover:bg-info/5"
+                onClick={() => window.open(waClienteAcompanhamentoLink(sol, window.location.origin), '_blank')}
+              >
+                <Link2 className="h-3.5 w-3.5 text-info" />
+                <span className="flex-1 text-left">Enviar link de acompanhamento ao cliente</span>
+                <Badge variant="outline" className="text-[8px] shrink-0">wa.me</Badge>
+              </Button>
+            )}
+          </div>
+          <p className="text-[9px] text-muted-foreground italic mt-1.5">O WhatsApp abrirá com a mensagem pré-preenchida. Você envia manualmente.</p>
+        </div>
+
         {/* Observations */}
         {d.observacoes && (
           <div className="p-3 rounded-lg bg-muted/20 border">
