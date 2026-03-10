@@ -356,7 +356,7 @@ export default function Prestadores() {
             <Separator />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2 space-y-1.5"><Label className="text-xs font-medium">Endereço</Label><Input value={editing?.endereco || ''} onChange={e => updateField('endereco', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label className="text-xs font-medium">CEP</Label><Input value={editing?.cep || ''} onChange={e => updateField('cep', e.target.value)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">CEP</Label><div className="relative"><Input value={editing?.cep || ''} onChange={e => handlePrestadorCep(e.target.value)} maxLength={9} />{cepLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}</div></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5"><Label className="text-xs font-medium">Cidade</Label><Input value={editing?.cidade || ''} onChange={e => updateField('cidade', e.target.value)} /></div>
