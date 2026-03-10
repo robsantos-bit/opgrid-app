@@ -408,10 +408,25 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
               <div className="space-y-3">
                 <div>
                   <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
+                    <MapPin className="h-3 w-3 text-success" />CEP de origem
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      placeholder="Ex: 01310-100"
+                      value={form.origemCep}
+                      onChange={e => handleCepChange('origemCep', e.target.value)}
+                      className="text-sm font-mono"
+                      maxLength={9}
+                    />
+                    {cepLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
                     <MapPin className="h-3 w-3 text-success" />Endereço de origem
                   </Label>
                   <Input
-                    placeholder="Ex: Av. Paulista, 1000 — São Paulo"
+                    placeholder="Preenchido automaticamente pelo CEP"
                     value={form.origemEndereco}
                     onChange={e => set('origemEndereco', e.target.value)}
                     className={`text-sm ${errors.origemEndereco ? 'border-destructive' : ''}`}
@@ -426,10 +441,25 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
 
                 <div>
                   <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
+                    <MapPin className="h-3 w-3 text-destructive" />CEP de destino
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      placeholder="Ex: 01413-000"
+                      value={form.destinoCep}
+                      onChange={e => handleCepChange('destinoCep', e.target.value)}
+                      className="text-sm font-mono"
+                      maxLength={9}
+                    />
+                    {cepLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
                     <MapPin className="h-3 w-3 text-destructive" />Endereço de destino
                   </Label>
                   <Input
-                    placeholder="Ex: Rua Augusta, 500 — São Paulo"
+                    placeholder="Preenchido automaticamente pelo CEP"
                     value={form.destinoEndereco}
                     onChange={e => set('destinoEndereco', e.target.value)}
                     className={`text-sm ${errors.destinoEndereco ? 'border-destructive' : ''}`}
