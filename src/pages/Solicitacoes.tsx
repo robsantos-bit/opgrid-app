@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getSolicitacoes, getPrestadores } from '@/data/store';
 import { Solicitacao, StatusSolicitacao } from '@/types';
 import {
@@ -14,6 +15,8 @@ import {
   ChevronRight, MessageCircle, Zap, Eye, Bell, Plus
 } from 'lucide-react';
 import NovaSolicitacaoDialog from '@/components/NovaSolicitacaoDialog';
+import { getNotifications, markAllRead, getUnreadCount, AppNotification } from '@/lib/notifications';
+import { toast } from 'sonner';
 
 const statusConfig: Record<StatusSolicitacao, { label: string; variant: 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'; dotColor: string }> = {
   'Recebida': { label: 'Recebida', variant: 'info', dotColor: 'bg-info' },
