@@ -36,12 +36,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   const sirenPlayedRef = useRef(false);
 
+  const sirenMutedRef = useRef(sirenMuted);
+  useEffect(() => { sirenMutedRef.current = sirenMuted; }, [sirenMuted]);
+
+  const toggleMute = () => {
+    setSirenMuted(prev => {
+      const next = !prev;
+      localStorage.setItem('opgrid-siren-muted', String(next));
+      return next;
+    });
+  };
+
   // Simulate siren toggling for demo — plays real audio alert
   useEffect(() => {
     const interval = setInterval(() => {
       setSirenActive(prev => {
         const next = !prev;
-        if (next && !sirenPlayedRef.current) {
+        if (next && !sirenPlayedRef.current && !sirenMutedRef.current) {
           playCentralSiren(2.5);
           sirenPlayedRef.current = true;
           setTimeout(() => { sirenPlayedRef.current = false; }, 10000);
