@@ -51,11 +51,14 @@ function formatDate(dateStr: string) {
 }
 
 export default function Solicitacoes() {
-  const solicitacoes = useMemo(() => getSolicitacoes(), []);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const solicitacoes = useMemo(() => getSolicitacoes(), [refreshKey]);
   const [selectedSol, setSelectedSol] = useState<Solicitacao | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterCanal, setFilterCanal] = useState<string>('all');
   const [search, setSearch] = useState('');
+  const [novaOpen, setNovaOpen] = useState(false);
+  const handleCreated = useCallback(() => setRefreshKey(k => k + 1), []);
 
   const filtered = useMemo(() => {
     return solicitacoes
