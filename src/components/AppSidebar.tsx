@@ -23,6 +23,7 @@ const menuGroups = [
     label: 'Operação',
     items: [
       { title: 'Operações', url: '/atendimentos', icon: ClipboardList, module: 'atendimentos' },
+      { title: 'Simulador WhatsApp', url: '/whatsapp', icon: MessageCircle, module: 'solicitacoes' },
       { title: 'Prestadores', url: '/prestadores', icon: Users, module: 'prestadores' },
     ],
   },
