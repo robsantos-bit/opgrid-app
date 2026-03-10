@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 import { getConfig, saveConfig, resetAllData } from '@/data/store';
 import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, RotateCcw } from 'lucide-react';
+import { Save, RotateCcw, Loader2 } from 'lucide-react';
+import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
@@ -16,10 +17,26 @@ const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'O
 export default function Configuracoes() {
   const { user, isAdmin } = useAuth();
   const [config, setConfig] = useState<ConfigEmpresa>(getConfig);
+  const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
 
   const updateField = (field: keyof ConfigEmpresa, value: any) => setConfig(prev => ({ ...prev, [field]: value }));
   const handleSave = () => { saveConfig(config); toast.success('Configurações salvas!'); };
   const handleReset = () => { resetAllData(); toast.success('Dados resetados. Recarregando...'); setTimeout(() => window.location.reload(), 1000); };
+
+  const handleCnpjChange = async (value: string) => {
+    updateField('cnpj', value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 14) {
+      const result = await lookupCnpj(value);
+      if (result) {
+        if (result.razao_social) updateField('nomeEmpresa', result.razao_social);
+        if (result.telefone) updateField('telefone', result.telefone);
+        if (result.email) updateField('email', result.email);
+        if (result.logradouro) updateField('endereco', [result.logradouro, result.numero, result.bairro, result.municipio, result.uf].filter(Boolean).join(', '));
+        toast.success('Dados do CNPJ preenchidos automaticamente!');
+      }
+    }
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -37,7 +54,7 @@ export default function Configuracoes() {
         <TabsContent value="empresa" className="mt-4">
           <Card className="max-w-xl"><CardHeader className="pb-2"><CardTitle className="text-sm">Dados da Empresa</CardTitle></CardHeader><CardContent className="space-y-3">
             <div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={config.nomeEmpresa} onChange={e => updateField('nomeEmpresa', e.target.value)} /></div>
-            <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-xs">CNPJ</Label><Input value={config.cnpj} onChange={e => updateField('cnpj', e.target.value)} /></div><div className="space-y-1"><Label className="text-xs">Telefone</Label><Input value={config.telefone} onChange={e => updateField('telefone', e.target.value)} /></div></div>
+            <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-xs">CNPJ</Label><div className="relative"><Input value={config.cnpj} onChange={e => handleCnpjChange(e.target.value)} />{cnpjLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}</div></div><div className="space-y-1"><Label className="text-xs">Telefone</Label><Input value={config.telefone} onChange={e => updateField('telefone', e.target.value)} /></div></div>
             <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input type="email" value={config.email} onChange={e => updateField('email', e.target.value)} /></div>
             <div className="space-y-1"><Label className="text-xs">Endereço</Label><Input value={config.endereco} onChange={e => updateField('endereco', e.target.value)} /></div>
             <Button onClick={handleSave} className="mt-2"><Save className="h-4 w-4 mr-1.5" />Salvar</Button>
