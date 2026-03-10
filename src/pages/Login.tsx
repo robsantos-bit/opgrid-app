@@ -6,7 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Hexagon, Mail, Lock, Eye, EyeOff, ArrowRight, Network, BarChart3, FileCheck, Users, ChevronRight, Shield, Zap, CheckCircle2 } from 'lucide-react';
+import {
+  Hexagon, Mail, Lock, Eye, EyeOff, ArrowRight, ChevronRight, Zap,
+  MessageCircle, Radar, Smartphone, Link2, Bell
+} from 'lucide-react';
 
 export default function Login() {
   const { login } = useAuth();
@@ -28,65 +31,127 @@ export default function Login() {
 
   const handleQuickLogin = (demoEmail: string) => { setEmail(demoEmail); setPassword('demo'); };
 
-  const capabilities = [
-    { icon: Network, label: 'Gestão da Rede', desc: 'Controle completo de prestadores com score, homologação e conformidade' },
-    { icon: BarChart3, label: 'Inteligência Financeira', desc: 'Visão executiva de custos, divergências e faturamento em tempo real' },
-    { icon: FileCheck, label: 'Governança', desc: 'Rastreabilidade total de ações com trilha de auditoria completa' },
-    { icon: Shield, label: 'Controle de Acesso', desc: 'Perfis granulares — admin, operações, financeiro e prestador' },
+  const differentials = [
+    {
+      icon: MessageCircle,
+      number: '01',
+      title: 'Solicitação via WhatsApp',
+      desc: 'Cliente pede guincho pelo WhatsApp. Dados coletados, valor calculado e proposta enviada automaticamente.',
+      accent: 'from-success/20 to-success/5',
+      iconColor: 'text-success',
+    },
+    {
+      icon: Bell,
+      number: '02',
+      title: 'Sirene na central',
+      desc: 'Quando a solicitação chega no sistema, toca uma sirene sonora na central operacional. Nada passa despercebido.',
+      accent: 'from-destructive/20 to-destructive/5',
+      iconColor: 'text-destructive',
+    },
+    {
+      icon: Radar,
+      number: '03',
+      title: 'Despacho automático',
+      desc: 'Sistema localiza os 2 prestadores mais próximos e aptos. Envia oferta automática. Primeiro que aceita, ganha a OS.',
+      accent: 'from-primary/20 to-primary/5',
+      iconColor: 'text-primary',
+    },
+    {
+      icon: Bell,
+      number: '04',
+      title: 'Sirene no prestador',
+      desc: 'Quando a oferta chega no celular do prestador, toca uma sirene de alerta. Resposta rápida garantida.',
+      accent: 'from-warning/20 to-warning/5',
+      iconColor: 'text-warning',
+    },
+    {
+      icon: Smartphone,
+      number: '05',
+      title: 'Portal do prestador por link',
+      desc: 'Sem app. O prestador recebe um link, aceita a OS, compartilha localização e gerencia o atendimento pelo navegador.',
+      accent: 'from-info/20 to-info/5',
+      iconColor: 'text-info',
+    },
+    {
+      icon: Link2,
+      number: '06',
+      title: 'Acompanhamento do cliente',
+      desc: 'O cliente recebe um link para acompanhar em tempo real: mapa, ETA, status e timeline. Sem baixar nada.',
+      accent: 'from-accent/20 to-accent/5',
+      iconColor: 'text-accent',
+    },
   ];
 
   return (
     <div className="min-h-screen flex bg-background">
       {/* Left brand panel */}
-      <div className="hidden lg:flex w-[480px] bg-gradient-to-b from-primary via-primary/95 to-primary/85 flex-col justify-between p-10 text-primary-foreground relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '24px 24px' }} />
-        <div className="absolute -bottom-24 -right-24 w-72 h-72 bg-white/5 rounded-full blur-3xl" />
+      <div className="hidden lg:flex w-[520px] bg-gradient-to-b from-[hsl(228,36%,6%)] via-[hsl(228,36%,8%)] to-[hsl(228,36%,12%)] flex-col justify-between p-8 text-white relative overflow-hidden">
+        {/* Grid pattern */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '20px 20px' }} />
+        <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-[100px]" />
+        <div className="absolute top-20 -left-20 w-60 h-60 bg-success/8 rounded-full blur-[80px]" />
 
+        {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 bg-white/15 backdrop-blur-sm rounded-lg flex items-center justify-center">
-              <Hexagon className="h-5 w-5" />
+            <div className="w-10 h-10 bg-primary/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-primary/20">
+              <Hexagon className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <span className="text-lg font-bold tracking-tight">OpGrid</span>
-              <p className="text-[10px] opacity-60 font-medium uppercase tracking-wider">Inteligência Operacional</p>
+              <span className="text-xl font-bold tracking-tight">OpGrid</span>
+              <p className="text-[9px] opacity-40 font-semibold uppercase tracking-[0.2em]">Guincho & Assistência 24h</p>
             </div>
           </div>
         </div>
 
-        <div className="relative z-10 space-y-6">
-          <div>
-            <p className="text-2xl font-bold leading-tight tracking-tight">A plataforma que governa sua rede operacional</p>
-            <p className="text-[13px] opacity-60 mt-2.5 leading-relaxed">Controle de prestadores, tarifação, operações e faturamento em um único hub para associações, seguradoras e redes credenciadas.</p>
+        {/* Differentials */}
+        <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-center -mt-4">
+          <div className="mb-2">
+            <p className="text-xl font-bold leading-tight tracking-tight">Operação completa<br />sem nenhum app</p>
+            <p className="text-xs text-white/40 mt-2 leading-relaxed max-w-[380px]">
+              Do WhatsApp do cliente ao link do prestador — toda a jornada acontece sem download, sem fricção, com despacho inteligente automático.
+            </p>
           </div>
 
-          <div className="space-y-3">
-            {capabilities.map(c => (
-              <div key={c.label} className="flex items-start gap-3 group">
-                <div className="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
-                  <c.icon className="h-4 w-4" />
+          <div className="grid grid-cols-2 gap-2.5">
+            {differentials.map((d, i) => (
+              <div
+                key={d.number}
+                className="group relative rounded-xl border border-white/5 bg-white/[0.02] p-3 hover:bg-white/[0.04] transition-all"
+                style={{ animationDelay: `${i * 100}ms` }}
+              >
+                <div className="flex items-start gap-2.5">
+                  <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${d.accent} flex items-center justify-center shrink-0`}>
+                    <d.icon className={`h-4 w-4 ${d.iconColor}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-mono text-white/20">{d.number}</span>
+                      <p className="text-[11px] font-semibold text-white/90 leading-tight">{d.title}</p>
+                    </div>
+                    <p className="text-[9px] text-white/30 leading-relaxed mt-1">{d.desc}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-[13px] font-semibold">{c.label}</p>
-                  <p className="text-[11px] opacity-50 leading-relaxed mt-0.5">{c.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex gap-5 pt-3 border-t border-white/10">
-            {[{ v: '12.000+', l: 'Prestadores' }, { v: '65.000+', l: 'Atendimentos/mês' }, { v: '99.9%', l: 'Uptime' }].map(s => (
-              <div key={s.l}>
-                <p className="text-base font-bold">{s.v}</p>
-                <p className="text-[9px] opacity-40 uppercase tracking-wider font-medium">{s.l}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="relative z-10 flex items-center justify-between">
-          <p className="text-[10px] opacity-30">© 2026 OpGrid. Todos os direitos reservados.</p>
-          <div className="flex items-center gap-1 text-[10px] opacity-30"><Zap className="h-3 w-3" /><span>v3.0</span></div>
+        {/* Bottom stats */}
+        <div className="relative z-10">
+          <div className="flex gap-8 pt-4 border-t border-white/5">
+            {[
+              { v: 'Zero', l: 'Apps para baixar' },
+              { v: '< 3min', l: 'Tempo de despacho' },
+              { v: '100%', l: 'Via WhatsApp + Link' },
+            ].map(s => (
+              <div key={s.l}>
+                <p className="text-sm font-bold text-primary">{s.v}</p>
+                <p className="text-[8px] text-white/25 uppercase tracking-wider font-semibold mt-0.5">{s.l}</p>
+              </div>
+            ))}
+          </div>
+          <p className="text-[9px] text-white/15 mt-4">© 2026 OpGrid. Plataforma operacional de guincho e assistência 24h.</p>
         </div>
       </div>
 
@@ -95,13 +160,24 @@ export default function Login() {
         <div className="w-full max-w-[400px] space-y-5 animate-fade-in">
           <div className="text-center lg:text-left">
             <div className="flex items-center gap-2 justify-center lg:justify-start mb-4 lg:hidden">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
-                <Hexagon className="h-4 w-4 text-primary-foreground" />
+              <div className="w-9 h-9 bg-gradient-to-br from-primary to-primary/70 rounded-xl flex items-center justify-center">
+                <Hexagon className="h-4.5 w-4.5 text-primary-foreground" />
               </div>
-              <span className="text-lg font-bold tracking-tight">OpGrid</span>
+              <div>
+                <span className="text-lg font-bold tracking-tight">OpGrid</span>
+                <p className="text-[9px] text-muted-foreground font-semibold uppercase tracking-wider">Guincho & Assistência 24h</p>
+              </div>
             </div>
-            <h1 className="text-xl font-bold tracking-tight">Acesse sua conta</h1>
-            <p className="text-[13px] text-muted-foreground mt-0.5">Entre com suas credenciais para acessar a plataforma</p>
+            <h1 className="text-xl font-bold tracking-tight">Acesse a central</h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5">Plataforma operacional com despacho inteligente</p>
+          </div>
+
+          {/* Mobile differentials summary */}
+          <div className="lg:hidden flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
+            <Zap className="h-4 w-4 text-primary shrink-0" />
+            <p className="text-[11px] text-muted-foreground">
+              <span className="font-semibold text-foreground">Operação 100% sem app.</span> WhatsApp → Sirene → Despacho automático → Link do prestador → Acompanhamento do cliente.
+            </p>
           </div>
 
           <Card className="shadow-premium-lg border-border/50">
@@ -125,7 +201,7 @@ export default function Login() {
                   </div>
                 </div>
                 <Button type="submit" className="w-full h-9 font-semibold text-[13px]" disabled={loading}>
-                  {loading ? <span className="flex items-center gap-2"><span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Entrando...</span> : <>Entrar <ArrowRight className="h-3.5 w-3.5 ml-1" /></>}
+                  {loading ? <span className="flex items-center gap-2"><span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Entrando...</span> : <>Entrar na central <ArrowRight className="h-3.5 w-3.5 ml-1" /></>}
                 </Button>
               </form>
             </CardContent>
@@ -157,6 +233,16 @@ export default function Login() {
               <p className="text-[10px] text-muted-foreground/40 text-center">Qualquer senha funciona no ambiente demo</p>
             </CardContent>
           </Card>
+
+          {/* Demo portal links */}
+          <div className="flex gap-2">
+            <a href="/prestador/oferta/of1" target="_blank" className="flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border bg-card hover:bg-muted/30 transition-all text-[10px] font-medium text-muted-foreground hover:text-primary">
+              <Smartphone className="h-3 w-3" />Portal Prestador
+            </a>
+            <a href="/acompanhar/a1" target="_blank" className="flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border bg-card hover:bg-muted/30 transition-all text-[10px] font-medium text-muted-foreground hover:text-primary">
+              <Link2 className="h-3 w-3" />Acompanhamento Cliente
+            </a>
+          </div>
         </div>
       </div>
     </div>

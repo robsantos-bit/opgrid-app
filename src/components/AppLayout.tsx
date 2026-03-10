@@ -1,10 +1,10 @@
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { Bell, Search, Building2, ChevronDown, User, Settings, LogOut, Hexagon, MessageSquare } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Bell, Search, ChevronDown, User, Settings, LogOut, Hexagon, MessageCircle, Radar, Smartphone } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
@@ -27,16 +27,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [sirenActive, setSirenActive] = useState(true);
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const visibleNav = navItems.filter(item => hasAccess([item.module]));
 
+  // Simulate siren toggling for demo
+  useEffect(() => {
+    const interval = setInterval(() => setSirenActive(prev => !prev), 8000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Top bar brand */}
+      {/* Top bar */}
       <header className="h-14 border-b bg-card shrink-0 sticky top-0 z-30">
         <div className="h-full flex items-center justify-between px-5 max-w-[1600px] mx-auto">
-          {/* Logo */}
+          {/* Logo + Nav */}
           <div className="flex items-center gap-6">
             <Link to="/" className="flex items-center gap-2 shrink-0">
               <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
@@ -48,7 +55,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
             </Link>
 
-            {/* Nav items */}
             <nav className="hidden lg:flex items-center gap-0.5">
               {visibleNav.map(item => {
                 const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
@@ -57,9 +63,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                     key={item.path}
                     to={item.path}
                     className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
-                      active
-                        ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                      active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
                     }`}
                   >
                     {item.label}
@@ -82,13 +86,28 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </button>
             )}
 
-            <div className="hidden xl:flex items-center gap-1.5 text-[11px] text-muted-foreground border rounded-md px-2.5 py-1 bg-muted/20 font-medium">
-              <MessageSquare className="h-3 w-3" /><span>WhatsApp ativo</span>
+            {/* Differential badges */}
+            <div className="hidden xl:flex items-center gap-1.5 text-[10px] text-success border border-success/20 bg-success/5 rounded-md px-2 py-1 font-medium">
+              <MessageCircle className="h-3 w-3" /><span>WhatsApp ativo</span>
             </div>
 
+            <div className="hidden xl:flex items-center gap-1.5 text-[10px] text-primary border border-primary/20 bg-primary/5 rounded-md px-2 py-1 font-medium">
+              <Radar className="h-3 w-3" /><span>Despacho auto</span>
+            </div>
+
+            <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] text-info border border-info/20 bg-info/5 rounded-md px-2 py-1 font-medium">
+              <Smartphone className="h-3 w-3" /><span>Sem app</span>
+            </div>
+
+            {/* Siren bell */}
             <Button variant="ghost" size="icon" className="relative h-8 w-8">
-              <Bell className="h-3.5 w-3.5 text-muted-foreground" />
-              <span className="absolute top-1 right-1 w-1.5 h-1.5 bg-destructive rounded-full" />
+              <Bell className={`h-3.5 w-3.5 ${sirenActive ? 'text-destructive animate-siren-glow' : 'text-muted-foreground'}`} />
+              {sirenActive && (
+                <>
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-destructive rounded-full animate-siren-pulse" />
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-destructive rounded-full" />
+                </>
+              )}
             </Button>
 
             <DropdownMenu>
