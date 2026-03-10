@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Bell, Search, ChevronDown, User, Settings, LogOut, Hexagon, MessageCircle, Radar, Smartphone } from 'lucide-react';
+import { Bell, Search, ChevronDown, User, Settings, LogOut, Hexagon, MessageCircle, Radar, Smartphone, Volume2, VolumeX } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
@@ -29,18 +29,30 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const location = useLocation();
   const [searchOpen, setSearchOpen] = useState(false);
   const [sirenActive, setSirenActive] = useState(true);
+  const [sirenMuted, setSirenMuted] = useState(() => localStorage.getItem('opgrid-siren-muted') === 'true');
   const handleLogout = () => { logout(); navigate('/login'); };
 
   const visibleNav = navItems.filter(item => hasAccess([item.module]));
 
   const sirenPlayedRef = useRef(false);
 
+  const sirenMutedRef = useRef(sirenMuted);
+  useEffect(() => { sirenMutedRef.current = sirenMuted; }, [sirenMuted]);
+
+  const toggleMute = () => {
+    setSirenMuted(prev => {
+      const next = !prev;
+      localStorage.setItem('opgrid-siren-muted', String(next));
+      return next;
+    });
+  };
+
   // Simulate siren toggling for demo — plays real audio alert
   useEffect(() => {
     const interval = setInterval(() => {
       setSirenActive(prev => {
         const next = !prev;
-        if (next && !sirenPlayedRef.current) {
+        if (next && !sirenPlayedRef.current && !sirenMutedRef.current) {
           playCentralSiren(2.5);
           sirenPlayedRef.current = true;
           setTimeout(() => { sirenPlayedRef.current = false; }, 10000);
@@ -112,10 +124,25 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               <Smartphone className="h-3 w-3" /><span>Sem app</span>
             </div>
 
+            {/* Mute toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={toggleMute}
+              title={sirenMuted ? 'Ativar som da sirene' : 'Silenciar sirene'}
+            >
+              {sirenMuted ? (
+                <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <Volume2 className="h-3.5 w-3.5 text-foreground" />
+              )}
+            </Button>
+
             {/* Siren bell */}
             <Button variant="ghost" size="icon" className="relative h-8 w-8">
-              <Bell className={`h-3.5 w-3.5 ${sirenActive ? 'text-destructive animate-siren-glow' : 'text-muted-foreground'}`} />
-              {sirenActive && (
+              <Bell className={`h-3.5 w-3.5 ${sirenActive && !sirenMuted ? 'text-destructive animate-siren-glow' : 'text-muted-foreground'}`} />
+              {sirenActive && !sirenMuted && (
                 <>
                   <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-destructive rounded-full animate-siren-pulse" />
                   <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-destructive rounded-full" />
