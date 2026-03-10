@@ -9,9 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { addSolicitacao, getPrestadores, addDespacho, saveSolicitacoes, getSolicitacoes } from '@/data/store';
 import { Solicitacao, MotivoSolicitacao, Despacho, OfertaPrestador } from '@/types';
-import { MessageCircle, MapPin, Car, User, Phone, FileText, Zap, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { MessageCircle, MapPin, Car, User, Phone, FileText, Zap, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
 import { playCentralSiren } from '@/lib/sirenSound';
 import { toast } from 'sonner';
+import { useCepLookup } from '@/hooks/useCepLookup';
+import { usePlacaLookup } from '@/hooks/usePlacaLookup';
 
 const motivos: MotivoSolicitacao[] = [
   'Pane elétrica', 'Pane mecânica', 'Pneu furado', 'Bateria descarregada',
@@ -24,7 +26,9 @@ const initialForm = {
   clienteWhatsApp: '',
   veiculoPlaca: '',
   veiculoModelo: '',
+  origemCep: '',
   origemEndereco: '',
+  destinoCep: '',
   destinoEndereco: '',
   motivo: '' as MotivoSolicitacao | '',
   observacoes: '',
@@ -41,10 +45,36 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
   const [form, setForm] = useState(initialForm);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { lookupCep, loading: cepLoading } = useCepLookup();
+  const { lookupPlaca } = usePlacaLookup();
 
   const set = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+  };
+
+  const handleCepChange = async (field: 'origemCep' | 'destinoCep', value: string) => {
+    set(field, value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const result = await lookupCep(value);
+      if (result) {
+        const addr = [result.logradouro, result.bairro, `${result.localidade}/${result.uf}`].filter(Boolean).join(', ');
+        const endField = field === 'origemCep' ? 'origemEndereco' : 'destinoEndereco';
+        set(endField, addr);
+        toast.success('Endereço preenchido automaticamente!');
+      }
+    }
+  };
+
+  const handlePlacaChange = (value: string) => {
+    const upper = value.toUpperCase();
+    set('veiculoPlaca', upper);
+    const result = lookupPlaca(upper);
+    if (result) {
+      set('veiculoModelo', result.modelo);
+      toast.success(`Veículo encontrado: ${result.modelo}`);
+    }
   };
 
   const validateStep1 = () => {
@@ -338,9 +368,9 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
                     <FileText className="h-3 w-3 text-muted-foreground" />Placa
                   </Label>
                   <Input
-                    placeholder="Ex: ABC-1234"
+                    placeholder="Ex: ABC1234"
                     value={form.veiculoPlaca}
-                    onChange={e => set('veiculoPlaca', e.target.value.toUpperCase())}
+                    onChange={e => handlePlacaChange(e.target.value)}
                     className={`text-sm font-mono ${errors.veiculoPlaca ? 'border-destructive' : ''}`}
                     maxLength={8}
                   />
@@ -378,10 +408,25 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
               <div className="space-y-3">
                 <div>
                   <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
+                    <MapPin className="h-3 w-3 text-success" />CEP de origem
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      placeholder="Ex: 01310-100"
+                      value={form.origemCep}
+                      onChange={e => handleCepChange('origemCep', e.target.value)}
+                      className="text-sm font-mono"
+                      maxLength={9}
+                    />
+                    {cepLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
                     <MapPin className="h-3 w-3 text-success" />Endereço de origem
                   </Label>
                   <Input
-                    placeholder="Ex: Av. Paulista, 1000 — São Paulo"
+                    placeholder="Preenchido automaticamente pelo CEP"
                     value={form.origemEndereco}
                     onChange={e => set('origemEndereco', e.target.value)}
                     className={`text-sm ${errors.origemEndereco ? 'border-destructive' : ''}`}
@@ -396,10 +441,25 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
 
                 <div>
                   <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
+                    <MapPin className="h-3 w-3 text-destructive" />CEP de destino
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      placeholder="Ex: 01413-000"
+                      value={form.destinoCep}
+                      onChange={e => handleCepChange('destinoCep', e.target.value)}
+                      className="text-sm font-mono"
+                      maxLength={9}
+                    />
+                    {cepLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
                     <MapPin className="h-3 w-3 text-destructive" />Endereço de destino
                   </Label>
                   <Input
-                    placeholder="Ex: Rua Augusta, 500 — São Paulo"
+                    placeholder="Preenchido automaticamente pelo CEP"
                     value={form.destinoEndereco}
                     onChange={e => set('destinoEndereco', e.target.value)}
                     className={`text-sm ${errors.destinoEndereco ? 'border-destructive' : ''}`}

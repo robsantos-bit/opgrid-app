@@ -16,7 +16,8 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import { getPrestadores, addPrestador, updatePrestador, deletePrestador, getAtendimentos, getTabelaPrecoPrestador, getTarifas } from '@/data/store';
 import { Prestador, StatusType, HomologacaoStatus } from '@/types';
-import { Plus, Pencil, Trash2, Search, Eye, LayoutGrid, List, ChevronLeft, MapPin, Phone, Shield, Star, Award, AlertTriangle, Tag, ClipboardList, Users } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, Eye, LayoutGrid, List, ChevronLeft, MapPin, Phone, Shield, Star, Award, AlertTriangle, Tag, ClipboardList, Users, Loader2 } from 'lucide-react';
+import { useCepLookup } from '@/hooks/useCepLookup';
 
 const UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO'];
 const TIPOS_SERVICO = ['Guincho', 'Reboque', 'Resgate', 'Patins', 'Munck', 'Guindaste', 'Carga Especial'];
@@ -49,7 +50,22 @@ export default function Prestadores() {
   const [page, setPage] = useState(0);
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [detailPrestador, setDetailPrestador] = useState<Prestador | null>(null);
+  const { lookupCep, loading: cepLoading } = useCepLookup();
   const perPage = 10;
+
+  const handlePrestadorCep = async (value: string) => {
+    updateField('cep', value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const result = await lookupCep(value);
+      if (result) {
+        updateField('endereco', [result.logradouro, result.bairro].filter(Boolean).join(', '));
+        updateField('cidade', result.localidade);
+        updateField('uf', result.uf);
+        toast.success('Endereço preenchido automaticamente!');
+      }
+    }
+  };
 
   const filtered = useMemo(() => {
     return data.filter(p => {
@@ -340,7 +356,7 @@ export default function Prestadores() {
             <Separator />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div className="sm:col-span-2 space-y-1.5"><Label className="text-xs font-medium">Endereço</Label><Input value={editing?.endereco || ''} onChange={e => updateField('endereco', e.target.value)} /></div>
-              <div className="space-y-1.5"><Label className="text-xs font-medium">CEP</Label><Input value={editing?.cep || ''} onChange={e => updateField('cep', e.target.value)} /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">CEP</Label><div className="relative"><Input value={editing?.cep || ''} onChange={e => handlePrestadorCep(e.target.value)} maxLength={9} />{cepLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}</div></div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5"><Label className="text-xs font-medium">Cidade</Label><Input value={editing?.cidade || ''} onChange={e => updateField('cidade', e.target.value)} /></div>
