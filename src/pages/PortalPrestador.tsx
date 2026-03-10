@@ -79,11 +79,19 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
 
   return (
     <MobileShell>
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground px-5 py-6">
+      {/* Header with siren */}
+      <div className="bg-primary text-primary-foreground px-5 py-6 relative overflow-hidden">
+        {/* Siren pulse overlay */}
+        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+          <div className="relative">
+            <div className="w-3 h-3 bg-destructive rounded-full animate-siren-pulse" />
+            <div className="absolute inset-0 w-3 h-3 bg-destructive rounded-full animate-siren-glow" />
+          </div>
+          <span className="text-[9px] font-semibold uppercase tracking-wider opacity-60">Sirene ativa</span>
+        </div>
         <div className="flex items-center gap-2 mb-1">
           <Zap className="h-4 w-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider opacity-80">Nova oferta de serviço</span>
+          <span className="text-xs font-semibold uppercase tracking-wider opacity-80">🔔 Nova oferta de serviço</span>
         </div>
         <h1 className="text-xl font-bold">Você recebeu uma OS!</h1>
         <p className="text-sm opacity-80 mt-1">Primeiro que aceitar, ganha a OS. Sem app necessário.</p>
@@ -91,10 +99,10 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
 
       {/* Timer */}
       <div className="mx-4 -mt-3">
-        <div className="bg-warning/10 border border-warning/30 rounded-xl px-4 py-3 flex items-center gap-3">
-          <Timer className="h-5 w-5 text-warning shrink-0" />
+        <div className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3 flex items-center gap-3 animate-siren-glow">
+          <Timer className="h-5 w-5 text-destructive shrink-0" />
           <div>
-            <p className="text-sm font-bold text-warning">Oferta expira em {oferta.tempoLimiteMinutos} min</p>
+            <p className="text-sm font-bold text-destructive">⏱ Oferta expira em {oferta.tempoLimiteMinutos} min</p>
             <p className="text-xs text-muted-foreground">Ao aceitar, a OS fica reservada para você</p>
           </div>
         </div>
