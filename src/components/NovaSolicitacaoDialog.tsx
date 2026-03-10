@@ -123,14 +123,74 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
 
     addSolicitacao(solicitacao);
 
+    // === AUTO-DISPATCH: select 2 closest active providers ===
+    const prestadores = getPrestadores();
+    const origemCoord = solicitacao.origemCoord!;
+    const activePrestadores = prestadores
+      .filter(p => p.status === 'Ativo' && p.localizacao?.compartilhamentoAtivo)
+      .map(p => {
+        const loc = p.localizacao!;
+        const dist = Math.sqrt(Math.pow(loc.lat - origemCoord.lat, 2) + Math.pow(loc.lng - origemCoord.lng, 2)) * 111;
+        return { ...p, distKm: Math.round(dist * 10) / 10 };
+      })
+      .sort((a, b) => a.distKm - b.distKm)
+      .slice(0, 2);
+
+    const despachoId = `desp-${Date.now()}`;
+    const ofertas: OfertaPrestador[] = activePrestadores.map((p, i) => ({
+      id: `of-${Date.now()}-${i}`,
+      despachoId,
+      prestadorId: p.id,
+      rodada: 1,
+      status: 'Pendente' as const,
+      enviadaEm: now,
+      tempoLimiteMinutos: 5,
+      distanciaEstimadaKm: p.distKm,
+      tempoEstimadoMinutos: Math.round(p.distKm * 2.5),
+      valorServico: Math.round(valorTotal),
+      linkOferta: `/prestador/oferta/of-${Date.now()}-${i}`,
+    }));
+
+    const despacho: Despacho = {
+      id: despachoId,
+      solicitacaoId: id,
+      rodadaAtual: 1,
+      status: 'Ofertas enviadas',
+      criadoEm: now,
+      atualizadoEm: now,
+      ofertas,
+      observacoes: `Despacho automático — ${activePrestadores.length} prestadores selecionados`,
+    };
+
+    addDespacho(despacho);
+
+    // Update solicitacao status
+    solicitacao.status = 'Despachada';
+    solicitacao.despachoId = despachoId;
+    solicitacao.timeline.push(
+      { data: now, descricao: `Despacho automático para ${activePrestadores.map(p => p.nomeFantasia).join(' e ')}`, tipo: 'sistema' },
+    );
+    // Re-save with updated status
+    const { saveSolicitacoes, getSolicitacoes } = await import('@/data/store');
+    saveSolicitacoes(getSolicitacoes().map(s => s.id === id ? solicitacao : s));
+
     // Play siren to simulate real-time alert
     const sirenMuted = localStorage.getItem('opgrid-siren-muted') === 'true';
     if (!sirenMuted) {
       playCentralSiren(2);
     }
 
-    toast.success('🔔 Nova solicitação registrada!', {
-      description: `${solicitacao.protocolo} — ${form.clienteNome} via ${form.canal}`,
+    // === SEND WHATSAPP TEST MESSAGE ===
+    const testPhone = '5512992184913';
+    const baseUrl = window.location.origin;
+    const ofertaLink = `${baseUrl}/prestador/oferta/${ofertas[0]?.id || ''}`;
+    const whatsMessage = `🚨 *OPGRID — Nova OS!*\n\n📋 *${solicitacao.protocolo}*\n🚗 ${form.veiculoModelo} • ${form.veiculoPlaca}\n📍 ${form.origemEndereco}\n➡️ ${form.destinoEndereco}\n💰 R$ ${Math.round(valorTotal)}\n\n🔗 Aceitar oferta:\n${ofertaLink}\n\n⏱ Expira em 5 minutos!`;
+    const waUrl = `https://wa.me/${testPhone}?text=${encodeURIComponent(whatsMessage)}`;
+    window.open(waUrl, '_blank');
+
+    toast.success('🔔 Solicitação criada + Despacho automático!', {
+      description: `${solicitacao.protocolo} — Ofertas enviadas para ${activePrestadores.map(p => p.nomeFantasia).join(' e ')}. WhatsApp aberto para teste.`,
+      duration: 6000,
     });
 
     // Reset
