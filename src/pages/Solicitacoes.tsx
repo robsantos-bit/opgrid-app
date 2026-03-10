@@ -11,7 +11,7 @@ import { Solicitacao, StatusSolicitacao } from '@/types';
 import {
   MessageSquare, Clock, CheckCircle2, AlertTriangle, Search, X, Phone, MapPin,
   Car, FileText, ArrowRight, DollarSign, Send, Ban, Timer, Smartphone, Link2,
-  ChevronRight, MessageCircle, Zap, Eye
+  ChevronRight, MessageCircle, Zap, Eye, Bell
 } from 'lucide-react';
 
 const statusConfig: Record<StatusSolicitacao, { label: string; variant: 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'; dotColor: string }> = {
