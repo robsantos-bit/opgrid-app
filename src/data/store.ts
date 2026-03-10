@@ -77,5 +77,10 @@ export function addAuditLog(log: AuditLog) { const all = getAuditLogs(); all.uns
 export function getConfig(): ConfigEmpresa { return load(KEYS.config, mockConfig); }
 export function saveConfig(data: ConfigEmpresa) { save(KEYS.config, data); }
 
+// Users
+export function getUsers(): User[] { return load(KEYS.users, mockUsers); }
+export function saveUsers(data: User[]) { save(KEYS.users, data); }
+export function updateUserInStore(u: User) { saveUsers(getUsers().map(x => x.id === u.id ? u : x)); }
+
 // Reset
 export function resetAllData() { Object.values(KEYS).forEach(k => localStorage.removeItem(k)); }
