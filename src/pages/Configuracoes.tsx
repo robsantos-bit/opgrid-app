@@ -17,10 +17,26 @@ const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'O
 export default function Configuracoes() {
   const { user, isAdmin } = useAuth();
   const [config, setConfig] = useState<ConfigEmpresa>(getConfig);
+  const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
 
   const updateField = (field: keyof ConfigEmpresa, value: any) => setConfig(prev => ({ ...prev, [field]: value }));
   const handleSave = () => { saveConfig(config); toast.success('Configurações salvas!'); };
   const handleReset = () => { resetAllData(); toast.success('Dados resetados. Recarregando...'); setTimeout(() => window.location.reload(), 1000); };
+
+  const handleCnpjChange = async (value: string) => {
+    updateField('cnpj', value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 14) {
+      const result = await lookupCnpj(value);
+      if (result) {
+        if (result.razao_social) updateField('nomeEmpresa', result.razao_social);
+        if (result.telefone) updateField('telefone', result.telefone);
+        if (result.email) updateField('email', result.email);
+        if (result.logradouro) updateField('endereco', [result.logradouro, result.numero, result.bairro, result.municipio, result.uf].filter(Boolean).join(', '));
+        toast.success('Dados do CNPJ preenchidos automaticamente!');
+      }
+    }
+  };
 
   return (
     <div className="space-y-5 animate-fade-in">
