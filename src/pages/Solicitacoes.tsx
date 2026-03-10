@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { getSolicitacoes, getPrestadores } from '@/data/store';
 import { Solicitacao, StatusSolicitacao } from '@/types';
 import {
@@ -14,6 +15,8 @@ import {
   ChevronRight, MessageCircle, Zap, Eye, Bell, Plus
 } from 'lucide-react';
 import NovaSolicitacaoDialog from '@/components/NovaSolicitacaoDialog';
+import { getNotifications, markAllRead, getUnreadCount, AppNotification } from '@/lib/notifications';
+import { toast } from 'sonner';
 
 const statusConfig: Record<StatusSolicitacao, { label: string; variant: 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'; dotColor: string }> = {
   'Recebida': { label: 'Recebida', variant: 'info', dotColor: 'bg-info' },
@@ -58,7 +61,41 @@ export default function Solicitacoes() {
   const [filterCanal, setFilterCanal] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [novaOpen, setNovaOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => getNotifications());
   const handleCreated = useCallback(() => setRefreshKey(k => k + 1), []);
+
+  // Listen for push notifications from prestador portal
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const notif = (e as CustomEvent<AppNotification>).detail;
+      setNotifications(getNotifications());
+      setUnreadCount(getUnreadCount());
+      setRefreshKey(k => k + 1); // refresh list
+      if (notif.type === 'oferta_aceita') {
+        toast.success(notif.title, { description: notif.message, duration: 8000 });
+      } else if (notif.type === 'oferta_recusada') {
+        toast.error(notif.title, { description: notif.message, duration: 8000 });
+      }
+    };
+    window.addEventListener('opgrid-notification', handler);
+    // Also poll every 3s for cross-tab changes
+    const poll = setInterval(() => {
+      const count = getUnreadCount();
+      if (count !== unreadCount) {
+        setUnreadCount(count);
+        setNotifications(getNotifications());
+        setRefreshKey(k => k + 1);
+      }
+    }, 3000);
+    return () => { window.removeEventListener('opgrid-notification', handler); clearInterval(poll); };
+  }, [unreadCount]);
+
+  const handleMarkRead = () => {
+    markAllRead();
+    setUnreadCount(0);
+    setNotifications(getNotifications());
+  };
 
   const filtered = useMemo(() => {
     return solicitacoes
@@ -104,6 +141,51 @@ export default function Solicitacoes() {
           <Button onClick={() => setNovaOpen(true)} size="sm" className="gap-1.5 text-xs">
             <Plus className="h-3.5 w-3.5" />Nova solicitação
           </Button>
+          {/* Notification bell */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="relative h-8 w-8 p-0">
+                <Bell className="h-3.5 w-3.5" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-destructive text-destructive-foreground rounded-full text-[9px] font-bold flex items-center justify-center animate-siren-pulse">
+                    {unreadCount}
+                  </span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[340px] p-0" align="end">
+              <div className="flex items-center justify-between px-3 py-2.5 border-b">
+                <p className="text-xs font-bold">Notificações</p>
+                {unreadCount > 0 && (
+                  <button onClick={handleMarkRead} className="text-[10px] text-primary font-medium hover:underline">
+                    Marcar como lidas
+                  </button>
+                )}
+              </div>
+              <div className="max-h-[300px] overflow-y-auto">
+                {notifications.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-muted-foreground">Nenhuma notificação</div>
+                ) : (
+                  notifications.slice(0, 20).map(n => (
+                    <div key={n.id} className={`px-3 py-2.5 border-b last:border-b-0 text-xs ${!n.read ? 'bg-primary/5' : ''}`}>
+                      <div className="flex items-start gap-2">
+                        <div className={`w-2 h-2 rounded-full mt-1 shrink-0 ${
+                          n.type === 'oferta_aceita' ? 'bg-success' : n.type === 'oferta_recusada' ? 'bg-destructive' : 'bg-info'
+                        }`} />
+                        <div className="min-w-0">
+                          <p className="font-semibold text-[11px]">{n.title}</p>
+                          <p className="text-muted-foreground text-[10px] mt-0.5">{n.message}</p>
+                          <p className="text-muted-foreground/50 text-[9px] mt-1">
+                            {new Date(n.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </PopoverContent>
+          </Popover>
           {/* Siren indicator */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-destructive border border-destructive/20 bg-destructive/5 rounded-md px-2.5 py-1 font-medium">
             <div className="relative">
