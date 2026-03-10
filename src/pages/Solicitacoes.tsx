@@ -236,6 +236,9 @@ export default function Solicitacoes() {
           {selectedSol && <SolicitacaoDetail sol={selectedSol} />}
         </SheetContent>
       </Sheet>
+
+      {/* New solicitation dialog */}
+      <NovaSolicitacaoDialog open={novaOpen} onOpenChange={setNovaOpen} onCreated={handleCreated} />
     </div>
   );
 }
