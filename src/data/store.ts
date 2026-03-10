@@ -1,5 +1,5 @@
-import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, Contrato, AuditLog, Solicitacao, Despacho } from '@/types';
-import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig, mockContratos, mockAuditLogs, mockSolicitacoes, mockDespachos } from './mockData';
+import { Prestador, Tarifa, TabelaPrecoItem, Atendimento, ConfigEmpresa, Contrato, AuditLog, Solicitacao, Despacho, User } from '@/types';
+import { mockPrestadores, mockTarifas, mockTabelaPrecos, mockAtendimentos, mockConfig, mockContratos, mockAuditLogs, mockSolicitacoes, mockDespachos, mockUsers } from './mockData';
 
 const KEYS = {
   prestadores: 'rc_prestadores',
@@ -11,6 +11,7 @@ const KEYS = {
   auditLogs: 'rc_audit_logs',
   solicitacoes: 'rc_solicitacoes',
   despachos: 'rc_despachos',
+  users: 'rc_users',
 };
 
 function load<T>(key: string, fallback: T): T {
@@ -75,6 +76,11 @@ export function addAuditLog(log: AuditLog) { const all = getAuditLogs(); all.uns
 // Config
 export function getConfig(): ConfigEmpresa { return load(KEYS.config, mockConfig); }
 export function saveConfig(data: ConfigEmpresa) { save(KEYS.config, data); }
+
+// Users
+export function getUsers(): User[] { return load(KEYS.users, mockUsers); }
+export function saveUsers(data: User[]) { save(KEYS.users, data); }
+export function updateUserInStore(u: User) { saveUsers(getUsers().map(x => x.id === u.id ? u : x)); }
 
 // Reset
 export function resetAllData() { Object.values(KEYS).forEach(k => localStorage.removeItem(k)); }

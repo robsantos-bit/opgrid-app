@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, UserRole } from '@/types';
-import { mockUsers } from '@/data/mockData';
+import { getUsers, updateUserInStore } from '@/data/store';
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => boolean;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
+  updateAnyUser: (userId: string, data: Partial<User>) => void;
+  getAllUsers: () => User[];
   isAdmin: boolean;
   hasAccess: (modules: string[]) => boolean;
 }
@@ -32,14 +34,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login = (email: string, _password: string): boolean => {
-    const found = mockUsers.find(u => u.email === email);
+    const allUsers = getUsers();
+    const found = allUsers.find(u => u.email === email);
     if (found) { setUser(found); return true; }
     return false;
   };
 
   const updateUser = (data: Partial<User>) => {
-    if (user) setUser({ ...user, ...data });
+    if (user) {
+      const updated = { ...user, ...data };
+      setUser(updated);
+      updateUserInStore(updated);
+    }
   };
+
+  const updateAnyUser = (userId: string, data: Partial<User>) => {
+    const allUsers = getUsers();
+    const target = allUsers.find(u => u.id === userId);
+    if (target) {
+      const updated = { ...target, ...data };
+      updateUserInStore(updated);
+      // If editing self, update state too
+      if (user && user.id === userId) setUser(updated);
+    }
+  };
+
+  const getAllUsers = () => getUsers();
+
   const logout = () => setUser(null);
   const hasAccess = (modules: string[]) => {
     if (!user) return false;
@@ -48,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser, isAdmin: user?.role === 'admin', hasAccess }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, updateAnyUser, getAllUsers, isAdmin: user?.role === 'admin', hasAccess }}>
       {children}
     </AuthContext.Provider>
   );
