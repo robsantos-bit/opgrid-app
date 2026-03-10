@@ -368,9 +368,9 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
                     <FileText className="h-3 w-3 text-muted-foreground" />Placa
                   </Label>
                   <Input
-                    placeholder="Ex: ABC-1234"
+                    placeholder="Ex: ABC1234"
                     value={form.veiculoPlaca}
-                    onChange={e => set('veiculoPlaca', e.target.value.toUpperCase())}
+                    onChange={e => handlePlacaChange(e.target.value)}
                     className={`text-sm font-mono ${errors.veiculoPlaca ? 'border-destructive' : ''}`}
                     maxLength={8}
                   />
