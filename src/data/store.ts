@@ -11,6 +11,7 @@ const KEYS = {
   auditLogs: 'rc_audit_logs',
   solicitacoes: 'rc_solicitacoes',
   despachos: 'rc_despachos',
+  users: 'rc_users',
 };
 
 function load<T>(key: string, fallback: T): T {
