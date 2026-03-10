@@ -21,6 +21,7 @@ import Configuracoes from "@/pages/Configuracoes";
 import MapaOperacional from "@/pages/MapaOperacional";
 import PortalPrestador from "@/pages/PortalPrestador";
 import AcompanhamentoCliente from "@/pages/AcompanhamentoCliente";
+import WhatsAppSimulador from "@/pages/WhatsAppSimulador";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ function AppRoutes() {
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
       <Route path="/solicitacoes" element={<ProtectedRoute><Solicitacoes /></ProtectedRoute>} />
+      <Route path="/whatsapp" element={<ProtectedRoute><WhatsAppSimulador /></ProtectedRoute>} />
       <Route path="/despacho" element={<ProtectedRoute><Despacho /></ProtectedRoute>} />
       <Route path="/prestadores" element={<ProtectedRoute><Prestadores /></ProtectedRoute>} />
       <Route path="/tarifas" element={<ProtectedRoute><Tarifas /></ProtectedRoute>} />

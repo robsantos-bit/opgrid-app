@@ -1,7 +1,7 @@
 // Simulated push notification system using localStorage events
 export interface AppNotification {
   id: string;
-  type: 'oferta_aceita' | 'oferta_recusada' | 'status_update';
+  type: 'oferta_aceita' | 'oferta_recusada' | 'status_update' | 'solicitacao_nova';
   title: string;
   message: string;
   solicitacaoId: string;
