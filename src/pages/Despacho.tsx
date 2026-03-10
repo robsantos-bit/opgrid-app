@@ -74,21 +74,24 @@ export default function CentralDespacho() {
     { label: 'Disponíveis', value: prestadoresOnline.length, icon: Radio, bg: 'bg-info/10', color: 'text-info', sub: 'online e aptos' },
   ];
 
-  // Initialize map
+  // Initialize map only when mapa tab is active
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) return;
+    if (activeTab !== 'mapa') return;
+    if (!mapContainerRef.current) return;
+
+    // Destroy previous instance if exists
+    if (mapRef.current) {
+      mapRef.current.remove();
+      mapRef.current = null;
+    }
+
     const map = L.map(mapContainerRef.current, { center: [-14.235, -51.9253], zoom: 4, zoomControl: true });
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; OpenStreetMap',
     }).addTo(map);
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
-  }, []);
 
-  // Update map markers when tab is 'mapa'
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
+    // Add markers
     markersRef.current.forEach(m => m.remove());
     markersRef.current = [];
 
@@ -118,7 +121,9 @@ export default function CentralDespacho() {
       markersRef.current.push(marker);
     });
 
-    setTimeout(() => map.invalidateSize(), 100);
+    setTimeout(() => map.invalidateSize(), 200);
+
+    return () => { map.remove(); mapRef.current = null; };
   }, [activeTab, prestadores, solicitacoes]);
 
   return (
