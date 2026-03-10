@@ -19,6 +19,8 @@ import Contratos from "@/pages/Contratos";
 import Auditoria from "@/pages/Auditoria";
 import Configuracoes from "@/pages/Configuracoes";
 import MapaOperacional from "@/pages/MapaOperacional";
+import PortalPrestador from "@/pages/PortalPrestador";
+import AcompanhamentoCliente from "@/pages/AcompanhamentoCliente";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +50,9 @@ function AppRoutes() {
       <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
       <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
       <Route path="/mapa" element={<ProtectedRoute><MapaOperacional /></ProtectedRoute>} />
+      {/* Public portals — no auth required */}
+      <Route path="/prestador/:tipo/:id" element={<PortalPrestador />} />
+      <Route path="/acompanhar/:id" element={<AcompanhamentoCliente />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
