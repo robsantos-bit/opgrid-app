@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => boolean;
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
   isAdmin: boolean;
   hasAccess: (modules: string[]) => boolean;
 }
@@ -36,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  const updateUser = (data: Partial<User>) => {
+    if (user) setUser({ ...user, ...data });
+  };
   const logout = () => setUser(null);
   const hasAccess = (modules: string[]) => {
     if (!user) return false;
@@ -44,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAdmin: user?.role === 'admin', hasAccess }}>
+    <AuthContext.Provider value={{ user, login, logout, updateUser, isAdmin: user?.role === 'admin', hasAccess }}>
       {children}
     </AuthContext.Provider>
   );

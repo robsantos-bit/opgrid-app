@@ -15,13 +15,21 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
 
 export default function Configuracoes() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, updateUser } = useAuth();
   const [config, setConfig] = useState<ConfigEmpresa>(getConfig);
   const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
+  const [profileName, setProfileName] = useState(user?.nome || '');
+  const [profileEmail, setProfileEmail] = useState(user?.email || '');
 
   const updateField = (field: keyof ConfigEmpresa, value: any) => setConfig(prev => ({ ...prev, [field]: value }));
   const handleSave = () => { saveConfig(config); toast.success('Configurações salvas!'); };
   const handleReset = () => { resetAllData(); toast.success('Dados resetados. Recarregando...'); setTimeout(() => window.location.reload(), 1000); };
+  const handleProfileSave = () => {
+    if (user) {
+      updateUser({ nome: profileName, email: profileEmail });
+      toast.success('Perfil atualizado!');
+    }
+  };
 
   const handleCnpjChange = async (value: string) => {
     updateField('cnpj', value);
@@ -70,9 +78,16 @@ export default function Configuracoes() {
 
         <TabsContent value="perfil" className="mt-4">
           <Card className="max-w-xl"><CardHeader className="pb-2"><CardTitle className="text-sm">Meu Perfil</CardTitle></CardHeader><CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-3"><div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={user?.nome || ''} readOnly className="bg-muted" /></div><div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={user?.email || ''} readOnly className="bg-muted" /></div></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1"><Label className="text-xs">Nome</Label><Input value={profileName} onChange={e => setProfileName(e.target.value)} readOnly={!isAdmin} className={!isAdmin ? 'bg-muted' : ''} /></div>
+              <div className="space-y-1"><Label className="text-xs">E-mail</Label><Input value={profileEmail} onChange={e => setProfileEmail(e.target.value)} readOnly={!isAdmin} className={!isAdmin ? 'bg-muted' : ''} /></div>
+            </div>
             <div className="space-y-1"><Label className="text-xs">Perfil</Label><Input value={roleLabels[user?.role || ''] || ''} readOnly className="bg-muted" /></div>
-            <p className="text-[11px] text-muted-foreground">Para alterar dados de perfil, contate o administrador.</p>
+            {isAdmin ? (
+              <Button onClick={handleProfileSave} className="mt-2"><Save className="h-4 w-4 mr-1.5" />Salvar</Button>
+            ) : (
+              <p className="text-[11px] text-muted-foreground">Para alterar dados de perfil, contate o administrador.</p>
+            )}
           </CardContent></Card>
         </TabsContent>
 
