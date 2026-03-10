@@ -488,46 +488,85 @@ function SolicitacaoDetail({ sol }: { sol: Solicitacao }) {
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
-            onClick={() => {
-              const phone = sol.clienteWhatsApp?.replace(/\D/g, '') || sol.clienteTelefone?.replace(/\D/g, '') || '';
-              if (phone) {
-                window.open(`https://wa.me/${phone}`, '_blank');
-              } else {
-                toast.error('Número de WhatsApp não disponível');
-              }
-            }}
-          >
-            <MessageCircle className="h-3.5 w-3.5" />WhatsApp
-          </Button>
-          <Button
-            variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
-            onClick={() => {
-              const phone = sol.clienteTelefone?.replace(/\D/g, '') || '';
-              if (phone) {
-                window.open(`tel:${phone}`);
-              } else {
-                toast.error('Telefone não disponível');
-              }
-            }}
-          >
-            <Phone className="h-3.5 w-3.5" />Ligar
-          </Button>
-          <Button
-            variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
-            onClick={() => {
-              if (sol.atendimentoId) {
-                toast.info(`OS ${sol.atendimentoId} — redirecionando para Atendimentos`);
-                window.location.href = '/atendimentos';
-              } else {
-                toast.warning('Nenhuma OS vinculada a esta solicitação');
-              }
-            }}
-          >
-            <Eye className="h-3.5 w-3.5" />Ver OS
-          </Button>
+        <div className="space-y-2 pt-2">
+          {/* Click to Chat WhatsApp buttons */}
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Clique para conversar</p>
+          <div className="space-y-1.5">
+            <Button
+              variant="outline" size="sm" className="w-full justify-start text-xs gap-2 h-9 border-success/30 hover:bg-success/5"
+              onClick={() => window.open(waClientePropostaLink(sol), '_blank')}
+            >
+              <MessageCircle className="h-3.5 w-3.5 text-success" />
+              <span className="flex-1 text-left">Enviar proposta via WhatsApp</span>
+              <Badge variant="outline" className="text-[8px] ml-auto">wa.me</Badge>
+            </Button>
+            {sol.atendimentoId && (
+              <Button
+                variant="outline" size="sm" className="w-full justify-start text-xs gap-2 h-9 border-info/30 hover:bg-info/5"
+                onClick={() => window.open(waClienteAcompanhamentoLink(sol, window.location.origin), '_blank')}
+              >
+                <Link2 className="h-3.5 w-3.5 text-info" />
+                <span className="flex-1 text-left">Enviar link de acompanhamento</span>
+                <Badge variant="outline" className="text-[8px] ml-auto">wa.me</Badge>
+              </Button>
+            )}
+            {(sol.status === 'Finalizada') && (
+              <Button
+                variant="outline" size="sm" className="w-full justify-start text-xs gap-2 h-9 border-primary/30 hover:bg-primary/5"
+                onClick={() => window.open(waClienteConclusaoLink(sol), '_blank')}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                <span className="flex-1 text-left">Enviar conclusão ao cliente</span>
+                <Badge variant="outline" className="text-[8px] ml-auto">wa.me</Badge>
+              </Button>
+            )}
+          </div>
+          <p className="text-[9px] text-muted-foreground italic">O WhatsApp abrirá com a mensagem pré-preenchida. Você envia manualmente.</p>
+
+          <Separator />
+
+          {/* Existing quick actions */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
+              onClick={() => {
+                const phone = sol.clienteWhatsApp?.replace(/\D/g, '') || sol.clienteTelefone?.replace(/\D/g, '') || '';
+                if (phone) {
+                  window.open(`https://wa.me/${phone}`, '_blank');
+                } else {
+                  toast.error('Número de WhatsApp não disponível');
+                }
+              }}
+            >
+              <MessageCircle className="h-3.5 w-3.5" />WhatsApp
+            </Button>
+            <Button
+              variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
+              onClick={() => {
+                const phone = sol.clienteTelefone?.replace(/\D/g, '') || '';
+                if (phone) {
+                  window.open(`tel:${phone}`);
+                } else {
+                  toast.error('Telefone não disponível');
+                }
+              }}
+            >
+              <Phone className="h-3.5 w-3.5" />Ligar
+            </Button>
+            <Button
+              variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
+              onClick={() => {
+                if (sol.atendimentoId) {
+                  toast.info(`OS ${sol.atendimentoId} — redirecionando para Atendimentos`);
+                  window.location.href = '/atendimentos';
+                } else {
+                  toast.warning('Nenhuma OS vinculada a esta solicitação');
+                }
+              }}
+            >
+              <Eye className="h-3.5 w-3.5" />Ver OS
+            </Button>
+          </div>
         </div>
       </div>
     </>
