@@ -19,6 +19,18 @@ export type StatusTabela = 'Rascunho' | 'Vigente' | 'Expirada' | 'Em revisão';
 export type StatusContrato = 'Ativo' | 'Suspenso' | 'Encerrado' | 'Em negociação';
 export type HomologacaoStatus = 'Homologado' | 'Pendente' | 'Crítico';
 export type PrioridadeAtendimento = 'Normal' | 'Urgente' | 'Crítico';
+export type StatusRastreamento = 'Online' | 'A caminho' | 'Em atendimento' | 'Offline' | 'Indisponível' | 'Sem sinal';
+
+export interface PrestadorLocalizacao {
+  lat: number;
+  lng: number;
+  ultimaAtualizacao: string;
+  precisao: 'Alta' | 'Média' | 'Baixa';
+  compartilhamentoAtivo: boolean;
+  statusRastreamento: StatusRastreamento;
+  velocidade?: number;
+  direcao?: string;
+}
 
 export interface Prestador {
   id: string;
@@ -49,6 +61,7 @@ export interface Prestador {
   homologacao: HomologacaoStatus;
   scoreOperacional: number;
   observacoesInternas: string;
+  localizacao?: PrestadorLocalizacao;
 }
 
 export interface Tarifa {
@@ -115,6 +128,8 @@ export interface Atendimento {
   tarifas: AtendimentoTarifa[];
   valorTotal: number;
   timeline: { data: string; descricao: string }[];
+  origemCoord?: { lat: number; lng: number };
+  destinoCoord?: { lat: number; lng: number };
 }
 
 export interface Contrato {
