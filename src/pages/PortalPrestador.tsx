@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { playProviderSiren } from '@/lib/sirenSound';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,8 +26,34 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
   const [status, setStatus] = useState(oferta.status);
   const [showRecusa, setShowRecusa] = useState(false);
   const [motivoRecusa, setMotivoRecusa] = useState('');
+  const [sirenPlayed, setSirenPlayed] = useState(false);
 
   const expired = status === 'Pendente' && new Date(oferta.enviadaEm).getTime() + oferta.tempoLimiteMinutos * 60000 < Date.now();
+
+  // Play provider siren on first render when offer is pending
+  useEffect(() => {
+    if (status === 'Pendente' && !expired && !sirenPlayed) {
+      // Small delay to ensure audio context can be created after user gesture (page load)
+      const playOnInteraction = () => {
+        playProviderSiren(3);
+        setSirenPlayed(true);
+        document.removeEventListener('click', playOnInteraction);
+        document.removeEventListener('touchstart', playOnInteraction);
+      };
+      // Try to play immediately, fallback to user interaction
+      try {
+        playProviderSiren(3);
+        setSirenPlayed(true);
+      } catch {
+        document.addEventListener('click', playOnInteraction, { once: true });
+        document.addEventListener('touchstart', playOnInteraction, { once: true });
+      }
+      return () => {
+        document.removeEventListener('click', playOnInteraction);
+        document.removeEventListener('touchstart', playOnInteraction);
+      };
+    }
+  }, [status, expired, sirenPlayed]);
 
   const handleAceitar = () => setStatus('Aceita');
   const handleRecusar = () => { setShowRecusa(true); };
