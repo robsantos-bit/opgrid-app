@@ -37,6 +37,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return false;
   };
 
+  const updateUser = (data: Partial<User>) => {
+    if (user) setUser({ ...user, ...data });
+  };
   const logout = () => setUser(null);
   const hasAccess = (modules: string[]) => {
     if (!user) return false;
