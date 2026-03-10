@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => boolean;
   logout: () => void;
+  updateUser: (data: Partial<User>) => void;
   isAdmin: boolean;
   hasAccess: (modules: string[]) => boolean;
 }
