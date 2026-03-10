@@ -7,15 +7,17 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
-import { getDespachos, getAtendimentos, getSolicitacoes, getPrestadores, updateDespacho, updateSolicitacao } from '@/data/store';
+import { Input } from '@/components/ui/input';
+import { getDespachos, getAtendimentos, getSolicitacoes, getPrestadores, updateDespacho, updateSolicitacao, updateAtendimento } from '@/data/store';
 import { addNotification } from '@/lib/notifications';
 import { OfertaPrestador, Atendimento, Solicitacao, Prestador, StatusOsPrestador, ChecklistItem, CHECKLIST_PADRAO } from '@/types';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { toast } from 'sonner';
 import {
   Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, XCircle, AlertTriangle,
   Navigation, Camera, FileText, Timer, Shield, Zap, ArrowRight, User, Car, DollarSign,
-  Send, ChevronRight, Radio, Eye, LocateFixed, Upload
+  Send, ChevronRight, Radio, Eye, LocateFixed, Upload, Lock, KeyRound
 } from 'lucide-react';
 
 function formatDate(d: string) {
@@ -31,17 +33,14 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
 
   const expired = status === 'Pendente' && new Date(oferta.enviadaEm).getTime() + oferta.tempoLimiteMinutos * 60000 < Date.now();
 
-  // Play provider siren on first render when offer is pending
   useEffect(() => {
     if (status === 'Pendente' && !expired && !sirenPlayed) {
-      // Small delay to ensure audio context can be created after user gesture (page load)
       const playOnInteraction = () => {
         playProviderSiren(3);
         setSirenPlayed(true);
         document.removeEventListener('click', playOnInteraction);
         document.removeEventListener('touchstart', playOnInteraction);
       };
-      // Try to play immediately, fallback to user interaction
       try {
         playProviderSiren(3);
         setSirenPlayed(true);
@@ -58,16 +57,30 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
 
   const handleAceitar = () => {
     setStatus('Aceita');
-    // Persist to store
     const despachos = getDespachos();
     const desp = despachos.find(d => d.id === oferta.despachoId);
     if (desp) {
       const now = new Date().toISOString();
       desp.ofertas = desp.ofertas.map(o => o.id === oferta.id ? { ...o, status: 'Aceita' as const, respondidaEm: now } : o);
+      // Close other pending offers
+      desp.ofertas = desp.ofertas.map(o => o.id !== oferta.id && o.status === 'Pendente' ? { ...o, status: 'Encerrada' as const, respondidaEm: now } : o);
       desp.status = 'Aceito';
       desp.prestadorAceitoId = oferta.prestadorId;
       desp.atualizadoEm = now;
       updateDespacho(desp);
+      // Update atendimento with prestador
+      if (desp.atendimentoId) {
+        const atendimentos = getAtendimentos();
+        const atd = atendimentos.find(a => a.id === desp.atendimentoId);
+        if (atd) {
+          atd.prestadorId = oferta.prestadorId;
+          atd.status = 'Em andamento';
+          atd.statusPrestador = 'Aceito';
+          atd.linkPrestador = `/prestador/os/${atd.id}`;
+          atd.timeline = [...atd.timeline, { data: now, descricao: `Prestador ${prestador?.nomeFantasia || ''} aceitou a OS` }];
+          updateAtendimento(atd);
+        }
+      }
       // Update solicitacao
       const sols = getSolicitacoes();
       const sol = sols.find(s => s.id === desp.solicitacaoId);
@@ -78,7 +91,6 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
         sol.timeline.push({ data: now, descricao: `Prestador ${prestador?.nomeFantasia || ''} aceitou a oferta`, tipo: 'sistema' });
         updateSolicitacao(sol);
       }
-      // Fire notification
       addNotification({
         type: 'oferta_aceita',
         title: '✅ Oferta aceita!',
@@ -94,7 +106,6 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
   const confirmRecusa = () => {
     setStatus('Recusada');
     setShowRecusa(false);
-    // Persist to store
     const despachos = getDespachos();
     const desp = despachos.find(d => d.id === oferta.despachoId);
     if (desp) {
@@ -106,7 +117,6 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
       }
       desp.atualizadoEm = now;
       updateDespacho(desp);
-      // Fire notification
       addNotification({
         type: 'oferta_recusada',
         title: '❌ Oferta recusada',
@@ -131,7 +141,10 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     );
   }
 
+  // After acceptance — link to OS page
   if (status === 'Aceita') {
+    const desp = getDespachos().find(d => d.id === oferta.despachoId);
+    const osId = desp?.atendimentoId;
     return (
       <MobileShell>
         <div className="flex flex-col items-center justify-center py-16 text-center px-6">
@@ -139,10 +152,13 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
             <CheckCircle2 className="h-8 w-8 text-success" />
           </div>
           <h2 className="text-lg font-bold text-success mb-1">Oferta aceita!</h2>
-          <p className="text-sm text-muted-foreground max-w-[280px]">A OS foi reservada para você. Acesse o link da OS para iniciar o atendimento.</p>
-          <Button className="mt-6 w-full max-w-[280px]" size="lg">
-            <Navigation className="h-4 w-4 mr-2" />Abrir OS do atendimento
-          </Button>
+          <p className="text-sm text-muted-foreground max-w-[280px]">A OS foi reservada para você. Acesse o portal operacional para iniciar o atendimento.</p>
+          {osId && (
+            <Button className="mt-6 w-full max-w-[280px]" size="lg"
+              onClick={() => window.location.href = `/prestador/os/${osId}`}>
+              <Navigation className="h-4 w-4 mr-2" />Abrir Portal da OS
+            </Button>
+          )}
         </div>
       </MobileShell>
     );
@@ -166,7 +182,6 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     <MobileShell>
       {/* Header with siren */}
       <div className="bg-primary text-primary-foreground px-5 py-6 relative overflow-hidden">
-        {/* Siren pulse overlay */}
         <div className="absolute top-3 right-3 flex items-center gap-1.5">
           <div className="relative">
             <div className="w-3 h-3 bg-destructive rounded-full animate-siren-pulse" />
@@ -263,7 +278,6 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
           </Card>
         )}
 
-        {/* Disclaimer */}
         <p className="text-[10px] text-center text-muted-foreground px-4">
           Aceite sujeito à sua disponibilidade e localização. Ao aceitar, você confirma estar apto para este serviço.
         </p>
@@ -280,16 +294,93 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
   );
   const [observacoes, setObservacoes] = useState('');
   const [locationActive, setLocationActive] = useState(false);
+  const [plateInput, setPlateInput] = useState('');
+  const [plateConfirmed, setPlateConfirmed] = useState(false);
+  const [plateError, setPlateError] = useState('');
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
   const statusFlow: StatusOsPrestador[] = ['Aceito', 'A caminho', 'Cheguei ao local', 'Em remoção', 'Concluído'];
   const currentIndex = statusFlow.indexOf(currentStatus);
 
-  const nextStatus = () => {
-    if (currentIndex < statusFlow.length - 1) {
-      setCurrentStatus(statusFlow[currentIndex + 1]);
+  // Persist status change to store
+  const persistStatus = useCallback((newStatus: StatusOsPrestador) => {
+    const now = new Date().toISOString();
+    const atd = getAtendimentos().find(a => a.id === atendimento.id);
+    if (!atd) return;
+
+    atd.statusPrestador = newStatus;
+    atd.checklist = checklist;
+
+    const statusLabels: Record<StatusOsPrestador, string> = {
+      'Aceito': 'Prestador aceitou a OS',
+      'A caminho': 'Prestador a caminho do local',
+      'Cheguei ao local': 'Prestador chegou ao local',
+      'Em remoção': 'Serviço de remoção iniciado',
+      'Concluído': 'Atendimento concluído pelo prestador',
+      'Cancelado': 'Atendimento cancelado pelo prestador',
+    };
+
+    atd.timeline = [...atd.timeline, { data: now, descricao: statusLabels[newStatus] || newStatus }];
+
+    if (newStatus === 'Cheguei ao local') atd.horaChegada = now;
+    if (newStatus === 'Concluído') {
+      atd.horaConclusao = now;
+      atd.status = 'Concluído';
     }
+
+    updateAtendimento(atd);
+
+    // Update solicitacao status
+    if (atd.solicitacaoId) {
+      const sol = getSolicitacoes().find(s => s.id === atd.solicitacaoId);
+      if (sol) {
+        if (newStatus === 'Concluído') sol.status = 'Finalizada';
+        sol.timeline.push({ data: now, descricao: statusLabels[newStatus], tipo: 'sistema' });
+        updateSolicitacao(sol);
+      }
+    }
+
+    // Fire notification to central
+    addNotification({
+      type: newStatus === 'Concluído' ? 'status_concluido' as any : 'status_atualizado' as any,
+      title: newStatus === 'Concluído' ? '✅ OS Concluída' : `📍 ${statusLabels[newStatus]}`,
+      message: `${prestador?.nomeFantasia || 'Prestador'} — ${atendimento.protocolo}`,
+      solicitacaoId: atd.solicitacaoId,
+      prestadorNome: prestador?.nomeFantasia,
+    });
+  }, [atendimento, checklist, prestador]);
+
+  const nextStatus = () => {
+    // At "Cheguei ao local" — require plate confirmation first
+    if (currentStatus === 'A caminho' && !plateConfirmed) {
+      // Will show plate confirmation UI, handled below
+    }
+    if (currentIndex < statusFlow.length - 1) {
+      const newSt = statusFlow[currentIndex + 1];
+      setCurrentStatus(newSt);
+      persistStatus(newSt);
+    }
+  };
+
+  const handlePlateConfirm = () => {
+    const expected = atendimento.placa.substring(0, 3).toUpperCase();
+    const entered = plateInput.trim().toUpperCase();
+    if (entered.length < 3) {
+      setPlateError('Digite as 3 primeiras letras da placa.');
+      return;
+    }
+    if (entered !== expected) {
+      setPlateError(`Placa não confere. Esperado: ${expected[0]}** — tente novamente.`);
+      return;
+    }
+    setPlateConfirmed(true);
+    setPlateError('');
+    // Advance to "Cheguei ao local"
+    const newSt: StatusOsPrestador = 'Cheguei ao local';
+    setCurrentStatus(newSt);
+    persistStatus(newSt);
+    toast.success('Placa confirmada! Chegada registrada.');
   };
 
   const statusConfig: Record<StatusOsPrestador, { color: string; bg: string; icon: typeof Truck }> = {
@@ -306,7 +397,7 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
 
   const nextLabel: Record<string, string> = {
     'Aceito': 'Estou a caminho',
-    'A caminho': 'Cheguei ao local',
+    'A caminho': 'Confirmar chegada',
     'Cheguei ao local': 'Iniciar remoção',
     'Em remoção': 'Concluir atendimento',
   };
@@ -338,6 +429,9 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
   }, []);
 
   const toggleLocation = () => setLocationActive(!locationActive);
+
+  // Check if we need plate confirmation (transitioning from A caminho → Cheguei ao local)
+  const needsPlateConfirmation = currentStatus === 'A caminho' && !plateConfirmed;
 
   return (
     <MobileShell>
@@ -381,6 +475,43 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
       </div>
 
       <div className="p-4 space-y-4">
+        {/* Plate Confirmation Gate — appears when arriving */}
+        {needsPlateConfirmation && (
+          <Card className="border-2 border-warning/40 bg-warning/5">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                  <KeyRound className="h-5 w-5 text-warning" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold">Confirme a placa do veículo</p>
+                  <p className="text-xs text-muted-foreground">Para registrar sua chegada, digite as 3 primeiras letras/números da placa.</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  value={plateInput}
+                  onChange={e => { setPlateInput(e.target.value.toUpperCase().slice(0, 3)); setPlateError(''); }}
+                  placeholder="Ex: ABC"
+                  maxLength={3}
+                  className="flex-1 text-center text-lg font-bold uppercase tracking-[0.3em] h-12"
+                />
+                <Button onClick={handlePlateConfirm} className="h-12 px-6" disabled={plateInput.length < 3}>
+                  <Lock className="h-4 w-4 mr-1.5" />Confirmar
+                </Button>
+              </div>
+              {plateError && (
+                <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                  <AlertTriangle className="h-3 w-3" />{plateError}
+                </p>
+              )}
+              <p className="text-[10px] text-muted-foreground text-center">
+                Verificação de segurança — garante que você está no veículo correto.
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Route */}
         <Card>
           <CardContent className="p-4">
@@ -424,53 +555,72 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
           </CardContent>
         </Card>
 
-        {/* Checklist */}
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Checklist do atendimento</p>
-            {checklist.map((item, i) => (
-              <label key={item.id} className="flex items-center gap-3 py-1 cursor-pointer">
-                <Checkbox
-                  checked={item.checked}
-                  onCheckedChange={(checked) => {
-                    const updated = [...checklist];
-                    updated[i] = { ...updated[i], checked: !!checked };
-                    setChecklist(updated);
-                  }}
-                />
-                <span className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.label}</span>
-              </label>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Checklist — show after confirming arrival */}
+        {(currentStatus === 'Cheguei ao local' || currentStatus === 'Em remoção') && (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Checklist do atendimento</p>
+                <Badge variant="outline" className="text-[10px]">
+                  {checklist.filter(c => c.checked).length}/{checklist.length}
+                </Badge>
+              </div>
+              {checklist.map((item, i) => (
+                <label key={item.id} className="flex items-center gap-3 py-1 cursor-pointer">
+                  <Checkbox
+                    checked={item.checked}
+                    onCheckedChange={(checked) => {
+                      const updated = [...checklist];
+                      updated[i] = { ...updated[i], checked: !!checked };
+                      setChecklist(updated);
+                    }}
+                  />
+                  <span className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.label}</span>
+                </label>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Observations + Attachments */}
-        <Card>
-          <CardContent className="p-4 space-y-3">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Observações e Anexos</p>
-            <Textarea
-              placeholder="Adicionar observações do atendimento..."
-              value={observacoes}
-              onChange={e => setObservacoes(e.target.value)}
-              className="text-sm min-h-[80px]"
-            />
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="text-xs">
-                <Camera className="h-3 w-3 mr-1" />Adicionar fotos
-              </Button>
-              <Button variant="outline" size="sm" className="text-xs">
-                <Upload className="h-3 w-3 mr-1" />Anexar NF
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Observations + Attachments — show from "Cheguei ao local" onwards */}
+        {['Cheguei ao local', 'Em remoção', 'Concluído'].includes(currentStatus) && (
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Observações e Anexos</p>
+              <Textarea
+                placeholder="Adicionar observações do atendimento..."
+                value={observacoes}
+                onChange={e => setObservacoes(e.target.value)}
+                className="text-sm min-h-[80px]"
+              />
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="text-xs">
+                  <Camera className="h-3 w-3 mr-1" />Adicionar fotos
+                </Button>
+                <Button variant="outline" size="sm" className="text-xs">
+                  <Upload className="h-3 w-3 mr-1" />Anexar NF
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        {/* Main action */}
+        {/* Main action — different logic for A caminho (plate gate) */}
         {currentStatus !== 'Concluído' && currentStatus !== 'Cancelado' && (
-          <Button className="w-full h-14 text-base font-bold" onClick={nextStatus}>
-            <ChevronRight className="h-5 w-5 mr-2" />
-            {nextLabel[currentStatus] || 'Avançar'}
-          </Button>
+          <>
+            {needsPlateConfirmation ? (
+              // Button is disabled — user must use plate confirmation card above
+              <Button className="w-full h-14 text-base font-bold opacity-50" disabled>
+                <Lock className="h-5 w-5 mr-2" />
+                Confirme a placa para registrar chegada
+              </Button>
+            ) : (
+              <Button className="w-full h-14 text-base font-bold" onClick={nextStatus}>
+                <ChevronRight className="h-5 w-5 mr-2" />
+                {nextLabel[currentStatus] || 'Avançar'}
+              </Button>
+            )}
+          </>
         )}
 
         {currentStatus === 'Concluído' && (
@@ -480,6 +630,7 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
             </div>
             <h2 className="text-lg font-bold text-success">Atendimento concluído!</h2>
             <p className="text-sm text-muted-foreground mt-1">Os dados foram registrados com sucesso.</p>
+            <p className="text-xs text-muted-foreground mt-2">A OS seguirá para conferência e faturamento.</p>
           </div>
         )}
 
@@ -495,10 +646,13 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
           </div>
         )}
 
-        {/* Footer */}
+        {/* App-less footer */}
         <div className="text-center pt-4 pb-8">
-          <p className="text-[10px] text-muted-foreground">Acesso via link • Sem app necessário</p>
-          <p className="text-[10px] text-muted-foreground/50 mt-0.5">Powered by OpGrid</p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 mb-2">
+            <Shield className="h-3 w-3 text-primary" />
+            <span className="text-[10px] font-semibold text-primary">Acesso via link • Sem app necessário</span>
+          </div>
+          <p className="text-[10px] text-muted-foreground/50">Powered by OpGrid</p>
         </div>
       </div>
     </MobileShell>
@@ -538,7 +692,6 @@ export default function PortalPrestador() {
   const prestadores = useMemo(() => getPrestadores(), []);
 
   if (tipo === 'oferta' && id) {
-    // Find the offer across all dispatches
     let oferta: OfertaPrestador | undefined;
     for (const d of despachos) {
       const found = d.ofertas.find(o => o.id === id);
@@ -596,6 +749,10 @@ export default function PortalPrestador() {
         </div>
         <h2 className="text-lg font-bold mb-1">Portal do Prestador</h2>
         <p className="text-sm text-muted-foreground max-w-[280px]">Acesse este portal através do link enviado pela central de operações.</p>
+        <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10">
+          <Shield className="h-3 w-3 text-primary" />
+          <span className="text-[10px] font-semibold text-primary">100% via link • Sem app necessário</span>
+        </div>
       </div>
     </MobileShell>
   );

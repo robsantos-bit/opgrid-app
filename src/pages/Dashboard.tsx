@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { getPrestadores, getAtendimentos, getTarifas, getTabelaPrecos, getContratos, getSolicitacoes, getDespachos } from '@/data/store';
 import {
   Users, ClipboardList, DollarSign, TrendingUp, AlertTriangle, Activity, Clock, Target, Gauge, ArrowUpRight, ArrowDownRight,
-  Shield, Radio, MapPin, Truck, WifiOff, MessageCircle, Radar, Smartphone, Link2, Bell, Zap, CheckCircle2
+  Shield, Radio, MapPin, Truck, WifiOff, MessageCircle, Radar, Smartphone, Link2, Bell, Zap, CheckCircle2,
+  User, FileText, Navigation, Phone, Eye, KeyRound, Car
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,7 +27,6 @@ export default function Dashboard() {
   const ticketMedio = concluidos.length > 0 ? faturamento / concluidos.length : 0;
   const divergencias = atendimentos.filter(a => a.km > a.kmPrevisto + 5).length;
 
-  // Differentials KPIs
   const solWhatsApp = solicitacoes.filter(s => s.canal === 'WhatsApp').length;
   const despachosAuto = despachos.length;
   const totalOfertas = despachos.reduce((s, d) => s + d.ofertas.length, 0);
@@ -69,6 +69,64 @@ export default function Dashboard() {
 
   const tt = { borderRadius: '6px', border: '1px solid hsl(220,18%,89%)', fontSize: 11, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' };
 
+  // Journey data
+  const journeys = [
+    {
+      title: 'Jornada do Cliente',
+      icon: User,
+      color: 'text-success',
+      bg: 'bg-success/10',
+      steps: ['WhatsApp', 'Dados', 'Cotação', 'Aceite', 'Acompanhamento'],
+      description: 'Solicita via WhatsApp, aceita proposta e acompanha por link',
+      badge: 'Sem app',
+    },
+    {
+      title: 'Jornada do Despacho',
+      icon: Radar,
+      color: 'text-primary',
+      bg: 'bg-primary/10',
+      steps: ['OS Gerada', 'Busca Rede', 'Oferta', 'Aceite', 'Vinculação'],
+      description: 'Automático para os 2 prestadores mais próximos e aptos',
+      badge: 'Automático',
+    },
+    {
+      title: 'Jornada do Prestador',
+      icon: Truck,
+      color: 'text-warning',
+      bg: 'bg-warning/10',
+      steps: ['Oferta', 'Aceite', 'A caminho', 'Placa', 'Checklist', 'Conclusão'],
+      description: 'Recebe link, aceita, confirma placa, preenche checklist',
+      badge: 'Sem app',
+    },
+    {
+      title: 'Jornada de Acompanhamento',
+      icon: Eye,
+      color: 'text-info',
+      bg: 'bg-info/10',
+      steps: ['Confirmado', 'A caminho', 'No local', 'Atendimento', 'Concluído'],
+      description: 'Cliente acompanha em tempo real por link com mapa e timeline',
+      badge: 'Tempo real',
+    },
+    {
+      title: 'Jornada da Central',
+      icon: Shield,
+      color: 'text-accent',
+      bg: 'bg-accent/10',
+      steps: ['Sirene', 'Pipeline', 'Despacho', 'Monitor', 'Mapa'],
+      description: 'Painel operacional com alertas, pipeline e mapa em tempo real',
+      badge: 'Controle total',
+    },
+    {
+      title: 'Jornada Financeira',
+      icon: DollarSign,
+      color: 'text-primary',
+      bg: 'bg-primary/10',
+      steps: ['OS Concluída', 'Conferência', 'Glosas', 'Aprovação', 'Faturamento'],
+      description: 'Conferência automática, tratamento de divergências e faturamento',
+      badge: 'Auditoria',
+    },
+  ];
+
   return (
     <div className="space-y-5 animate-fade-in">
       <div>
@@ -88,47 +146,47 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* 6 Differentials Strip */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
-        {[
-          { icon: MessageCircle, label: 'WhatsApp', value: solWhatsApp, sub: 'solicitações', color: 'text-success', bg: 'bg-success/10' },
-          { icon: Bell, label: 'Sirene Central', value: solicitacoes.length, sub: 'alertas disparados', color: 'text-destructive', bg: 'bg-destructive/10', pulse: true },
-          { icon: Radar, label: 'Despacho Auto', value: despachosAuto, sub: `${taxaAceite}% aceite`, color: 'text-primary', bg: 'bg-primary/10' },
-          { icon: Bell, label: 'Sirene Prestador', value: totalOfertas, sub: 'ofertas enviadas', color: 'text-warning', bg: 'bg-warning/10', pulse: true },
-          { icon: Smartphone, label: 'Portal Link', value: prestadoresAtivos, sub: 'sem app', color: 'text-info', bg: 'bg-info/10' },
-          { icon: Link2, label: 'Acompanhamento', value: `${taxaConversao}%`, sub: 'conversão', color: 'text-accent', bg: 'bg-accent/10' },
-        ].map(d => (
-          <div key={d.label} className="relative bg-card border rounded-xl p-3 flex items-center gap-2.5 overflow-hidden group hover:shadow-premium-lg transition-all">
-            <div className={`w-9 h-9 rounded-lg ${d.bg} flex items-center justify-center shrink-0 ${d.pulse ? 'animate-siren-glow' : ''}`}>
-              <d.icon className={`h-4 w-4 ${d.color}`} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider leading-none mb-0.5">{d.label}</p>
-              <p className="text-base font-bold leading-tight">{d.value}</p>
-              <p className="text-[9px] text-muted-foreground/50">{d.sub}</p>
+      {/* 6 Journeys Strip */}
+      <Card>
+        <CardHeader className="pb-2 pt-4 px-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center"><Zap className="h-3.5 w-3.5 text-primary" /></div>
+            <div>
+              <CardTitle className="text-[13px] font-bold">6 Jornadas Operacionais</CardTitle>
+              <p className="text-[11px] text-muted-foreground">Arquitetura completa — cliente, despacho, prestador, acompanhamento, central e financeiro</p>
             </div>
           </div>
-        ))}
-      </div>
-
-      {/* Main KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        {[
-          { label: 'Rede Ativa', value: prestadoresAtivos, icon: Users, bg: 'bg-primary/10', color: 'text-primary', sub: `${prestadores.length} total` },
-          { label: 'Faturamento', value: `R$ ${(faturamento / 1000).toFixed(1)}k`, icon: DollarSign, bg: 'bg-success/10', color: 'text-success', sub: 'período atual' },
-          { label: 'Ticket Médio', value: `R$ ${ticketMedio.toFixed(0)}`, icon: TrendingUp, bg: 'bg-info/10', color: 'text-info', sub: 'por atendimento' },
-          { label: 'Divergências', value: divergencias, icon: AlertTriangle, bg: 'bg-destructive/10', color: 'text-destructive', sub: 'km fora da faixa' },
-        ].map(k => (
-          <div key={k.label} className="kpi-card">
-            <div className={`kpi-icon ${k.bg} ${k.color}`}><k.icon className="h-4.5 w-4.5" /></div>
-            <div className="min-w-0 flex-1">
-              <p className="kpi-label">{k.label}</p>
-              <p className="kpi-value">{k.value}</p>
-              <p className="text-[10px] text-muted-foreground/50 mt-0.5">{k.sub}</p>
-            </div>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            {journeys.map(j => (
+              <div key={j.title} className="relative border rounded-xl p-3.5 hover:shadow-premium-lg transition-all group overflow-hidden">
+                <div className="flex items-start gap-2.5 mb-2.5">
+                  <div className={`w-9 h-9 rounded-lg ${j.bg} flex items-center justify-center shrink-0`}>
+                    <j.icon className={`h-4.5 w-4.5 ${j.color}`} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[12px] font-bold leading-tight">{j.title}</p>
+                      <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 border-primary/20 text-primary shrink-0">{j.badge}</Badge>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{j.description}</p>
+                  </div>
+                </div>
+                {/* Step flow */}
+                <div className="flex items-center gap-0.5 flex-wrap">
+                  {j.steps.map((step, i) => (
+                    <div key={step} className="flex items-center gap-0.5">
+                      <span className="text-[9px] font-medium text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded">{step}</span>
+                      {i < j.steps.length - 1 && <span className="text-muted-foreground/30 text-[10px]">→</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Operation Flow — visual funnel */}
       <Card>
@@ -138,7 +196,7 @@ export default function Dashboard() {
               <div className="w-7 h-7 rounded-md bg-primary/10 flex items-center justify-center"><Zap className="h-3.5 w-3.5 text-primary" /></div>
               <div>
                 <CardTitle className="text-[13px] font-bold">Fluxo da Operação — Sem App</CardTitle>
-                <p className="text-[11px] text-muted-foreground">WhatsApp → Sirene → Despacho → Link Prestador → Link Cliente</p>
+                <p className="text-[11px] text-muted-foreground">WhatsApp → Sirene → Despacho → Link Prestador → Confirmação Placa → Link Cliente</p>
               </div>
             </div>
           </div>
@@ -151,6 +209,7 @@ export default function Dashboard() {
               { icon: Radar, label: 'Despacho', value: despachosAuto, color: 'bg-primary', textColor: 'text-primary' },
               { icon: Bell, label: 'Sirene Prestador', value: totalOfertas, color: 'bg-warning', textColor: 'text-warning' },
               { icon: CheckCircle2, label: 'Aceite', value: ofertasAceitas, color: 'bg-success', textColor: 'text-success' },
+              { icon: KeyRound, label: 'Conf. Placa', value: ofertasAceitas, color: 'bg-warning', textColor: 'text-warning' },
               { icon: Smartphone, label: 'Portal Link', value: ofertasAceitas, color: 'bg-info', textColor: 'text-info' },
               { icon: Link2, label: 'Acompanhamento', value: solConvertidas, color: 'bg-accent', textColor: 'text-accent' },
             ].map((step, i, arr) => (
@@ -170,6 +229,25 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Main KPIs */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {[
+          { label: 'Rede Ativa', value: prestadoresAtivos, icon: Users, bg: 'bg-primary/10', color: 'text-primary', sub: `${prestadores.length} total` },
+          { label: 'Faturamento', value: `R$ ${(faturamento / 1000).toFixed(1)}k`, icon: DollarSign, bg: 'bg-success/10', color: 'text-success', sub: 'período atual' },
+          { label: 'Ticket Médio', value: `R$ ${ticketMedio.toFixed(0)}`, icon: TrendingUp, bg: 'bg-info/10', color: 'text-info', sub: 'por atendimento' },
+          { label: 'Divergências', value: divergencias, icon: AlertTriangle, bg: 'bg-destructive/10', color: 'text-destructive', sub: 'km fora da faixa' },
+        ].map(k => (
+          <div key={k.label} className="kpi-card">
+            <div className={`kpi-icon ${k.bg} ${k.color}`}><k.icon className="h-4.5 w-4.5" /></div>
+            <div className="min-w-0 flex-1">
+              <p className="kpi-label">{k.label}</p>
+              <p className="kpi-value">{k.value}</p>
+              <p className="text-[10px] text-muted-foreground/50 mt-0.5">{k.sub}</p>
+            </div>
+          </div>
+        ))}
+      </div>
 
       {/* Map + Health */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
