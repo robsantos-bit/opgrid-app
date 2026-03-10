@@ -3,17 +3,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { getPrestadores, getAtendimentos, getTarifas, getTabelaPrecos, getContratos } from '@/data/store';
-import { Users, Tag, ClipboardList, DollarSign, TrendingUp, AlertTriangle, Activity, Clock, Target, Gauge, ArrowUpRight, ArrowDownRight, Hexagon, Shield } from 'lucide-react';
+import { Users, ClipboardList, DollarSign, TrendingUp, AlertTriangle, Activity, Clock, Target, Gauge, ArrowUpRight, ArrowDownRight, Shield, Radio, MapPin, Truck, WifiOff } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAuth } from '@/contexts/AuthContext';
-
-const COLORS = ['hsl(228,72%,44%)', 'hsl(165,60%,34%)', 'hsl(36,92%,48%)', 'hsl(152,60%,36%)', 'hsl(280,60%,48%)'];
+import { Link } from 'react-router-dom';
+import { StatusRastreamento } from '@/types';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const prestadores = useMemo(() => getPrestadores(), []);
   const atendimentos = useMemo(() => getAtendimentos(), []);
-  const tarifas = useMemo(() => getTarifas(), []);
   const tabelaPrecos = useMemo(() => getTabelaPrecos(), []);
   const contratos = useMemo(() => getContratos(), []);
 
@@ -32,6 +31,17 @@ export default function Dashboard() {
   const contratosAtivos = contratos.filter(c => c.status === 'Ativo').length;
   const homologados = prestadores.filter(p => p.homologacao === 'Homologado').length;
   const prestadoresCriticos = prestadores.filter(p => p.homologacao === 'Crítico');
+
+  // Map data
+  const mapStats = useMemo(() => {
+    const counts: Record<string, number> = {};
+    prestadores.forEach(p => {
+      if (p.localizacao) {
+        counts[p.localizacao.statusRastreamento] = (counts[p.localizacao.statusRastreamento] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [prestadores]);
 
   const alerts = [
     ...(prestadoresCriticos.length > 0 ? [{ text: `${prestadoresCriticos.length} prestador(es) com homologação crítica`, type: 'critical' as const }] : []),
@@ -75,6 +85,10 @@ export default function Dashboard() {
 
   const tt = { borderRadius: '6px', border: '1px solid hsl(220,18%,89%)', fontSize: 11, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' };
 
+  const statusMapColors: Record<string, string> = {
+    'Online': 'bg-success', 'A caminho': 'bg-info', 'Em atendimento': 'bg-warning', 'Offline': 'bg-muted-foreground/40',
+  };
+
   return (
     <div className="space-y-5 animate-fade-in">
       <div>
@@ -105,7 +119,45 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Map summary + Health side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-md bg-success/10 flex items-center justify-center"><Radio className="h-3.5 w-3.5 text-success animate-pulse" /></div>
+                <div>
+                  <CardTitle className="text-[13px] font-bold">Rede em Tempo Real</CardTitle>
+                  <p className="text-[11px] text-muted-foreground">Rastreamento via app</p>
+                </div>
+              </div>
+              <Link to="/mapa" className="text-[11px] text-primary font-medium hover:underline">Ver mapa →</Link>
+            </div>
+          </CardHeader>
+          <CardContent className="px-4 pb-4 space-y-3">
+            {[
+              { label: 'Online', count: mapStats['Online'] || 0, icon: Radio, color: 'text-success', bg: 'bg-success' },
+              { label: 'A caminho', count: mapStats['A caminho'] || 0, icon: Truck, color: 'text-info', bg: 'bg-info' },
+              { label: 'Em atendimento', count: mapStats['Em atendimento'] || 0, icon: MapPin, color: 'text-warning', bg: 'bg-warning' },
+              { label: 'Offline', count: mapStats['Offline'] || 0, icon: WifiOff, color: 'text-muted-foreground', bg: 'bg-muted-foreground/40' },
+            ].map(item => (
+              <div key={item.label} className="flex items-center justify-between py-1">
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${item.bg}`} />
+                  <span className="text-[12px] text-muted-foreground">{item.label}</span>
+                </div>
+                <span className="text-[13px] font-bold">{item.count}</span>
+              </div>
+            ))}
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-muted-foreground">Sem sinal / indisponível</span>
+                <span className="font-bold text-destructive">{(mapStats['Sem sinal'] || 0) + (mapStats['Indisponível'] || 0)}</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2 pt-4 px-4">
             <div className="flex items-center gap-2">
@@ -137,6 +189,28 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Indicators */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-1 pt-4 px-4">
+            <CardTitle className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Ranking — Faturamento por Prestador</CardTitle>
+          </CardHeader>
+          <CardContent className="px-2 pb-3">
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={rankingPrestadores}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,18%,89%)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(220,12%,44%)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'hsl(220,12%,44%)' }} axisLine={false} tickLine={false} />
+                  <Tooltip formatter={(v: number) => [`R$ ${v.toFixed(2)}`, 'Faturamento']} contentStyle={tt} />
+                  <Bar dataKey="faturamento" fill="hsl(228,72%,44%)" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader className="pb-2 pt-4 px-4">
@@ -164,26 +238,8 @@ export default function Dashboard() {
         </Card>
       </div>
 
+      {/* Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        <Card className="lg:col-span-2">
-          <CardHeader className="pb-1 pt-4 px-4">
-            <CardTitle className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Ranking — Faturamento por Prestador</CardTitle>
-          </CardHeader>
-          <CardContent className="px-2 pb-3">
-            <div className="h-56">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={rankingPrestadores}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,18%,89%)" />
-                  <XAxis dataKey="name" tick={{ fontSize: 10, fill: 'hsl(220,12%,44%)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: 'hsl(220,12%,44%)' }} axisLine={false} tickLine={false} />
-                  <Tooltip formatter={(v: number) => [`R$ ${v.toFixed(2)}`, 'Faturamento']} contentStyle={tt} />
-                  <Bar dataKey="faturamento" fill="hsl(228,72%,44%)" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-
         <Card>
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Distribuição Operacional</CardTitle>
@@ -201,10 +257,8 @@ export default function Dashboard() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <Card>
+        <Card className="lg:col-span-2">
           <CardHeader className="pb-1 pt-4 px-4">
             <CardTitle className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Top Prestadores</CardTitle>
           </CardHeader>
@@ -236,35 +290,44 @@ export default function Dashboard() {
             </Table>
           </CardContent>
         </Card>
+      </div>
 
-        <Card>
-          <CardHeader className="pb-1 pt-4 px-4">
+      {/* Recent operations */}
+      <Card>
+        <CardHeader className="pb-1 pt-4 px-4">
+          <div className="flex items-center justify-between">
             <CardTitle className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Últimas Operações</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="hover:bg-transparent">
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold">Protocolo</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold">Cliente</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider font-semibold">Status</TableHead>
-                  <TableHead className="text-[10px] uppercase tracking-wider text-right font-semibold">Valor</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {atendimentos.slice(0, 6).map(a => (
+            <Link to="/atendimentos" className="text-[11px] text-primary font-medium hover:underline">Ver todas →</Link>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="text-[10px] uppercase tracking-wider font-semibold">Protocolo</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider font-semibold">Cliente</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider font-semibold hidden md:table-cell">Prestador</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider font-semibold">Status</TableHead>
+                <TableHead className="text-[10px] uppercase tracking-wider text-right font-semibold">Valor</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {atendimentos.slice(0, 6).map(a => {
+                const prest = prestadores.find(p => p.id === a.prestadorId);
+                return (
                   <TableRow key={a.id} className="table-row-hover">
                     <TableCell className="font-mono text-[10px] text-muted-foreground">{a.protocolo}</TableCell>
                     <TableCell className="text-[13px] font-medium">{a.clienteNome}</TableCell>
+                    <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground">{prest?.nomeFantasia || '-'}</TableCell>
                     <TableCell><Badge variant={a.status === 'Concluído' || a.status === 'Faturado' ? 'success' : a.status === 'Cancelado' ? 'destructive' : a.status === 'Aberto' ? 'warning' : 'info'}>{a.status}</Badge></TableCell>
                     <TableCell className="text-right text-[13px] font-bold tabular-nums">R$ {a.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      </div>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import Relatorios from "@/pages/Relatorios";
 import Contratos from "@/pages/Contratos";
 import Auditoria from "@/pages/Auditoria";
 import Configuracoes from "@/pages/Configuracoes";
+import MapaOperacional from "@/pages/MapaOperacional";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ function AppRoutes() {
       <Route path="/contratos" element={<ProtectedRoute><Contratos /></ProtectedRoute>} />
       <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
       <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+      <Route path="/mapa" element={<ProtectedRoute><MapaOperacional /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

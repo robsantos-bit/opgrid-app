@@ -11,8 +11,8 @@ interface AuthContextType {
 }
 
 const roleAccess: Record<UserRole, string[]> = {
-  admin: ['dashboard', 'prestadores', 'tarifas', 'tabela-precos', 'atendimentos', 'faturamento', 'relatorios', 'contratos', 'auditoria', 'configuracoes'],
-  operador: ['dashboard', 'prestadores', 'atendimentos', 'tarifas', 'tabela-precos'],
+  admin: ['dashboard', 'prestadores', 'tarifas', 'tabela-precos', 'atendimentos', 'faturamento', 'relatorios', 'contratos', 'auditoria', 'configuracoes', 'mapa'],
+  operador: ['dashboard', 'prestadores', 'atendimentos', 'tarifas', 'tabela-precos', 'mapa'],
   financeiro: ['dashboard', 'faturamento', 'relatorios', 'atendimentos', 'contratos'],
   prestador: ['dashboard', 'atendimentos', 'faturamento', 'tarifas'],
 };
