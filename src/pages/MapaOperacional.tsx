@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -6,10 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { getPrestadores, getAtendimentos } from '@/data/store';
 import { Prestador, StatusRastreamento } from '@/types';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, Signal, SignalZero, Truck, Clock, Phone, Star, ChevronRight, Radio, Wifi, WifiOff, Navigation, Filter, X, Eye } from 'lucide-react';
+import { Filter, X, Radio, Wifi, WifiOff, Eye, Phone } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const statusColors: Record<StatusRastreamento, string> = {
@@ -42,18 +41,6 @@ function createMarkerIcon(color: string, pulse = false) {
   });
 }
 
-function MapBounds({ prestadores }: { prestadores: Prestador[] }) {
-  const map = useMap();
-  useEffect(() => {
-    const withLoc = prestadores.filter(p => p.localizacao);
-    if (withLoc.length > 0) {
-      const bounds = L.latLngBounds(withLoc.map(p => [p.localizacao!.lat, p.localizacao!.lng]));
-      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
-    }
-  }, [prestadores, map]);
-  return null;
-}
-
 export default function MapaOperacional() {
   const navigate = useNavigate();
   const prestadores = useMemo(() => getPrestadores(), []);
@@ -62,6 +49,9 @@ export default function MapaOperacional() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterUf, setFilterUf] = useState<string>('all');
   const [showFilters, setShowFilters] = useState(false);
+  const mapRef = useRef<L.Map | null>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<L.Marker[]>([]);
 
   const withLocation = useMemo(() => {
     return prestadores.filter(p => {
@@ -96,6 +86,59 @@ export default function MapaOperacional() {
     if (hrs < 24) return `${hrs}h atrás`;
     return `${Math.floor(hrs / 24)}d atrás`;
   };
+
+  // Initialize map
+  useEffect(() => {
+    if (!mapContainerRef.current || mapRef.current) return;
+    
+    const map = L.map(mapContainerRef.current, {
+      center: [-14.235, -51.9253],
+      zoom: 4,
+      zoomControl: true,
+    });
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+    };
+  }, []);
+
+  // Update markers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(m => m.remove());
+    markersRef.current = [];
+
+    withLocation.forEach(p => {
+      if (!p.localizacao) return;
+      const status = p.localizacao.statusRastreamento;
+      const isActive = status === 'Online' || status === 'A caminho' || status === 'Em atendimento';
+      
+      const marker = L.marker([p.localizacao.lat, p.localizacao.lng], {
+        icon: createMarkerIcon(statusColors[status], isActive),
+      })
+        .addTo(map)
+        .bindPopup(`<div style="font-size:13px;"><p style="font-weight:bold;margin:0;">${p.nomeFantasia}</p><p style="color:#666;font-size:11px;margin:2px 0 0;">${p.cidade}/${p.uf}</p></div>`)
+        .on('click', () => setSelectedPrestador(p));
+      
+      markersRef.current.push(marker);
+    });
+
+    // Fit bounds
+    if (withLocation.length > 0) {
+      const bounds = L.latLngBounds(withLocation.map(p => [p.localizacao!.lat, p.localizacao!.lng]));
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 12 });
+    }
+  }, [withLocation]);
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -143,38 +186,7 @@ export default function MapaOperacional() {
       {/* Map */}
       <Card className="overflow-hidden">
         <div className="h-[calc(100vh-320px)] min-h-[400px] relative">
-          <MapContainer
-            center={[-14.235, -51.9253]}
-            zoom={4}
-            style={{ height: '100%', width: '100%' }}
-            zoomControl={true}
-          >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
-            />
-            <MapBounds prestadores={withLocation} />
-            {withLocation.map(p => {
-              if (!p.localizacao) return null;
-              const status = p.localizacao.statusRastreamento;
-              const isActive = status === 'Online' || status === 'A caminho' || status === 'Em atendimento';
-              return (
-                <Marker
-                  key={p.id}
-                  position={[p.localizacao.lat, p.localizacao.lng]}
-                  icon={createMarkerIcon(statusColors[status], isActive)}
-                  eventHandlers={{ click: () => setSelectedPrestador(p) }}
-                >
-                  <Popup className="custom-popup">
-                    <div className="text-[13px]">
-                      <p className="font-bold">{p.nomeFantasia}</p>
-                      <p className="text-muted-foreground text-[11px]">{p.cidade}/{p.uf}</p>
-                    </div>
-                  </Popup>
-                </Marker>
-              );
-            })}
-          </MapContainer>
+          <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
 
           {/* Legend overlay */}
           <div className="absolute bottom-4 left-4 bg-card/95 backdrop-blur-sm border rounded-lg px-3 py-2 z-[1000] text-[10px] space-y-1">
@@ -190,7 +202,7 @@ export default function MapaOperacional() {
           {/* Count overlay */}
           <div className="absolute top-4 right-4 bg-card/95 backdrop-blur-sm border rounded-lg px-3.5 py-2.5 z-[1000]">
             <div className="flex items-center gap-2 text-[12px]">
-              <Radio className="h-3.5 w-3.5 text-success animate-pulse" />
+              <Radio className="h-3.5 w-3.5 text-green-500 animate-pulse" />
               <span className="font-bold">{withLocation.length}</span>
               <span className="text-muted-foreground">prestadores visíveis</span>
             </div>
@@ -219,7 +231,7 @@ export default function MapaOperacional() {
                       <p className="text-[13px] font-bold">{statusLabels[loc?.statusRastreamento || 'Offline']}</p>
                       <p className="text-[11px] text-muted-foreground">{loc ? timeSince(loc.ultimaAtualizacao) : 'Sem dados'}</p>
                     </div>
-                    <Badge variant={loc?.compartilhamentoAtivo ? 'success' : 'secondary'} className="ml-auto text-[10px]">
+                    <Badge variant={loc?.compartilhamentoAtivo ? 'default' : 'secondary'} className="ml-auto text-[10px]">
                       {loc?.compartilhamentoAtivo ? <><Wifi className="h-3 w-3 mr-1" />Ativo</> : <><WifiOff className="h-3 w-3 mr-1" />Inativo</>}
                     </Badge>
                   </div>
@@ -244,14 +256,14 @@ export default function MapaOperacional() {
 
                   {/* Current attendance */}
                   {atd && (
-                    <Card className="border-warning/20 bg-warning/5">
+                    <Card className="border-yellow-200 bg-yellow-50">
                       <CardContent className="p-3">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-warning mb-2">Atendimento Atual</p>
+                        <p className="text-[10px] font-bold uppercase tracking-wider text-yellow-700 mb-2">Atendimento Atual</p>
                         <div className="space-y-1 text-[13px]">
                           <div className="flex justify-between"><span className="text-muted-foreground">Protocolo</span><span className="font-mono font-bold text-[11px]">{atd.protocolo}</span></div>
                           <div className="flex justify-between"><span className="text-muted-foreground">Cliente</span><span className="font-medium">{atd.clienteNome}</span></div>
                           <div className="flex justify-between"><span className="text-muted-foreground">Tipo</span><span>{atd.tipoAtendimento}</span></div>
-                          <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge variant="warning">{atd.status}</Badge></div>
+                          <div className="flex justify-between"><span className="text-muted-foreground">Status</span><Badge variant="outline">{atd.status}</Badge></div>
                         </div>
                       </CardContent>
                     </Card>
