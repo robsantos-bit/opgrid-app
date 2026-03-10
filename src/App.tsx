@@ -50,6 +50,9 @@ function AppRoutes() {
       <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
       <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
       <Route path="/mapa" element={<ProtectedRoute><MapaOperacional /></ProtectedRoute>} />
+      {/* Public portals — no auth required */}
+      <Route path="/prestador/:tipo/:id" element={<PortalPrestador />} />
+      <Route path="/acompanhar/:id" element={<AcompanhamentoCliente />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
