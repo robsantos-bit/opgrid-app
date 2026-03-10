@@ -61,7 +61,41 @@ export default function Solicitacoes() {
   const [filterCanal, setFilterCanal] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [novaOpen, setNovaOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(() => getUnreadCount());
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => getNotifications());
   const handleCreated = useCallback(() => setRefreshKey(k => k + 1), []);
+
+  // Listen for push notifications from prestador portal
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const notif = (e as CustomEvent<AppNotification>).detail;
+      setNotifications(getNotifications());
+      setUnreadCount(getUnreadCount());
+      setRefreshKey(k => k + 1); // refresh list
+      if (notif.type === 'oferta_aceita') {
+        toast.success(notif.title, { description: notif.message, duration: 8000 });
+      } else if (notif.type === 'oferta_recusada') {
+        toast.error(notif.title, { description: notif.message, duration: 8000 });
+      }
+    };
+    window.addEventListener('opgrid-notification', handler);
+    // Also poll every 3s for cross-tab changes
+    const poll = setInterval(() => {
+      const count = getUnreadCount();
+      if (count !== unreadCount) {
+        setUnreadCount(count);
+        setNotifications(getNotifications());
+        setRefreshKey(k => k + 1);
+      }
+    }, 3000);
+    return () => { window.removeEventListener('opgrid-notification', handler); clearInterval(poll); };
+  }, [unreadCount]);
+
+  const handleMarkRead = () => {
+    markAllRead();
+    setUnreadCount(0);
+    setNotifications(getNotifications());
+  };
 
   const filtered = useMemo(() => {
     return solicitacoes
