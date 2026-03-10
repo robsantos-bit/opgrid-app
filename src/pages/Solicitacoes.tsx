@@ -101,6 +101,9 @@ export default function Solicitacoes() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Button onClick={() => setNovaOpen(true)} size="sm" className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" />Nova solicitação
+          </Button>
           {/* Siren indicator */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-destructive border border-destructive/20 bg-destructive/5 rounded-md px-2.5 py-1 font-medium">
             <div className="relative">
