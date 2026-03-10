@@ -45,10 +45,36 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
   const [form, setForm] = useState(initialForm);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { lookupCep, loading: cepLoading } = useCepLookup();
+  const { lookupPlaca } = usePlacaLookup();
 
   const set = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
     setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
+  };
+
+  const handleCepChange = async (field: 'origemCep' | 'destinoCep', value: string) => {
+    set(field, value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const result = await lookupCep(value);
+      if (result) {
+        const addr = [result.logradouro, result.bairro, `${result.localidade}/${result.uf}`].filter(Boolean).join(', ');
+        const endField = field === 'origemCep' ? 'origemEndereco' : 'destinoEndereco';
+        set(endField, addr);
+        toast.success('Endereço preenchido automaticamente!');
+      }
+    }
+  };
+
+  const handlePlacaChange = (value: string) => {
+    const upper = value.toUpperCase();
+    set('veiculoPlaca', upper);
+    const result = lookupPlaca(upper);
+    if (result) {
+      set('veiculoModelo', result.modelo);
+      toast.success(`Veículo encontrado: ${result.modelo}`);
+    }
   };
 
   const validateStep1 = () => {
