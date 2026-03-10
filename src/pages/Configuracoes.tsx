@@ -15,13 +15,21 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
 
 export default function Configuracoes() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, updateUser } = useAuth();
   const [config, setConfig] = useState<ConfigEmpresa>(getConfig);
   const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
+  const [profileName, setProfileName] = useState(user?.nome || '');
+  const [profileEmail, setProfileEmail] = useState(user?.email || '');
 
   const updateField = (field: keyof ConfigEmpresa, value: any) => setConfig(prev => ({ ...prev, [field]: value }));
   const handleSave = () => { saveConfig(config); toast.success('Configurações salvas!'); };
   const handleReset = () => { resetAllData(); toast.success('Dados resetados. Recarregando...'); setTimeout(() => window.location.reload(), 1000); };
+  const handleProfileSave = () => {
+    if (user) {
+      updateUser({ nome: profileName, email: profileEmail });
+      toast.success('Perfil atualizado!');
+    }
+  };
 
   const handleCnpjChange = async (value: string) => {
     updateField('cnpj', value);
