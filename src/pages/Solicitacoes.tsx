@@ -488,13 +488,43 @@ function SolicitacaoDetail({ sol }: { sol: Solicitacao }) {
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">
-          <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5">
+          <Button
+            variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
+            onClick={() => {
+              const phone = sol.clienteWhatsApp?.replace(/\D/g, '') || sol.clienteTelefone?.replace(/\D/g, '') || '';
+              if (phone) {
+                window.open(`https://wa.me/${phone}`, '_blank');
+              } else {
+                toast.error('Número de WhatsApp não disponível');
+              }
+            }}
+          >
             <MessageCircle className="h-3.5 w-3.5" />WhatsApp
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5">
+          <Button
+            variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
+            onClick={() => {
+              const phone = sol.clienteTelefone?.replace(/\D/g, '') || '';
+              if (phone) {
+                window.open(`tel:${phone}`);
+              } else {
+                toast.error('Telefone não disponível');
+              }
+            }}
+          >
             <Phone className="h-3.5 w-3.5" />Ligar
           </Button>
-          <Button variant="outline" size="sm" className="flex-1 text-xs gap-1.5">
+          <Button
+            variant="outline" size="sm" className="flex-1 text-xs gap-1.5"
+            onClick={() => {
+              if (sol.atendimentoId) {
+                toast.info(`OS ${sol.atendimentoId} — redirecionando para Atendimentos`);
+                window.location.href = '/atendimentos';
+              } else {
+                toast.warning('Nenhuma OS vinculada a esta solicitação');
+              }
+            }}
+          >
             <Eye className="h-3.5 w-3.5" />Ver OS
           </Button>
         </div>
