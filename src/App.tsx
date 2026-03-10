@@ -7,6 +7,8 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
+import Solicitacoes from "@/pages/Solicitacoes";
+import Despacho from "@/pages/Despacho";
 import Prestadores from "@/pages/Prestadores";
 import Tarifas from "@/pages/Tarifas";
 import TabelaPrecos from "@/pages/TabelaPrecos";
@@ -34,6 +36,8 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
       <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/solicitacoes" element={<ProtectedRoute><Solicitacoes /></ProtectedRoute>} />
+      <Route path="/despacho" element={<ProtectedRoute><Despacho /></ProtectedRoute>} />
       <Route path="/prestadores" element={<ProtectedRoute><Prestadores /></ProtectedRoute>} />
       <Route path="/tarifas" element={<ProtectedRoute><Tarifas /></ProtectedRoute>} />
       <Route path="/tabela-precos" element={<ProtectedRoute><TabelaPrecos /></ProtectedRoute>} />
