@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Bell, Search, ChevronDown, User, Settings, LogOut, Hexagon, MessageCircle, Radar, Smartphone } from 'lucide-react';
+import { Bell, Search, ChevronDown, User, Settings, LogOut, Hexagon, MessageCircle, Radar, Smartphone, Volume2, VolumeX } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
