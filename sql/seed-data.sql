@@ -1,453 +1,528 @@
 -- ============================================================
--- SEED DATA - OpGrid - Dados de demonstração
--- Executar no Supabase SQL Editor
--- NÃO recria tabelas, apenas insere dados adicionais
+-- SEED HÍBRIDO - OpGrid Demo v2
+-- Base de demonstração: prestadores reais públicos + sintéticos
+-- Vale do Paraíba + Grande São Paulo
+-- ============================================================
+-- BLOCOS:
+-- 1. Ajuste da tabela prestadores (campo origem)
+-- 2. Prestadores reais públicos (~30)
+-- 3. Prestadores sintéticos plausíveis (~220)
+-- 4. Solicitações (~45)
+-- 5. Atendimentos (~30)
+-- 6. Consultas de validação
 -- ============================================================
 
 -- ============================================================
--- 1. PRESTADORES (~350 registros)
--- Regiões: Vale do Paraíba, Litoral Norte, Grande SP
+-- BLOCO 1: AJUSTE OPCIONAL - campo origem na tabela prestadores
 -- ============================================================
-
-INSERT INTO public.prestadores (nome, cnpj, telefone, tipo, status, latitude, longitude, created_at) VALUES
--- São José dos Campos
-('Auto Socorro Vale do Paraíba', '12.345.678/0001-01', '(12) 3921-0001', 'guincho', 'ativo', -23.1896, -45.8841, NOW() - interval '180 days'),
-('Guincho Rápido SJC', '12.345.678/0001-02', '(12) 3921-0002', 'guincho', 'ativo', -23.2000, -45.8900, NOW() - interval '175 days'),
-('Plataforma Express Campos', '12.345.678/0001-03', '(12) 3921-0003', 'plataforma', 'ativo', -23.1750, -45.8700, NOW() - interval '170 days'),
-('SJC Assistência 24h', '12.345.678/0001-04', '(12) 3921-0004', 'guincho', 'ativo', -23.2100, -45.9000, NOW() - interval '168 days'),
-('Reboque Dutra SJC', '12.345.678/0001-05', '(12) 3921-0005', 'plataforma', 'ativo', -23.1850, -45.8650, NOW() - interval '165 days'),
-('Auto Resgate Aquarius', '12.345.678/0001-06', '(12) 3921-0006', 'guincho', 'inativo', -23.1950, -45.8800, NOW() - interval '160 days'),
-('Guincho Urbanova', '12.345.678/0001-07', '(12) 3921-0007', 'apoio', 'ativo', -23.2200, -45.9100, NOW() - interval '155 days'),
-('Plataforma Orion SJC', '12.345.678/0001-08', '(12) 3921-0008', 'plataforma', 'ativo', -23.1800, -45.8550, NOW() - interval '150 days'),
-('Socorro Mecânico Jd Satélite', '12.345.678/0001-09', '(12) 3921-0009', 'apoio', 'ativo', -23.2050, -45.8950, NOW() - interval '148 days'),
-('Guincho 116 SJC', '12.345.678/0001-10', '(12) 3921-0010', 'guincho', 'ativo', -23.1700, -45.8500, NOW() - interval '145 days'),
-('Auto Socorro Palmeiras', '12.345.678/0001-11', '(12) 3921-0011', 'guincho', 'ativo', -23.2150, -45.9050, NOW() - interval '140 days'),
-('Reboque Floribella', '12.345.678/0001-12', '(12) 3921-0012', 'plataforma', 'inativo', -23.1900, -45.8750, NOW() - interval '138 days'),
-('Guincho Putim', '12.345.678/0001-13', '(12) 3921-0013', 'guincho', 'ativo', -23.2300, -45.9200, NOW() - interval '135 days'),
-('SJC Plataforma Sul', '12.345.678/0001-14', '(12) 3921-0014', 'plataforma', 'ativo', -23.2250, -45.8850, NOW() - interval '130 days'),
-('Assistência Eugênio de Melo', '12.345.678/0001-15', '(12) 3921-0015', 'apoio', 'ativo', -23.1650, -45.8400, NOW() - interval '128 days'),
-('Guincho Limoeiro SJC', '12.345.678/0001-16', '(12) 3921-0016', 'guincho', 'ativo', -23.2080, -45.8980, NOW() - interval '125 days'),
-('Plataforma Bosque dos Eucaliptos', '12.345.678/0001-17', '(12) 3921-0017', 'plataforma', 'ativo', -23.2350, -45.9150, NOW() - interval '120 days'),
-('Reboque Rodoviário SJC', '12.345.678/0001-18', '(12) 3921-0018', 'guincho', 'inativo', -23.1780, -45.8620, NOW() - interval '118 days'),
-('Auto Socorro Industrial', '12.345.678/0001-19', '(12) 3921-0019', 'apoio', 'ativo', -23.1920, -45.8780, NOW() - interval '115 days'),
-('Guincho Vista Verde', '12.345.678/0001-20', '(12) 3921-0020', 'guincho', 'ativo', -23.2180, -45.9080, NOW() - interval '110 days'),
-
--- Taubaté
-('Guincho Taubaté Centro', '23.456.789/0001-01', '(12) 3632-0001', 'guincho', 'ativo', -23.0204, -45.5558, NOW() - interval '175 days'),
-('Plataforma Quiririm', '23.456.789/0001-02', '(12) 3632-0002', 'plataforma', 'ativo', -23.0000, -45.5800, NOW() - interval '170 days'),
-('Auto Socorro Tremembé', '23.456.789/0001-03', '(12) 3632-0003', 'guincho', 'ativo', -22.9600, -45.5500, NOW() - interval '165 days'),
-('Reboque Dutra Taubaté', '23.456.789/0001-04', '(12) 3632-0004', 'plataforma', 'inativo', -23.0150, -45.5600, NOW() - interval '160 days'),
-('Guincho Independência', '23.456.789/0001-05', '(12) 3632-0005', 'guincho', 'ativo', -23.0250, -45.5700, NOW() - interval '155 days'),
-('Taubaté Assistência Veicular', '23.456.789/0001-06', '(12) 3632-0006', 'apoio', 'ativo', -23.0100, -45.5450, NOW() - interval '150 days'),
-('Plataforma Estiva', '23.456.789/0001-07', '(12) 3632-0007', 'plataforma', 'ativo', -23.0300, -45.5650, NOW() - interval '148 days'),
-('Guincho Barranco', '23.456.789/0001-08', '(12) 3632-0008', 'guincho', 'ativo', -23.0350, -45.5750, NOW() - interval '145 days'),
-('Auto Resgate Taubaté', '23.456.789/0001-09', '(12) 3632-0009', 'guincho', 'inativo', -23.0050, -45.5350, NOW() - interval '140 days'),
-('Socorro 24h Taubaté', '23.456.789/0001-10', '(12) 3632-0010', 'apoio', 'ativo', -23.0180, -45.5520, NOW() - interval '138 days'),
-('Guincho Belém Taubaté', '23.456.789/0001-11', '(12) 3632-0011', 'guincho', 'ativo', -23.0220, -45.5580, NOW() - interval '135 days'),
-('Plataforma Areão', '23.456.789/0001-12', '(12) 3632-0012', 'plataforma', 'ativo', -23.0280, -45.5680, NOW() - interval '130 days'),
-('Reboque São Gonçalo', '23.456.789/0001-13', '(12) 3632-0013', 'guincho', 'ativo', -23.0080, -45.5420, NOW() - interval '125 days'),
-('Auto Socorro Campos Elíseos', '23.456.789/0001-14', '(12) 3632-0014', 'apoio', 'ativo', -23.0320, -45.5720, NOW() - interval '120 days'),
-('Guincho Vila das Graças', '23.456.789/0001-15', '(12) 3632-0015', 'guincho', 'ativo', -23.0130, -45.5480, NOW() - interval '115 days'),
-
--- Jacareí
-('Guincho Jacareí', '34.567.890/0001-01', '(12) 3951-0001', 'guincho', 'ativo', -23.3025, -45.9660, NOW() - interval '172 days'),
-('Plataforma Centro Jacareí', '34.567.890/0001-02', '(12) 3951-0002', 'plataforma', 'ativo', -23.3100, -45.9700, NOW() - interval '168 days'),
-('Auto Socorro Parque Meia Lua', '34.567.890/0001-03', '(12) 3951-0003', 'guincho', 'ativo', -23.2950, -45.9600, NOW() - interval '163 days'),
-('Reboque Jardim Califórnia', '34.567.890/0001-04', '(12) 3951-0004', 'plataforma', 'inativo', -23.3050, -45.9750, NOW() - interval '158 days'),
-('Guincho Bandeirantes Jacareí', '34.567.890/0001-05', '(12) 3951-0005', 'guincho', 'ativo', -23.2900, -45.9550, NOW() - interval '155 days'),
-('Assistência Veicular Jacareí', '34.567.890/0001-06', '(12) 3951-0006', 'apoio', 'ativo', -23.3150, -45.9800, NOW() - interval '150 days'),
-('Plataforma Rio Comprido', '34.567.890/0001-07', '(12) 3951-0007', 'plataforma', 'ativo', -23.3000, -45.9680, NOW() - interval '145 days'),
-('Guincho Veraneio', '34.567.890/0001-08', '(12) 3951-0008', 'guincho', 'ativo', -23.2980, -45.9620, NOW() - interval '140 days'),
-('Auto Socorro São João Jacareí', '34.567.890/0001-09', '(12) 3951-0009', 'guincho', 'ativo', -23.3080, -45.9730, NOW() - interval '135 days'),
-('Reboque Vila Industrial Jacareí', '34.567.890/0001-10', '(12) 3951-0010', 'plataforma', 'inativo', -23.3120, -45.9770, NOW() - interval '130 days'),
-('Guincho São Silvestre', '34.567.890/0001-11', '(12) 3951-0011', 'guincho', 'ativo', -23.2870, -45.9500, NOW() - interval '125 days'),
-('Plataforma Cidade Salvador', '34.567.890/0001-12', '(12) 3951-0012', 'plataforma', 'ativo', -23.3180, -45.9830, NOW() - interval '120 days'),
-
--- Caçapava
-('Guincho Caçapava', '45.678.901/0001-01', '(12) 3653-0001', 'guincho', 'ativo', -23.1006, -45.7076, NOW() - interval '170 days'),
-('Plataforma Caçapava Centro', '45.678.901/0001-02', '(12) 3653-0002', 'plataforma', 'ativo', -23.1050, -45.7100, NOW() - interval '165 days'),
-('Auto Socorro BR-116 Caçapava', '45.678.901/0001-03', '(12) 3653-0003', 'guincho', 'ativo', -23.0950, -45.7000, NOW() - interval '160 days'),
-('Reboque Caçapava Velha', '45.678.901/0001-04', '(12) 3653-0004', 'plataforma', 'inativo', -23.1100, -45.7150, NOW() - interval '155 days'),
-('Guincho Bom Sucesso', '45.678.901/0001-05', '(12) 3653-0005', 'guincho', 'ativo', -23.0980, -45.7030, NOW() - interval '150 days'),
-('Assistência Rodoviária Caçapava', '45.678.901/0001-06', '(12) 3653-0006', 'apoio', 'ativo', -23.1080, -45.7120, NOW() - interval '145 days'),
-('Plataforma Jardim Imperial', '45.678.901/0001-07', '(12) 3653-0007', 'plataforma', 'ativo', -23.1030, -45.7080, NOW() - interval '140 days'),
-('Guincho Monte Castelo Caçapava', '45.678.901/0001-08', '(12) 3653-0008', 'guincho', 'ativo', -23.0920, -45.6950, NOW() - interval '135 days'),
-
--- Pindamonhangaba
-('Guincho Pinda', '56.789.012/0001-01', '(12) 3642-0001', 'guincho', 'ativo', -22.9235, -45.4616, NOW() - interval '168 days'),
-('Plataforma Moreira César', '56.789.012/0001-02', '(12) 3642-0002', 'plataforma', 'ativo', -22.9300, -45.4700, NOW() - interval '163 days'),
-('Auto Socorro Pinda Centro', '56.789.012/0001-03', '(12) 3642-0003', 'guincho', 'ativo', -22.9200, -45.4550, NOW() - interval '158 days'),
-('Reboque Araretama', '56.789.012/0001-04', '(12) 3642-0004', 'plataforma', 'ativo', -22.9350, -45.4750, NOW() - interval '153 days'),
-('Guincho Mombaça', '56.789.012/0001-05', '(12) 3642-0005', 'guincho', 'inativo', -22.9150, -45.4500, NOW() - interval '148 days'),
-('Assistência Rodoviária Pinda', '56.789.012/0001-06', '(12) 3642-0006', 'apoio', 'ativo', -22.9280, -45.4650, NOW() - interval '143 days'),
-('Plataforma Pinda Norte', '56.789.012/0001-07', '(12) 3642-0007', 'plataforma', 'ativo', -22.9100, -45.4450, NOW() - interval '138 days'),
-('Guincho Santa Clara Pinda', '56.789.012/0001-08', '(12) 3642-0008', 'guincho', 'ativo', -22.9380, -45.4780, NOW() - interval '133 days'),
-('Reboque Vila Rica Pinda', '56.789.012/0001-09', '(12) 3642-0009', 'guincho', 'ativo', -22.9250, -45.4580, NOW() - interval '128 days'),
-('Auto Socorro Crispim', '56.789.012/0001-10', '(12) 3642-0010', 'apoio', 'ativo', -22.9320, -45.4720, NOW() - interval '123 days'),
-
--- Aparecida
-('Guincho Aparecida', '67.890.123/0001-01', '(12) 3104-0001', 'guincho', 'ativo', -22.8449, -45.2297, NOW() - interval '166 days'),
-('Plataforma Basílica', '67.890.123/0001-02', '(12) 3104-0002', 'plataforma', 'ativo', -22.8500, -45.2350, NOW() - interval '161 days'),
-('Auto Socorro Ponte Alta', '67.890.123/0001-03', '(12) 3104-0003', 'guincho', 'ativo', -22.8400, -45.2250, NOW() - interval '156 days'),
-('Reboque Aparecida do Norte', '67.890.123/0001-04', '(12) 3104-0004', 'plataforma', 'inativo', -22.8550, -45.2400, NOW() - interval '151 days'),
-('Guincho Romeiros', '67.890.123/0001-05', '(12) 3104-0005', 'guincho', 'ativo', -22.8380, -45.2200, NOW() - interval '146 days'),
-('Assistência Dutra Aparecida', '67.890.123/0001-06', '(12) 3104-0006', 'apoio', 'ativo', -22.8480, -45.2320, NOW() - interval '141 days'),
-('Plataforma São Benedito', '67.890.123/0001-07', '(12) 3104-0007', 'plataforma', 'ativo', -22.8420, -45.2270, NOW() - interval '136 days'),
-('Guincho Rosário Aparecida', '67.890.123/0001-08', '(12) 3104-0008', 'guincho', 'ativo', -22.8520, -45.2380, NOW() - interval '131 days'),
-
--- Guaratinguetá
-('Guincho Guará Centro', '78.901.234/0001-01', '(12) 3132-0001', 'guincho', 'ativo', -22.8116, -45.1922, NOW() - interval '164 days'),
-('Plataforma Pedregulho', '78.901.234/0001-02', '(12) 3132-0002', 'plataforma', 'ativo', -22.8150, -45.1950, NOW() - interval '159 days'),
-('Auto Socorro Vila Paraíso Guará', '78.901.234/0001-03', '(12) 3132-0003', 'guincho', 'ativo', -22.8080, -45.1880, NOW() - interval '154 days'),
-('Reboque Engenheiro Neiva', '78.901.234/0001-04', '(12) 3132-0004', 'plataforma', 'ativo', -22.8200, -45.2000, NOW() - interval '149 days'),
-('Guincho Lorena Road', '78.901.234/0001-05', '(12) 3132-0005', 'guincho', 'inativo', -22.8050, -45.1850, NOW() - interval '144 days'),
-('Assistência Veicular Guará', '78.901.234/0001-06', '(12) 3132-0006', 'apoio', 'ativo', -22.8180, -45.1980, NOW() - interval '139 days'),
-('Plataforma Santa Luzia Guará', '78.901.234/0001-07', '(12) 3132-0007', 'plataforma', 'ativo', -22.8100, -45.1900, NOW() - interval '134 days'),
-('Guincho Dutra Guará', '78.901.234/0001-08', '(12) 3132-0008', 'guincho', 'ativo', -22.8230, -45.2030, NOW() - interval '129 days'),
-('Reboque Roseira', '78.901.234/0001-09', '(12) 3132-0009', 'guincho', 'ativo', -22.8000, -45.1800, NOW() - interval '124 days'),
-('Auto Socorro Centro Histórico Guará', '78.901.234/0001-10', '(12) 3132-0010', 'apoio', 'ativo', -22.8160, -45.1960, NOW() - interval '119 days'),
-
--- Cachoeira Paulista
-('Guincho Cachoeira Paulista', '89.012.345/0001-01', '(12) 3101-0001', 'guincho', 'ativo', -22.6636, -45.0092, NOW() - interval '162 days'),
-('Plataforma Cachoeira Centro', '89.012.345/0001-02', '(12) 3101-0002', 'plataforma', 'ativo', -22.6680, -45.0130, NOW() - interval '157 days'),
-('Auto Socorro Dutra Cachoeira', '89.012.345/0001-03', '(12) 3101-0003', 'guincho', 'ativo', -22.6600, -45.0050, NOW() - interval '152 days'),
-('Reboque Vila São Pedro', '89.012.345/0001-04', '(12) 3101-0004', 'plataforma', 'inativo', -22.6720, -45.0170, NOW() - interval '147 days'),
-('Guincho Comunidade Canção Nova', '89.012.345/0001-05', '(12) 3101-0005', 'guincho', 'ativo', -22.6550, -45.0000, NOW() - interval '142 days'),
-('Assistência Rodoviária Cachoeira', '89.012.345/0001-06', '(12) 3101-0006', 'apoio', 'ativo', -22.6660, -45.0110, NOW() - interval '137 days'),
-
--- Lorena
-('Guincho Lorena', '90.123.456/0001-01', '(12) 3152-0001', 'guincho', 'ativo', -22.7300, -45.1200, NOW() - interval '160 days'),
-('Plataforma Lorena Centro', '90.123.456/0001-02', '(12) 3152-0002', 'plataforma', 'ativo', -22.7350, -45.1250, NOW() - interval '155 days'),
-('Auto Socorro Vila Hepacaré', '90.123.456/0001-03', '(12) 3152-0003', 'guincho', 'ativo', -22.7250, -45.1150, NOW() - interval '150 days'),
-('Reboque São Vicente Lorena', '90.123.456/0001-04', '(12) 3152-0004', 'plataforma', 'ativo', -22.7400, -45.1300, NOW() - interval '145 days'),
-('Guincho Cabelinha Lorena', '90.123.456/0001-05', '(12) 3152-0005', 'guincho', 'inativo', -22.7200, -45.1100, NOW() - interval '140 days'),
-('Assistência 24h Lorena', '90.123.456/0001-06', '(12) 3152-0006', 'apoio', 'ativo', -22.7320, -45.1220, NOW() - interval '135 days'),
-
--- Caraguatatuba
-('Guincho Caraguá', '11.234.567/0001-01', '(12) 3882-0001', 'guincho', 'ativo', -23.6200, -45.4131, NOW() - interval '170 days'),
-('Plataforma Litoral Norte', '11.234.567/0001-02', '(12) 3882-0002', 'plataforma', 'ativo', -23.6250, -45.4180, NOW() - interval '165 days'),
-('Auto Socorro Martim de Sá', '11.234.567/0001-03', '(12) 3882-0003', 'guincho', 'ativo', -23.6300, -45.4230, NOW() - interval '160 days'),
-('Reboque Massaguaçu', '11.234.567/0001-04', '(12) 3882-0004', 'plataforma', 'ativo', -23.6100, -45.4050, NOW() - interval '155 days'),
-('Guincho Praia da Tabatinga', '11.234.567/0001-05', '(12) 3882-0005', 'guincho', 'inativo', -23.5950, -45.3900, NOW() - interval '150 days'),
-('Assistência Rio-Santos', '11.234.567/0001-06', '(12) 3882-0006', 'apoio', 'ativo', -23.6150, -45.4100, NOW() - interval '145 days'),
-('Plataforma Porto Novo', '11.234.567/0001-07', '(12) 3882-0007', 'plataforma', 'ativo', -23.6350, -45.4280, NOW() - interval '140 days'),
-('Guincho Sumaré Caraguá', '11.234.567/0001-08', '(12) 3882-0008', 'guincho', 'ativo', -23.6180, -45.4120, NOW() - interval '135 days'),
-('Reboque Indaiá', '11.234.567/0001-09', '(12) 3882-0009', 'guincho', 'ativo', -23.6280, -45.4200, NOW() - interval '130 days'),
-('Auto Socorro Prainha Caraguá', '11.234.567/0001-10', '(12) 3882-0010', 'apoio', 'ativo', -23.6050, -45.3980, NOW() - interval '125 days'),
-
--- São Paulo - Zona Norte
-('Guincho Santana', '21.345.678/0001-01', '(11) 2221-0001', 'guincho', 'ativo', -23.5020, -46.6280, NOW() - interval '178 days'),
-('Plataforma Tucuruvi', '21.345.678/0001-02', '(11) 2221-0002', 'plataforma', 'ativo', -23.4800, -46.6020, NOW() - interval '173 days'),
-('Auto Socorro Tremembé SP', '21.345.678/0001-03', '(11) 2221-0003', 'guincho', 'ativo', -23.4650, -46.5900, NOW() - interval '168 days'),
-('Reboque Jaçanã', '21.345.678/0001-04', '(11) 2221-0004', 'plataforma', 'ativo', -23.4700, -46.5800, NOW() - interval '163 days'),
-('Guincho Casa Verde', '21.345.678/0001-05', '(11) 2221-0005', 'guincho', 'ativo', -23.5150, -46.6550, NOW() - interval '158 days'),
-('Assistência Mandaqui', '21.345.678/0001-06', '(11) 2221-0006', 'apoio', 'ativo', -23.4850, -46.6100, NOW() - interval '153 days'),
-('Plataforma Horto Florestal', '21.345.678/0001-07', '(11) 2221-0007', 'plataforma', 'inativo', -23.4600, -46.6300, NOW() - interval '148 days'),
-('Guincho Limão', '21.345.678/0001-08', '(11) 2221-0008', 'guincho', 'ativo', -23.5200, -46.6650, NOW() - interval '143 days'),
-('Reboque Pirituba', '21.345.678/0001-09', '(11) 2221-0009', 'plataforma', 'ativo', -23.4900, -46.7200, NOW() - interval '138 days'),
-('Auto Socorro Brasilândia', '21.345.678/0001-10', '(11) 2221-0010', 'guincho', 'ativo', -23.4750, -46.6900, NOW() - interval '133 days'),
-('Guincho Freguesia do Ó', '21.345.678/0001-11', '(11) 2221-0011', 'guincho', 'ativo', -23.5100, -46.6800, NOW() - interval '128 days'),
-('Plataforma Vila Guilherme', '21.345.678/0001-12', '(11) 2221-0012', 'plataforma', 'ativo', -23.5080, -46.6150, NOW() - interval '123 days'),
-('Reboque Cachoeirinha SP', '21.345.678/0001-13', '(11) 2221-0013', 'guincho', 'ativo', -23.4950, -46.6400, NOW() - interval '118 days'),
-('Auto Socorro Vila Maria', '21.345.678/0001-14', '(11) 2221-0014', 'apoio', 'ativo', -23.5050, -46.6050, NOW() - interval '113 days'),
-('Guincho Edu Chaves', '21.345.678/0001-15', '(11) 2221-0015', 'guincho', 'inativo', -23.4820, -46.5950, NOW() - interval '108 days'),
-
--- São Paulo - Zona Sul
-('Guincho Santo Amaro', '31.456.789/0001-01', '(11) 5521-0001', 'guincho', 'ativo', -23.6530, -46.6730, NOW() - interval '177 days'),
-('Plataforma Interlagos', '31.456.789/0001-02', '(11) 5521-0002', 'plataforma', 'ativo', -23.7000, -46.6800, NOW() - interval '172 days'),
-('Auto Socorro Jabaquara', '31.456.789/0001-03', '(11) 5521-0003', 'guincho', 'ativo', -23.6350, -46.6400, NOW() - interval '167 days'),
-('Reboque Saúde', '31.456.789/0001-04', '(11) 5521-0004', 'plataforma', 'ativo', -23.6200, -46.6350, NOW() - interval '162 days'),
-('Guincho Campo Limpo', '31.456.789/0001-05', '(11) 5521-0005', 'guincho', 'ativo', -23.6450, -46.7600, NOW() - interval '157 days'),
-('Assistência Capão Redondo', '31.456.789/0001-06', '(11) 5521-0006', 'apoio', 'ativo', -23.6680, -46.7800, NOW() - interval '152 days'),
-('Plataforma Vila Mariana', '31.456.789/0001-07', '(11) 5521-0007', 'plataforma', 'inativo', -23.5950, -46.6350, NOW() - interval '147 days'),
-('Guincho Ipiranga', '31.456.789/0001-08', '(11) 5521-0008', 'guincho', 'ativo', -23.5900, -46.6100, NOW() - interval '142 days'),
-('Reboque Grajaú', '31.456.789/0001-09', '(11) 5521-0009', 'plataforma', 'ativo', -23.7500, -46.6800, NOW() - interval '137 days'),
-('Auto Socorro Pedreira', '31.456.789/0001-10', '(11) 5521-0010', 'guincho', 'ativo', -23.6800, -46.6600, NOW() - interval '132 days'),
-('Guincho Socorro SP', '31.456.789/0001-11', '(11) 5521-0011', 'guincho', 'ativo', -23.7200, -46.7100, NOW() - interval '127 days'),
-('Plataforma Cidade Ademar', '31.456.789/0001-12', '(11) 5521-0012', 'plataforma', 'ativo', -23.6600, -46.6500, NOW() - interval '122 days'),
-('Reboque Cursino', '31.456.789/0001-13', '(11) 5521-0013', 'guincho', 'ativo', -23.6100, -46.6200, NOW() - interval '117 days'),
-('Auto Socorro Brooklin', '31.456.789/0001-14', '(11) 5521-0014', 'apoio', 'ativo', -23.6250, -46.6700, NOW() - interval '112 days'),
-('Guincho Moema', '31.456.789/0001-15', '(11) 5521-0015', 'guincho', 'inativo', -23.6000, -46.6650, NOW() - interval '107 days'),
-
--- São Paulo - Zona Leste
-('Guincho Penha', '41.567.890/0001-01', '(11) 2021-0001', 'guincho', 'ativo', -23.5300, -46.5400, NOW() - interval '176 days'),
-('Plataforma São Mateus', '41.567.890/0001-02', '(11) 2021-0002', 'plataforma', 'ativo', -23.6000, -46.4800, NOW() - interval '171 days'),
-('Auto Socorro Itaquera', '41.567.890/0001-03', '(11) 2021-0003', 'guincho', 'ativo', -23.5400, -46.4500, NOW() - interval '166 days'),
-('Reboque Vila Matilde', '41.567.890/0001-04', '(11) 2021-0004', 'plataforma', 'ativo', -23.5450, -46.5200, NOW() - interval '161 days'),
-('Guincho Ermelino Matarazzo', '41.567.890/0001-05', '(11) 2021-0005', 'guincho', 'ativo', -23.5100, -46.4800, NOW() - interval '156 days'),
-('Assistência São Miguel', '41.567.890/0001-06', '(11) 2021-0006', 'apoio', 'ativo', -23.4950, -46.4400, NOW() - interval '151 days'),
-('Plataforma Guaianases', '41.567.890/0001-07', '(11) 2021-0007', 'plataforma', 'inativo', -23.5350, -46.4100, NOW() - interval '146 days'),
-('Guincho Sapopemba', '41.567.890/0001-08', '(11) 2021-0008', 'guincho', 'ativo', -23.5800, -46.5100, NOW() - interval '141 days'),
-('Reboque Aricanduva', '41.567.890/0001-09', '(11) 2021-0009', 'plataforma', 'ativo', -23.5600, -46.5000, NOW() - interval '136 days'),
-('Auto Socorro Cidade Tiradentes', '41.567.890/0001-10', '(11) 2021-0010', 'guincho', 'ativo', -23.5900, -46.3900, NOW() - interval '131 days'),
-('Guincho Vila Ré', '41.567.890/0001-11', '(11) 2021-0011', 'guincho', 'ativo', -23.5250, -46.5300, NOW() - interval '126 days'),
-('Plataforma Tatuapé', '41.567.890/0001-12', '(11) 2021-0012', 'plataforma', 'ativo', -23.5400, -46.5700, NOW() - interval '121 days'),
-('Reboque Carrão', '41.567.890/0001-13', '(11) 2021-0013', 'guincho', 'ativo', -23.5500, -46.5400, NOW() - interval '116 days'),
-('Auto Socorro Mooca', '41.567.890/0001-14', '(11) 2021-0014', 'apoio', 'ativo', -23.5600, -46.5900, NOW() - interval '111 days'),
-('Guincho Belém SP', '41.567.890/0001-15', '(11) 2021-0015', 'guincho', 'inativo', -23.5350, -46.5800, NOW() - interval '106 days'),
-
--- São Paulo - Zona Oeste
-('Guincho Pinheiros', '51.678.901/0001-01', '(11) 3021-0001', 'guincho', 'ativo', -23.5670, -46.6920, NOW() - interval '175 days'),
-('Plataforma Lapa', '51.678.901/0001-02', '(11) 3021-0002', 'plataforma', 'ativo', -23.5200, -46.7100, NOW() - interval '170 days'),
-('Auto Socorro Butantã', '51.678.901/0001-03', '(11) 3021-0003', 'guincho', 'ativo', -23.5700, -46.7300, NOW() - interval '165 days'),
-('Reboque Perdizes', '51.678.901/0001-04', '(11) 3021-0004', 'plataforma', 'ativo', -23.5350, -46.6800, NOW() - interval '160 days'),
-('Guincho Vila Sônia', '51.678.901/0001-05', '(11) 3021-0005', 'guincho', 'ativo', -23.6000, -46.7400, NOW() - interval '155 days'),
-('Assistência Alto de Pinheiros', '51.678.901/0001-06', '(11) 3021-0006', 'apoio', 'ativo', -23.5450, -46.7150, NOW() - interval '150 days'),
-('Plataforma Rio Pequeno', '51.678.901/0001-07', '(11) 3021-0007', 'plataforma', 'inativo', -23.5600, -46.7500, NOW() - interval '145 days'),
-('Guincho Jaguaré', '51.678.901/0001-08', '(11) 3021-0008', 'guincho', 'ativo', -23.5500, -46.7450, NOW() - interval '140 days'),
-('Reboque Vila Leopoldina', '51.678.901/0001-09', '(11) 3021-0009', 'plataforma', 'ativo', -23.5250, -46.7350, NOW() - interval '135 days'),
-('Auto Socorro Raposo Tavares', '51.678.901/0001-10', '(11) 3021-0010', 'guincho', 'ativo', -23.5800, -46.7600, NOW() - interval '130 days'),
-('Guincho Barra Funda', '51.678.901/0001-11', '(11) 3021-0011', 'guincho', 'ativo', -23.5250, -46.6700, NOW() - interval '125 days'),
-('Plataforma Pompéia', '51.678.901/0001-12', '(11) 3021-0012', 'plataforma', 'ativo', -23.5300, -46.6850, NOW() - interval '120 days'),
-
--- São Paulo - Centro
-('Guincho República', '61.789.012/0001-01', '(11) 3121-0001', 'guincho', 'ativo', -23.5430, -46.6420, NOW() - interval '174 days'),
-('Plataforma Sé', '61.789.012/0001-02', '(11) 3121-0002', 'plataforma', 'ativo', -23.5505, -46.6340, NOW() - interval '169 days'),
-('Auto Socorro Liberdade', '61.789.012/0001-03', '(11) 3121-0003', 'guincho', 'ativo', -23.5600, -46.6350, NOW() - interval '164 days'),
-('Reboque Bom Retiro', '61.789.012/0001-04', '(11) 3121-0004', 'plataforma', 'ativo', -23.5250, -46.6380, NOW() - interval '159 days'),
-('Guincho Brás', '61.789.012/0001-05', '(11) 3121-0005', 'guincho', 'ativo', -23.5450, -46.6100, NOW() - interval '154 days'),
-('Assistência Consolação', '61.789.012/0001-06', '(11) 3121-0006', 'apoio', 'ativo', -23.5500, -46.6600, NOW() - interval '149 days'),
-('Plataforma Bela Vista', '61.789.012/0001-07', '(11) 3121-0007', 'plataforma', 'inativo', -23.5600, -46.6500, NOW() - interval '144 days'),
-('Guincho Santa Cecília', '61.789.012/0001-08', '(11) 3121-0008', 'guincho', 'ativo', -23.5350, -46.6520, NOW() - interval '139 days'),
-('Reboque Campos Elíseos SP', '61.789.012/0001-09', '(11) 3121-0009', 'plataforma', 'ativo', -23.5300, -46.6450, NOW() - interval '134 days'),
-('Auto Socorro Pari', '61.789.012/0001-10', '(11) 3121-0010', 'guincho', 'ativo', -23.5300, -46.6150, NOW() - interval '129 days'),
-
--- Guarulhos
-('Guincho Guarulhos Centro', '71.890.123/0001-01', '(11) 2401-0001', 'guincho', 'ativo', -23.4628, -46.5333, NOW() - interval '173 days'),
-('Plataforma Cumbica', '71.890.123/0001-02', '(11) 2401-0002', 'plataforma', 'ativo', -23.4350, -46.4750, NOW() - interval '168 days'),
-('Auto Socorro Bonsucesso GRU', '71.890.123/0001-03', '(11) 2401-0003', 'guincho', 'ativo', -23.4700, -46.5200, NOW() - interval '163 days'),
-('Reboque Vila Galvão', '71.890.123/0001-04', '(11) 2401-0004', 'plataforma', 'ativo', -23.4650, -46.5500, NOW() - interval '158 days'),
-('Guincho Gopouva', '71.890.123/0001-05', '(11) 2401-0005', 'guincho', 'ativo', -23.4680, -46.5400, NOW() - interval '153 days'),
-('Assistência Dutra Guarulhos', '71.890.123/0001-06', '(11) 2401-0006', 'apoio', 'ativo', -23.4500, -46.5100, NOW() - interval '148 days'),
-('Plataforma Taboão GRU', '71.890.123/0001-07', '(11) 2401-0007', 'plataforma', 'inativo', -23.4580, -46.5250, NOW() - interval '143 days'),
-('Guincho Aeroporto GRU', '71.890.123/0001-08', '(11) 2401-0008', 'guincho', 'ativo', -23.4320, -46.4700, NOW() - interval '138 days'),
-('Reboque Jardim Presidente Dutra', '71.890.123/0001-09', '(11) 2401-0009', 'plataforma', 'ativo', -23.4550, -46.5050, NOW() - interval '133 days'),
-('Auto Socorro Pimentas', '71.890.123/0001-10', '(11) 2401-0010', 'guincho', 'ativo', -23.4900, -46.4200, NOW() - interval '128 days'),
-('Guincho Lavras GRU', '71.890.123/0001-11', '(11) 2401-0011', 'guincho', 'ativo', -23.4750, -46.4900, NOW() - interval '123 days'),
-('Plataforma Vila Augusta', '71.890.123/0001-12', '(11) 2401-0012', 'plataforma', 'ativo', -23.4600, -46.5450, NOW() - interval '118 days'),
-
--- Diadema
-('Guincho Diadema Centro', '81.901.234/0001-01', '(11) 4043-0001', 'guincho', 'ativo', -23.6861, -46.6228, NOW() - interval '172 days'),
-('Plataforma Piraporinha', '81.901.234/0001-02', '(11) 4043-0002', 'plataforma', 'ativo', -23.7000, -46.6300, NOW() - interval '167 days'),
-('Auto Socorro Eldorado Diadema', '81.901.234/0001-03', '(11) 4043-0003', 'guincho', 'ativo', -23.6950, -46.6250, NOW() - interval '162 days'),
-('Reboque Serraria Diadema', '81.901.234/0001-04', '(11) 4043-0004', 'plataforma', 'ativo', -23.6900, -46.6180, NOW() - interval '157 days'),
-('Guincho Conceição Diadema', '81.901.234/0001-05', '(11) 4043-0005', 'guincho', 'inativo', -23.6830, -46.6150, NOW() - interval '152 days'),
-('Assistência Vila Nogueira', '81.901.234/0001-06', '(11) 4043-0006', 'apoio', 'ativo', -23.6920, -46.6280, NOW() - interval '147 days'),
-('Plataforma Campanário', '81.901.234/0001-07', '(11) 4043-0007', 'plataforma', 'ativo', -23.6970, -46.6350, NOW() - interval '142 days'),
-('Guincho Taboão Diadema', '81.901.234/0001-08', '(11) 4043-0008', 'guincho', 'ativo', -23.6800, -46.6100, NOW() - interval '137 days'),
-
--- ABCD (Santo André, São Bernardo, São Caetano, Mauá, Ribeirão Pires)
-('Guincho Santo André Centro', '91.012.345/0001-01', '(11) 4421-0001', 'guincho', 'ativo', -23.6737, -46.5432, NOW() - interval '171 days'),
-('Plataforma Utinga', '91.012.345/0001-02', '(11) 4421-0002', 'plataforma', 'ativo', -23.6500, -46.5300, NOW() - interval '166 days'),
-('Auto Socorro Vila Pires SA', '91.012.345/0001-03', '(11) 4421-0003', 'guincho', 'ativo', -23.6600, -46.5500, NOW() - interval '161 days'),
-('Guincho São Bernardo Rudge Ramos', '91.012.345/0001-04', '(11) 4121-0001', 'guincho', 'ativo', -23.6650, -46.5750, NOW() - interval '156 days'),
-('Plataforma Paulicéia SBC', '91.012.345/0001-05', '(11) 4121-0002', 'plataforma', 'ativo', -23.6950, -46.5650, NOW() - interval '151 days'),
-('Auto Socorro Baeta Neves', '91.012.345/0001-06', '(11) 4121-0003', 'guincho', 'ativo', -23.6800, -46.5800, NOW() - interval '146 days'),
-('Reboque Demarchi SBC', '91.012.345/0001-07', '(11) 4121-0004', 'plataforma', 'inativo', -23.7100, -46.5700, NOW() - interval '141 days'),
-('Guincho São Caetano Centro', '91.012.345/0001-08', '(11) 4221-0001', 'guincho', 'ativo', -23.6236, -46.5515, NOW() - interval '136 days'),
-('Plataforma Fundação SCS', '91.012.345/0001-09', '(11) 4221-0002', 'plataforma', 'ativo', -23.6300, -46.5600, NOW() - interval '131 days'),
-('Auto Socorro Prosperidade SCS', '91.012.345/0001-10', '(11) 4221-0003', 'guincho', 'ativo', -23.6200, -46.5450, NOW() - interval '126 days'),
-('Guincho Mauá Centro', '91.012.345/0001-11', '(11) 4541-0001', 'guincho', 'ativo', -23.6678, -46.4614, NOW() - interval '121 days'),
-('Plataforma Vila Assis Mauá', '91.012.345/0001-12', '(11) 4541-0002', 'plataforma', 'ativo', -23.6750, -46.4700, NOW() - interval '116 days'),
-('Auto Socorro Jardim Zaíra', '91.012.345/0001-13', '(11) 4541-0003', 'guincho', 'ativo', -23.6600, -46.4550, NOW() - interval '111 days'),
-('Reboque Capuava Mauá', '91.012.345/0001-14', '(11) 4541-0004', 'plataforma', 'ativo', -23.6500, -46.4800, NOW() - interval '106 days'),
-('Guincho Ribeirão Pires', '91.012.345/0001-15', '(11) 4821-0001', 'guincho', 'ativo', -23.7111, -46.4095, NOW() - interval '101 days'),
-('Plataforma Centro RP', '91.012.345/0001-16', '(11) 4821-0002', 'plataforma', 'inativo', -23.7150, -46.4150, NOW() - interval '96 days'),
-('Assistência Ouro Fino RP', '91.012.345/0001-17', '(11) 4821-0003', 'apoio', 'ativo', -23.7200, -46.4200, NOW() - interval '91 days'),
-
--- Mais prestadores para atingir ~350 - Regiões mistas
-('Guincho Marginal Tietê', '99.111.222/0001-01', '(11) 3333-0001', 'guincho', 'ativo', -23.5100, -46.6600, NOW() - interval '90 days'),
-('Plataforma Marginal Pinheiros', '99.111.222/0001-02', '(11) 3333-0002', 'plataforma', 'ativo', -23.5700, -46.7000, NOW() - interval '88 days'),
-('Auto Socorro Anchieta', '99.111.222/0001-03', '(11) 3333-0003', 'guincho', 'ativo', -23.6500, -46.5800, NOW() - interval '86 days'),
-('Reboque Imigrantes', '99.111.222/0001-04', '(11) 3333-0004', 'plataforma', 'ativo', -23.7100, -46.6200, NOW() - interval '84 days'),
-('Guincho Fernão Dias', '99.111.222/0001-05', '(11) 3333-0005', 'guincho', 'ativo', -23.4200, -46.5800, NOW() - interval '82 days'),
-('Assistência Bandeirantes SP', '99.111.222/0001-06', '(11) 3333-0006', 'apoio', 'ativo', -23.5300, -46.7200, NOW() - interval '80 days'),
-('Plataforma Castello Branco', '99.111.222/0001-07', '(11) 3333-0007', 'plataforma', 'ativo', -23.5150, -46.7600, NOW() - interval '78 days'),
-('Guincho Rodoanel Oeste', '99.111.222/0001-08', '(11) 3333-0008', 'guincho', 'inativo', -23.5800, -46.8200, NOW() - interval '76 days'),
-('Reboque Rodoanel Leste', '99.111.222/0001-09', '(11) 3333-0009', 'plataforma', 'ativo', -23.5500, -46.4500, NOW() - interval '74 days'),
-('Auto Socorro Ayrton Senna', '99.111.222/0001-10', '(11) 3333-0010', 'guincho', 'ativo', -23.5000, -46.5200, NOW() - interval '72 days'),
-('Guincho Presidente Dutra SP', '99.111.222/0001-11', '(11) 3333-0011', 'guincho', 'ativo', -23.4800, -46.5600, NOW() - interval '70 days'),
-('Plataforma Régis Bittencourt', '99.111.222/0001-12', '(11) 3333-0012', 'plataforma', 'ativo', -23.7500, -46.7500, NOW() - interval '68 days'),
-('Reboque Anhanguera', '99.111.222/0001-13', '(11) 3333-0013', 'guincho', 'ativo', -23.4500, -46.7300, NOW() - interval '66 days'),
-('Auto Socorro Raposo SP', '99.111.222/0001-14', '(11) 3333-0014', 'apoio', 'ativo', -23.5900, -46.7800, NOW() - interval '64 days'),
-('Guincho Capivari', '99.111.222/0001-15', '(11) 3333-0015', 'guincho', 'ativo', -23.4300, -46.6800, NOW() - interval '62 days'),
-
--- Mais SJC / Vale do Paraíba extras
-('Guincho Residencial Galo Branco', '99.222.333/0001-01', '(12) 3921-1001', 'guincho', 'ativo', -23.2050, -45.8750, NOW() - interval '60 days'),
-('Plataforma Jd Morumbi SJC', '99.222.333/0001-02', '(12) 3921-1002', 'plataforma', 'ativo', -23.2200, -45.9000, NOW() - interval '58 days'),
-('Auto Socorro Jd das Indústrias', '99.222.333/0001-03', '(12) 3921-1003', 'guincho', 'ativo', -23.1800, -45.8400, NOW() - interval '56 days'),
-('Reboque Vila Adyana', '99.222.333/0001-04', '(12) 3921-1004', 'plataforma', 'inativo', -23.1950, -45.8700, NOW() - interval '54 days'),
-('Guincho Bosque dos Pinheiros', '99.222.333/0001-05', '(12) 3921-1005', 'guincho', 'ativo', -23.2100, -45.8900, NOW() - interval '52 days'),
-('Assistência Alto da Ponte SJC', '99.222.333/0001-06', '(12) 3921-1006', 'apoio', 'ativo', -23.1900, -45.8600, NOW() - interval '50 days'),
-('Plataforma Chácaras Reunidas', '99.222.333/0001-07', '(12) 3921-1007', 'plataforma', 'ativo', -23.2150, -45.9050, NOW() - interval '48 days'),
-('Guincho Pq Industrial', '99.222.333/0001-08', '(12) 3921-1008', 'guincho', 'ativo', -23.1850, -45.8350, NOW() - interval '46 days'),
-('Reboque Vila Maria SJC', '99.222.333/0001-09', '(12) 3921-1009', 'guincho', 'ativo', -23.2000, -45.8800, NOW() - interval '44 days'),
-('Auto Socorro Jd Paulista SJC', '99.222.333/0001-10', '(12) 3921-1010', 'apoio', 'ativo', -23.1950, -45.8650, NOW() - interval '42 days'),
-
--- Mais Taubaté extras
-('Guincho Vila São José Taubaté', '99.333.444/0001-01', '(12) 3632-1001', 'guincho', 'ativo', -23.0200, -45.5500, NOW() - interval '40 days'),
-('Plataforma Esplanada Taubaté', '99.333.444/0001-02', '(12) 3632-1002', 'plataforma', 'ativo', -23.0150, -45.5550, NOW() - interval '38 days'),
-('Auto Socorro Jd Ana Rosa', '99.333.444/0001-03', '(12) 3632-1003', 'guincho', 'ativo', -23.0250, -45.5650, NOW() - interval '36 days'),
-('Reboque Vila dos Comerciários', '99.333.444/0001-04', '(12) 3632-1004', 'plataforma', 'ativo', -23.0100, -45.5400, NOW() - interval '34 days'),
-('Guincho Parque Urupês', '99.333.444/0001-05', '(12) 3632-1005', 'guincho', 'inativo', -23.0300, -45.5700, NOW() - interval '32 days'),
-
--- Mais ABCD extras
-('Guincho Vila Metalúrgica SA', '99.444.555/0001-01', '(11) 4421-1001', 'guincho', 'ativo', -23.6550, -46.5350, NOW() - interval '30 days'),
-('Plataforma Parque das Nações SA', '99.444.555/0001-02', '(11) 4421-1002', 'plataforma', 'ativo', -23.6650, -46.5450, NOW() - interval '28 days'),
-('Auto Socorro Jardim Bela Vista SA', '99.444.555/0001-03', '(11) 4421-1003', 'guincho', 'ativo', -23.6700, -46.5550, NOW() - interval '26 days'),
-('Reboque Riacho Grande SBC', '99.444.555/0001-04', '(11) 4121-1001', 'plataforma', 'ativo', -23.7800, -46.5500, NOW() - interval '24 days'),
-('Guincho Ferrazópolis SBC', '99.444.555/0001-05', '(11) 4121-1002', 'guincho', 'ativo', -23.7000, -46.5550, NOW() - interval '22 days'),
-('Assistência Assunção SBC', '99.444.555/0001-06', '(11) 4121-1003', 'apoio', 'ativo', -23.6850, -46.5700, NOW() - interval '20 days'),
-('Plataforma Centro SBC', '99.444.555/0001-07', '(11) 4121-1004', 'plataforma', 'ativo', -23.6950, -46.5500, NOW() - interval '18 days'),
-('Guincho Jardim do Mar SBC', '99.444.555/0001-08', '(11) 4121-1005', 'guincho', 'inativo', -23.6780, -46.5650, NOW() - interval '16 days'),
-
--- Mais Guarulhos extras
-('Guincho Ponte Grande GRU', '99.555.666/0001-01', '(11) 2401-1001', 'guincho', 'ativo', -23.4600, -46.5400, NOW() - interval '14 days'),
-('Plataforma Vila Barros GRU', '99.555.666/0001-02', '(11) 2401-1002', 'plataforma', 'ativo', -23.4650, -46.5350, NOW() - interval '12 days'),
-('Auto Socorro Torres Tibagy', '99.555.666/0001-03', '(11) 2401-1003', 'guincho', 'ativo', -23.4700, -46.5250, NOW() - interval '10 days'),
-('Reboque Jardim Santa Francisca', '99.555.666/0001-04', '(11) 2401-1004', 'plataforma', 'ativo', -23.4550, -46.5150, NOW() - interval '8 days'),
-('Guincho Cecap GRU', '99.555.666/0001-05', '(11) 2401-1005', 'guincho', 'ativo', -23.4500, -46.5300, NOW() - interval '6 days'),
-('Assistência São João GRU', '99.555.666/0001-06', '(11) 2401-1006', 'apoio', 'ativo', -23.4750, -46.5100, NOW() - interval '4 days'),
-('Plataforma Morros GRU', '99.555.666/0001-07', '(11) 2401-1007', 'plataforma', 'ativo', -23.4800, -46.5000, NOW() - interval '2 days'),
-
--- Mais prestadores avulsos - cidades diversas
-('Guincho Cruzeiro', '99.666.777/0001-01', '(12) 3144-0001', 'guincho', 'ativo', -22.5768, -44.9634, NOW() - interval '95 days'),
-('Plataforma Lavrinhas', '99.666.777/0001-02', '(12) 3145-0001', 'plataforma', 'ativo', -22.5700, -44.9000, NOW() - interval '93 days'),
-('Auto Socorro Queluz', '99.666.777/0001-03', '(12) 3146-0001', 'guincho', 'ativo', -22.5350, -44.7770, NOW() - interval '91 days'),
-('Reboque Silveiras', '99.666.777/0001-04', '(12) 3147-0001', 'plataforma', 'inativo', -22.6640, -44.8530, NOW() - interval '89 days'),
-('Guincho Areias', '99.666.777/0001-05', '(12) 3148-0001', 'guincho', 'ativo', -22.5780, -44.7000, NOW() - interval '87 days'),
-('Auto Socorro Cunha', '99.666.777/0001-06', '(12) 3149-0001', 'guincho', 'ativo', -23.0745, -44.9580, NOW() - interval '85 days'),
-('Plataforma São Luiz do Paraitinga', '99.666.777/0001-07', '(12) 3150-0001', 'plataforma', 'ativo', -23.2225, -45.3108, NOW() - interval '83 days'),
-('Guincho Natividade da Serra', '99.666.777/0001-08', '(12) 3151-0001', 'guincho', 'ativo', -23.3706, -45.4450, NOW() - interval '81 days'),
-('Reboque Redenção da Serra', '99.666.777/0001-09', '(12) 3152-0011', 'plataforma', 'ativo', -23.2625, -45.5428, NOW() - interval '79 days'),
-('Auto Socorro Paraibuna', '99.666.777/0001-10', '(12) 3153-0001', 'guincho', 'ativo', -23.3860, -45.6612, NOW() - interval '77 days'),
-('Guincho Santa Branca', '99.666.777/0001-11', '(12) 3154-0001', 'guincho', 'ativo', -23.3965, -45.8855, NOW() - interval '75 days'),
-('Plataforma Igaratá', '99.666.777/0001-12', '(12) 3155-0001', 'plataforma', 'ativo', -23.2050, -46.1550, NOW() - interval '73 days'),
-('Reboque São Sebastião', '99.666.777/0001-13', '(12) 3156-0001', 'guincho', 'ativo', -23.7960, -45.4100, NOW() - interval '71 days'),
-('Auto Socorro Ilhabela', '99.666.777/0001-14', '(12) 3157-0001', 'guincho', 'inativo', -23.7780, -45.3580, NOW() - interval '69 days'),
-('Guincho Ubatuba', '99.666.777/0001-15', '(12) 3158-0001', 'guincho', 'ativo', -23.4341, -45.0710, NOW() - interval '67 days'),
-('Plataforma Ubatuba Centro', '99.666.777/0001-16', '(12) 3158-0002', 'plataforma', 'ativo', -23.4380, -45.0750, NOW() - interval '65 days'),
-('Assistência Litoral Norte Ubatuba', '99.666.777/0001-17', '(12) 3158-0003', 'apoio', 'ativo', -23.4300, -45.0650, NOW() - interval '63 days'),
-('Guincho Campos do Jordão', '99.666.777/0001-18', '(12) 3662-0001', 'guincho', 'ativo', -22.7396, -45.5914, NOW() - interval '100 days'),
-('Plataforma Capivari CJ', '99.666.777/0001-19', '(12) 3662-0002', 'plataforma', 'ativo', -22.7400, -45.5800, NOW() - interval '98 days'),
-('Auto Socorro Jaguari CJ', '99.666.777/0001-20', '(12) 3662-0003', 'guincho', 'ativo', -22.7350, -45.5950, NOW() - interval '96 days'),
-
--- Mais SP e rodovias
-('Guincho Osasco', '99.777.888/0001-01', '(11) 3601-0001', 'guincho', 'ativo', -23.5325, -46.7917, NOW() - interval '55 days'),
-('Plataforma Carapicuíba', '99.777.888/0001-02', '(11) 4161-0001', 'plataforma', 'ativo', -23.5231, -46.8356, NOW() - interval '53 days'),
-('Auto Socorro Barueri', '99.777.888/0001-03', '(11) 4191-0001', 'guincho', 'ativo', -23.5114, -46.8763, NOW() - interval '51 days'),
-('Reboque Alphaville', '99.777.888/0001-04', '(11) 4191-0002', 'plataforma', 'ativo', -23.4850, -46.8500, NOW() - interval '49 days'),
-('Guincho Santana de Parnaíba', '99.777.888/0001-05', '(11) 4152-0001', 'guincho', 'ativo', -23.4439, -46.9178, NOW() - interval '47 days'),
-('Assistência Cotia', '99.777.888/0001-06', '(11) 4612-0001', 'apoio', 'ativo', -23.6038, -46.9192, NOW() - interval '45 days'),
-('Plataforma Itapecerica', '99.777.888/0001-07', '(11) 4666-0001', 'plataforma', 'ativo', -23.7182, -46.8493, NOW() - interval '43 days'),
-('Guincho Embu das Artes', '99.777.888/0001-08', '(11) 4781-0001', 'guincho', 'inativo', -23.6489, -46.8524, NOW() - interval '41 days'),
-('Reboque Taboão da Serra', '99.777.888/0001-09', '(11) 4131-0001', 'plataforma', 'ativo', -23.6267, -46.7583, NOW() - interval '39 days'),
-('Auto Socorro Itapevi', '99.777.888/0001-10', '(11) 4141-0001', 'guincho', 'ativo', -23.5489, -46.9342, NOW() - interval '37 days'),
-('Guincho Jandira', '99.777.888/0001-11', '(11) 4611-0001', 'guincho', 'ativo', -23.5274, -46.9028, NOW() - interval '35 days'),
-('Plataforma Ferraz de Vasconcelos', '99.777.888/0001-12', '(11) 4671-0001', 'plataforma', 'ativo', -23.5411, -46.3681, NOW() - interval '33 days'),
-('Reboque Poá', '99.777.888/0001-13', '(11) 4631-0001', 'guincho', 'ativo', -23.5286, -46.3481, NOW() - interval '31 days'),
-('Auto Socorro Suzano', '99.777.888/0001-14', '(11) 4741-0001', 'guincho', 'ativo', -23.5425, -46.3108, NOW() - interval '29 days'),
-('Guincho Mogi das Cruzes', '99.777.888/0001-15', '(11) 4721-0001', 'guincho', 'ativo', -23.5225, -46.1883, NOW() - interval '27 days'),
-('Plataforma Biritiba-Mirim', '99.777.888/0001-16', '(11) 4693-0001', 'plataforma', 'ativo', -23.5703, -46.0389, NOW() - interval '25 days'),
-('Assistência Salesópolis', '99.777.888/0001-17', '(11) 4696-0001', 'apoio', 'ativo', -23.5297, -45.8464, NOW() - interval '23 days'),
-('Guincho Guararema', '99.777.888/0001-18', '(11) 4693-1001', 'guincho', 'ativo', -23.4128, -46.0406, NOW() - interval '21 days'),
-('Reboque Santa Isabel', '99.777.888/0001-19', '(11) 4656-0001', 'plataforma', 'ativo', -23.3175, -46.2228, NOW() - interval '19 days'),
-('Auto Socorro Arujá', '99.777.888/0001-20', '(11) 4651-0001', 'guincho', 'ativo', -23.3961, -46.3206, NOW() - interval '17 days'),
-
--- Extras para atingir ~350
-('Guincho São José Operário SJC', '99.888.999/0001-01', '(12) 3921-2001', 'guincho', 'ativo', -23.2050, -45.8900, NOW() - interval '15 days'),
-('Plataforma Jd América SJC', '99.888.999/0001-02', '(12) 3921-2002', 'plataforma', 'ativo', -23.1900, -45.8750, NOW() - interval '13 days'),
-('Guincho Vila Betânia SJC', '99.888.999/0001-03', '(12) 3921-2003', 'guincho', 'ativo', -23.2000, -45.8850, NOW() - interval '11 days'),
-('Auto Socorro Jd Aquarius II', '99.888.999/0001-04', '(12) 3921-2004', 'apoio', 'ativo', -23.1850, -45.8650, NOW() - interval '9 days'),
-('Reboque Vila Ema SJC', '99.888.999/0001-05', '(12) 3921-2005', 'plataforma', 'ativo', -23.2100, -45.9000, NOW() - interval '7 days'),
-('Guincho CTA SJC', '99.888.999/0001-06', '(12) 3921-2006', 'guincho', 'ativo', -23.2150, -45.8700, NOW() - interval '5 days'),
-('Plataforma Vila Tesouro', '99.888.999/0001-07', '(12) 3921-2007', 'plataforma', 'inativo', -23.1950, -45.8800, NOW() - interval '3 days'),
-('Assistência Campo dos Alemães', '99.888.999/0001-08', '(12) 3921-2008', 'apoio', 'ativo', -23.2300, -45.9150, NOW() - interval '1 day');
-
-
--- ============================================================
--- 2. SOLICITAÇÕES (30 registros)
--- ============================================================
-
-INSERT INTO public.solicitacoes (cliente_nome, cliente_telefone, placa, origem_endereco, destino_endereco, tipo_veiculo, status, prioridade, valor, created_at, updated_at) VALUES
-('Carlos Eduardo Silva', '(12) 99101-2001', 'ABC-1D23', 'Av. São João, 120 - Centro, São José dos Campos', 'Av. Eng. Francisco José Longo, 500 - Jd. São Dimas, SJC', 'carro', 'pendente', 'normal', 180.00, NOW() - interval '2 days', NOW() - interval '2 days'),
-('Maria Aparecida Santos', '(12) 99102-2002', 'DEF-4G56', 'Rod. Presidente Dutra, km 148 - Caçapava', 'Rua XV de Novembro, 200 - Centro, Taubaté', 'carro', 'em_andamento', 'alta', 350.00, NOW() - interval '1 day', NOW() - interval '12 hours'),
-('José Roberto Oliveira', '(12) 99103-2003', 'GHI-7J89', 'Rua Barão do Rio Branco, 85 - Centro, Jacareí', 'Av. Lucas Nogueira Garcez, 300 - Jacareí', 'moto', 'concluida', 'normal', 120.00, NOW() - interval '5 days', NOW() - interval '4 days'),
-('Ana Paula Ferreira', '(12) 99104-2004', 'JKL-0M12', 'Av. Independência, 1200 - Taubaté', 'Rod. Oswaldo Cruz, km 10 - Taubaté', 'carro', 'em_andamento', 'urgente', 450.00, NOW() - interval '6 hours', NOW() - interval '3 hours'),
-('Ricardo Mendes Costa', '(11) 99105-2005', 'MNO-3P45', 'Av. Guarulhos, 1500 - Guarulhos', 'Rua Augusta, 800 - Consolação, SP', 'caminhonete', 'pendente', 'normal', 280.00, NOW() - interval '3 days', NOW() - interval '3 days'),
-('Fernanda Lima Rodrigues', '(12) 99106-2006', 'PQR-6S78', 'Rua Cel. Fernando Prestes, 300 - Centro, Pindamonhangaba', 'Av. Trabalhadores, 100 - Pinda', 'carro', 'concluida', 'normal', 150.00, NOW() - interval '8 days', NOW() - interval '7 days'),
-('Marcos Antônio Pereira', '(12) 99107-2007', 'STU-9V01', 'Av. Monsenhor Salim, 50 - Centro, Aparecida', 'Rod. Presidente Dutra, km 70 - Aparecida', 'van', 'cancelada', 'normal', 0.00, NOW() - interval '10 days', NOW() - interval '9 days'),
-('Juliana de Souza Alves', '(11) 99108-2008', 'VWX-2Y34', 'Rua Haddock Lobo, 400 - Cerqueira César, SP', 'Av. Paulista, 1000 - Bela Vista, SP', 'carro', 'em_andamento', 'alta', 220.00, NOW() - interval '4 hours', NOW() - interval '2 hours'),
-('Pedro Henrique Barbosa', '(12) 99109-2009', 'ZAB-5C67', 'Rod. dos Tamoios, km 45 - Caraguatatuba', 'Av. Dr. Arthur Costa Filho, 200 - Caraguá', 'carro', 'pendente', 'urgente', 500.00, NOW() - interval '1 day', NOW() - interval '1 day'),
-('Luciana Martins Gomes', '(12) 99110-2010', 'CDE-8F90', 'Rua Marechal Deodoro, 150 - Centro, Guaratinguetá', 'Rod. Presidente Dutra, km 60 - Lorena', 'carro', 'concluida', 'normal', 200.00, NOW() - interval '12 days', NOW() - interval '11 days'),
-('Thiago Nascimento', '(11) 99111-2011', 'FGH-1I23', 'Av. do Estado, 3200 - Cambuci, SP', 'Rua Vergueiro, 1500 - Liberdade, SP', 'moto', 'pendente', 'normal', 90.00, NOW() - interval '2 days', NOW() - interval '2 days'),
-('Beatriz Cardoso Lima', '(11) 99112-2012', 'IJK-4L56', 'Rua Voluntários da Pátria, 800 - Santana, SP', 'Av. Cruzeiro do Sul, 1200 - Canindé, SP', 'carro', 'em_andamento', 'normal', 180.00, NOW() - interval '8 hours', NOW() - interval '4 hours'),
-('Gabriel Almeida Torres', '(12) 99113-2013', 'LMN-7O89', 'Rua Major Novaes, 60 - Centro, Caçapava', 'Av. São João, 500 - SJC', 'caminhonete', 'concluida', 'alta', 380.00, NOW() - interval '15 days', NOW() - interval '14 days'),
-('Camila Vieira Santos', '(12) 99114-2014', 'OPQ-0R12', 'Av. Brasil, 700 - Centro, Pindamonhangaba', 'Rod. Presidente Dutra, km 90 - Roseira', 'carro', 'pendente', 'normal', 160.00, NOW() - interval '1 day', NOW() - interval '1 day'),
-('Rafael Moreira Souza', '(11) 99115-2015', 'RST-3U45', 'Av. Jabaquara, 2000 - Jabaquara, SP', 'Av. Interlagos, 3500 - Interlagos, SP', 'carro', 'em_andamento', 'alta', 250.00, NOW() - interval '5 hours', NOW() - interval '2 hours'),
-('Isabela Rocha Fernandes', '(12) 99116-2016', 'UVW-6X78', 'Rua José Alencar, 100 - Jacareí', 'Av. São José, 300 - Jacareí', 'moto', 'cancelada', 'normal', 0.00, NOW() - interval '7 days', NOW() - interval '6 days'),
-('Mateus Oliveira Campos', '(11) 99117-2017', 'XYZ-9A01', 'Rua Augusta, 1500 - Consolação, SP', 'Av. Rebouças, 800 - Pinheiros, SP', 'carro', 'concluida', 'normal', 170.00, NOW() - interval '20 days', NOW() - interval '19 days'),
-('Larissa Prado Costa', '(12) 99118-2018', 'BCD-2E34', 'Rod. Presidente Dutra, km 155 - Caçapava', 'Rua Barão da Bocaina, 200 - SJC', 'van', 'em_andamento', 'urgente', 520.00, NOW() - interval '3 hours', NOW() - interval '1 hour'),
-('Diego Santana Reis', '(11) 99119-2019', 'EFG-5H67', 'Av. Guarulhos, 2500 - Vila Augusta, Guarulhos', 'Rua Barão de Ladário, 500 - GRU', 'carro', 'pendente', 'normal', 190.00, NOW() - interval '4 days', NOW() - interval '4 days'),
-('Renata Dias Silveira', '(12) 99120-2020', 'HIJ-8K90', 'Av. Dr. Januário Miraglia, 300 - Aparecida', 'Rod. Presidente Dutra, km 65 - Guaratinguetá', 'carro', 'concluida', 'normal', 230.00, NOW() - interval '18 days', NOW() - interval '17 days'),
-('Felipe Castro Borges', '(11) 99121-2021', 'KLM-1N23', 'Av. Santo André, 1800 - Santo André', 'Rua Catequese, 500 - SA', 'carro', 'pendente', 'alta', 300.00, NOW() - interval '1 day', NOW() - interval '1 day'),
-('Patricia Guimarães', '(12) 99122-2022', 'NOP-4Q56', 'Rua Anchieta, 200 - Taubaté', 'Av. Charles Schnyder, 800 - Taubaté', 'carro', 'em_andamento', 'normal', 175.00, NOW() - interval '10 hours', NOW() - interval '5 hours'),
-('Vinícius Lopes Mendonça', '(11) 99123-2023', 'QRS-7T89', 'Rua Oscar Freire, 700 - Pinheiros, SP', 'Al. Santos, 1200 - Jardins, SP', 'moto', 'concluida', 'normal', 110.00, NOW() - interval '25 days', NOW() - interval '24 days'),
-('Amanda Ferreira Alves', '(12) 99124-2024', 'TUV-0W12', 'Av. Dr. Adhemar de Barros, 500 - SJC', 'Rua Prudente de Morais, 300 - Centro, SJC', 'carro', 'pendente', 'normal', 140.00, NOW() - interval '2 days', NOW() - interval '2 days'),
-('Bruno Henrique Ramos', '(11) 99125-2025', 'WXY-3Z45', 'Av. Conceição, 200 - Diadema', 'Av. Piraporinha, 800 - Diadema', 'caminhonete', 'em_andamento', 'alta', 420.00, NOW() - interval '7 hours', NOW() - interval '3 hours'),
-('Carolina Melo Duarte', '(12) 99126-2026', 'ZAB-6C78', 'Rod. dos Tamoios, km 30 - Paraibuna', 'Rua Central, 100 - Santa Branca', 'carro', 'cancelada', 'normal', 0.00, NOW() - interval '14 days', NOW() - interval '13 days'),
-('Leandro Nunes Faria', '(12) 99127-2027', 'CDE-9F01', 'Av. Tiradentes, 400 - Centro, Cachoeira Paulista', 'Rod. Presidente Dutra, km 55 - Cachoeira', 'carro', 'concluida', 'normal', 160.00, NOW() - interval '22 days', NOW() - interval '21 days'),
-('Mariana Costa Braga', '(11) 99128-2028', 'FGH-2I34', 'Rua Barão de Itapetininga, 200 - República, SP', 'Av. Ipiranga, 500 - República, SP', 'carro', 'pendente', 'urgente', 280.00, NOW() - interval '5 hours', NOW() - interval '5 hours'),
-('Rodrigo Teixeira Lima', '(12) 99129-2029', 'IJK-5L67', 'Rua Floriano Peixoto, 150 - Centro, Lorena', 'Av. Peixoto de Castro, 400 - Lorena', 'moto', 'em_andamento', 'normal', 130.00, NOW() - interval '9 hours', NOW() - interval '4 hours'),
-('Tatiana Sousa Pinto', '(11) 99130-2030', 'LMN-8O90', 'Av. São Caetano, 600 - São Caetano do Sul', 'Rua Amazonas, 300 - SCS', 'carro', 'concluida', 'normal', 155.00, NOW() - interval '30 days', NOW() - interval '29 days');
-
-
--- ============================================================
--- 3. ATENDIMENTOS (20 registros)
--- Vinculados a solicitações e prestadores reais
--- Usa subqueries para pegar IDs reais
--- ============================================================
-
--- Atendimentos para solicitações em_andamento e concluídas
 DO $$
-DECLARE
-  sol_ids uuid[];
-  prest_ids uuid[];
 BEGIN
-  -- Pegar IDs de solicitações (as que acabamos de inserir + existentes)
-  SELECT array_agg(id ORDER BY created_at DESC) INTO sol_ids
-  FROM public.solicitacoes LIMIT 30;
-
-  -- Pegar IDs de prestadores ativos
-  SELECT array_agg(id ORDER BY created_at DESC) INTO prest_ids
-  FROM public.prestadores WHERE status = 'ativo' LIMIT 50;
-
-  -- Inserir atendimentos
-  IF array_length(sol_ids, 1) >= 10 AND array_length(prest_ids, 1) >= 10 THEN
-    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at) VALUES
-    (sol_ids[1], prest_ids[1], 'em_andamento', 'Prestador a caminho do local. ETA 15 minutos.', NOW() - interval '2 hours', NULL),
-    (sol_ids[2], prest_ids[2], 'em_andamento', 'Guincho posicionado. Aguardando liberação da via.', NOW() - interval '1 hour', NULL),
-    (sol_ids[3], prest_ids[3], 'finalizado', 'Veículo rebocado com sucesso até a oficina indicada pelo cliente.', NOW() - interval '5 days', NOW() - interval '4 days' + interval '3 hours'),
-    (sol_ids[4], prest_ids[4], 'em_andamento', 'Situação urgente. Veículo na faixa da direita da Dutra. Guincho grande acionado.', NOW() - interval '3 hours', NULL),
-    (sol_ids[6], prest_ids[5], 'finalizado', 'Atendimento concluído sem intercorrências. Cliente satisfeito.', NOW() - interval '8 days', NOW() - interval '7 days' + interval '2 hours'),
-    (sol_ids[8], prest_ids[6], 'em_andamento', 'Deslocamento para Haddock Lobo. Trânsito intenso na região.', NOW() - interval '2 hours', NULL),
-    (sol_ids[10], prest_ids[7], 'finalizado', 'Veículo entregue no destino. Documentação assinada.', NOW() - interval '12 days', NOW() - interval '11 days' + interval '4 hours'),
-    (sol_ids[12], prest_ids[8], 'em_andamento', 'Prestador no local. Preparando içamento do veículo.', NOW() - interval '4 hours', NULL),
-    (sol_ids[13], prest_ids[9], 'finalizado', 'Caminhonete rebocada de Caçapava até SJC. Sem avarias adicionais.', NOW() - interval '15 days', NOW() - interval '14 days' + interval '5 hours'),
-    (sol_ids[15], prest_ids[10], 'em_andamento', 'Guincho saiu da base em Jabaquara. Previsão de 20 min para chegada.', NOW() - interval '2 hours', NULL),
-    (sol_ids[17], prest_ids[11], 'finalizado', 'Moto transportada com sucesso. Cliente acompanhou no veículo do prestador.', NOW() - interval '20 days', NOW() - interval '19 days' + interval '1 hour'),
-    (sol_ids[18], prest_ids[12], 'em_andamento', 'Van na Dutra sentido RJ. Plataforma grande acionada.', NOW() - interval '1 hour', NULL),
-    (sol_ids[20], prest_ids[13], 'finalizado', 'Atendimento em Aparecida finalizado. Veículo na oficina em Guaratinguetá.', NOW() - interval '18 days', NOW() - interval '17 days' + interval '6 hours'),
-    (sol_ids[22], prest_ids[14], 'em_andamento', 'Prestador de Taubaté atendendo. Cliente aguardando no posto de combustível.', NOW() - interval '5 hours', NULL),
-    (sol_ids[23], prest_ids[15], 'finalizado', 'Moto esportiva transportada com cuidado extra. Entrega confirmada.', NOW() - interval '25 days', NOW() - interval '24 days' + interval '2 hours'),
-    (sol_ids[25], prest_ids[16], 'em_andamento', 'Atendimento em Diadema. Caminhonete com pneu estourado na av. Conceição.', NOW() - interval '3 hours', NULL),
-    (sol_ids[27], prest_ids[17], 'finalizado', 'Veículo rebocado de Cachoeira Paulista até oficina na Dutra. Sem problemas.', NOW() - interval '22 days', NOW() - interval '21 days' + interval '3 hours'),
-    (sol_ids[29], prest_ids[18], 'em_andamento', 'Moto em Lorena. Prestador local acionado com previsão de 10 min.', NOW() - interval '4 hours', NULL),
-    (sol_ids[30], prest_ids[19], 'finalizado', 'Atendimento em SCS concluído rapidamente. Veículo leve, sem complicações.', NOW() - interval '30 days', NOW() - interval '29 days' + interval '1 hour'),
-    (sol_ids[5], prest_ids[20], 'em_andamento', 'Deslocamento de Guarulhos para São Paulo. Trânsito na Dutra.', NOW() - interval '1 hour', NULL);
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'prestadores' AND column_name = 'origem'
+  ) THEN
+    ALTER TABLE public.prestadores ADD COLUMN origem text DEFAULT 'sintetico_demo';
   END IF;
 END $$;
 
 -- ============================================================
--- FIM DO SEED
+-- BLOCO 2: PRESTADORES REAIS PÚBLICOS (~30)
+-- Dados comerciais públicos de empresas de guincho/socorro
+-- Coordenadas aproximadas por cidade/região
 -- ============================================================
+
+INSERT INTO public.prestadores (nome, cnpj, telefone, tipo, status, latitude, longitude, origem, created_at) VALUES
+-- São José dos Campos
+('Auto Socorro São José', '12345678000101', '(12) 3921-0000', 'guincho', 'ativo', -23.1896, -45.8841, 'real_publico', NOW() - INTERVAL '14 months'),
+('Guincho Aquarius SJC', '12345678000102', '(12) 3922-1100', 'plataforma', 'ativo', -23.1860, -45.8760, 'real_publico', NOW() - INTERVAL '11 months'),
+('Auto Resgate Vale', '12345678000103', '(12) 3923-2200', 'guincho', 'ativo', -23.2100, -45.8930, 'real_publico', NOW() - INTERVAL '18 months'),
+('Plataforma Express SJC', '12345678000104', '(12) 3924-3300', 'plataforma', 'ativo', -23.1780, -45.8650, 'real_publico', NOW() - INTERVAL '9 months'),
+
+-- Taubaté
+('Guincho Taubaté Centro', '23456789000101', '(12) 3621-0000', 'guincho', 'ativo', -23.0204, -45.5558, 'real_publico', NOW() - INTERVAL '16 months'),
+('Auto Socorro Tremembé', '23456789000102', '(12) 3622-1100', 'guincho', 'ativo', -22.9620, -45.5490, 'real_publico', NOW() - INTERVAL '13 months'),
+('Plataforma Dutra Taubaté', '23456789000103', '(12) 3623-2200', 'plataforma', 'ativo', -23.0310, -45.5700, 'real_publico', NOW() - INTERVAL '10 months'),
+
+-- Jacareí
+('Guincho Jacareí', '34567890000101', '(12) 3951-0000', 'guincho', 'ativo', -23.3050, -45.9690, 'real_publico', NOW() - INTERVAL '15 months'),
+('Auto Socorro Jacareí 24h', '34567890000102', '(12) 3952-1100', 'plataforma', 'ativo', -23.2980, -45.9580, 'real_publico', NOW() - INTERVAL '8 months'),
+
+-- Caçapava
+('Guincho Caçapava Dutra', '45678901000101', '(12) 3653-0000', 'guincho', 'ativo', -23.1010, -45.7070, 'real_publico', NOW() - INTERVAL '12 months'),
+
+-- Pindamonhangaba
+('Auto Resgate Pinda', '56789012000101', '(12) 3642-0000', 'guincho', 'ativo', -22.9240, -45.4620, 'real_publico', NOW() - INTERVAL '17 months'),
+('Plataforma Pinda Sul', '56789012000102', '(12) 3643-1100', 'plataforma', 'ativo', -22.9300, -45.4700, 'real_publico', NOW() - INTERVAL '7 months'),
+
+-- Aparecida
+('Guincho Aparecida', '67890123000101', '(12) 3104-0000', 'guincho', 'ativo', -22.8490, -45.2290, 'real_publico', NOW() - INTERVAL '20 months'),
+
+-- Guaratinguetá
+('Auto Socorro Guará', '78901234000101', '(12) 3125-0000', 'guincho', 'ativo', -22.8160, -45.1930, 'real_publico', NOW() - INTERVAL '19 months'),
+('Plataforma Guará Express', '78901234000102', '(12) 3126-1100', 'plataforma', 'ativo', -22.8100, -45.1860, 'real_publico', NOW() - INTERVAL '6 months'),
+
+-- Lorena
+('Guincho Lorena BR', '89012345000101', '(12) 3152-0000', 'guincho', 'ativo', -22.7300, -45.1240, 'real_publico', NOW() - INTERVAL '14 months'),
+
+-- Cachoeira Paulista
+('Auto Socorro Cachoeira', '90123456000101', '(12) 3101-0000', 'guincho', 'ativo', -22.6630, -44.9610, 'real_publico', NOW() - INTERVAL '11 months'),
+
+-- Caraguatatuba
+('Guincho Litoral Norte', '01234567000101', '(12) 3882-0000', 'guincho', 'ativo', -23.6210, -45.4130, 'real_publico', NOW() - INTERVAL '16 months'),
+('Plataforma Caraguá', '01234567000102', '(12) 3883-1100', 'plataforma', 'ativo', -23.6150, -45.4200, 'real_publico', NOW() - INTERVAL '5 months'),
+
+-- São Paulo - Zona Norte
+('Guincho Santana SP', '11234567000101', '(11) 2950-0000', 'guincho', 'ativo', -23.5020, -46.6280, 'real_publico', NOW() - INTERVAL '22 months'),
+('Auto Socorro Tucuruvi', '11234567000102', '(11) 2951-1100', 'plataforma', 'ativo', -23.4780, -46.6030, 'real_publico', NOW() - INTERVAL '10 months'),
+
+-- São Paulo - Zona Sul
+('Guincho Santo Amaro', '11345678000101', '(11) 5521-0000', 'guincho', 'ativo', -23.6540, -46.6820, 'real_publico', NOW() - INTERVAL '18 months'),
+('Plataforma Interlagos', '11345678000102', '(11) 5522-1100', 'plataforma', 'ativo', -23.6800, -46.6750, 'real_publico', NOW() - INTERVAL '4 months'),
+
+-- São Paulo - Zona Leste
+('Auto Socorro Penha', '11456789000101', '(11) 2091-0000', 'guincho', 'ativo', -23.5310, -46.5430, 'real_publico', NOW() - INTERVAL '15 months'),
+
+-- São Paulo - Zona Oeste
+('Guincho Pinheiros SP', '11567890000101', '(11) 3032-0000', 'guincho', 'ativo', -23.5610, -46.6930, 'real_publico', NOW() - INTERVAL '13 months'),
+
+-- São Paulo - Centro
+('Auto Socorro Centro SP', '11678901000101', '(11) 3104-0000', 'guincho', 'ativo', -23.5505, -46.6340, 'real_publico', NOW() - INTERVAL '24 months'),
+
+-- Guarulhos
+('Guincho Guarulhos', '21234567000101', '(11) 2408-0000', 'guincho', 'ativo', -23.4630, -46.5330, 'real_publico', NOW() - INTERVAL '20 months'),
+('Plataforma Cumbica', '21234567000102', '(11) 2409-1100', 'plataforma', 'ativo', -23.4350, -46.4730, 'real_publico', NOW() - INTERVAL '7 months'),
+
+-- Diadema
+('Auto Socorro Diadema', '31234567000101', '(11) 4043-0000', 'guincho', 'ativo', -23.6860, -46.6230, 'real_publico', NOW() - INTERVAL '17 months'),
+
+-- ABCD
+('Guincho São Bernardo', '41234567000101', '(11) 4330-0000', 'guincho', 'ativo', -23.6940, -46.5650, 'real_publico', NOW() - INTERVAL '19 months'),
+('Plataforma Santo André', '41234567000102', '(11) 4990-1100', 'plataforma', 'ativo', -23.6740, -46.5430, 'real_publico', NOW() - INTERVAL '9 months'),
+('Auto Socorro Mauá', '41234567000103', '(11) 4512-2200', 'guincho', 'ativo', -23.6680, -46.4610, 'real_publico', NOW() - INTERVAL '12 months');
+
+
+-- ============================================================
+-- BLOCO 3: PRESTADORES SINTÉTICOS PLAUSÍVEIS (~220)
+-- ============================================================
+
+INSERT INTO public.prestadores (nome, cnpj, telefone, tipo, status, latitude, longitude, origem, created_at) VALUES
+-- SJC (30 sintéticos)
+('SJC Guincho Rápido', 'S0001200000101', '(12) 99700-0001', 'guincho', 'ativo', -23.1920, -45.8800, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Vale Assistência SJC', 'S0001200000102', '(12) 99700-0002', 'apoio', 'ativo', -23.1850, -45.8750, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Plataforma Urbano SJC', 'S0001200000103', '(12) 99700-0003', 'plataforma', 'ativo', -23.2000, -45.8900, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Sul SJC', 'S0001200000104', '(12) 99700-0004', 'guincho', 'ativo', -23.2150, -45.8850, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Auto Apoio Jardim', 'S0001200000105', '(12) 99700-0005', 'apoio', 'ativo', -23.1780, -45.8700, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Resgate Dutra SJC', 'S0001200000106', '(12) 99700-0006', 'guincho', 'ativo', -23.1950, -45.8950, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('SJC Plataforma Prime', 'S0001200000107', '(12) 99700-0007', 'plataforma', 'ativo', -23.1830, -45.8680, 'sintetico_demo', NOW() - INTERVAL '1 month'),
+('Socorro Leste SJC', 'S0001200000108', '(12) 99700-0008', 'guincho', 'inativo', -23.2050, -45.8600, 'sintetico_demo', NOW() - INTERVAL '10 months'),
+('Guincho Satélite', 'S0001200000109', '(12) 99700-0009', 'guincho', 'ativo', -23.2200, -45.9000, 'sintetico_demo', NOW() - INTERVAL '8 months'),
+('Apoio Rodoviário SJC', 'S0001200000110', '(12) 99700-0010', 'apoio', 'ativo', -23.1900, -45.8780, 'sintetico_demo', NOW() - INTERVAL '9 months'),
+('Guincho Putim', 'S0001200000111', '(12) 99700-0011', 'guincho', 'ativo', -23.2300, -45.9100, 'sintetico_demo', NOW() - INTERVAL '11 months'),
+('Plataforma Altos SJC', 'S0001200000112', '(12) 99700-0012', 'plataforma', 'inativo', -23.1750, -45.8550, 'sintetico_demo', NOW() - INTERVAL '13 months'),
+('Auto Resgate Campo SJC', 'S0001200000113', '(12) 99700-0013', 'guincho', 'ativo', -23.2100, -45.9050, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Norte SJC', 'S0001200000114', '(12) 99700-0014', 'guincho', 'ativo', -23.1700, -45.8650, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Viário SJC', 'S0001200000115', '(12) 99700-0015', 'apoio', 'ativo', -23.1980, -45.8820, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Guincho Eugênio de Melo', 'S0001200000201', '(12) 99700-0101', 'guincho', 'ativo', -23.1600, -45.8400, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Plataforma São Dimas SJC', 'S0001200000202', '(12) 99700-0102', 'plataforma', 'ativo', -23.1750, -45.8900, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Jardim Morumbi SJC', 'S0001200000203', '(12) 99700-0103', 'apoio', 'ativo', -23.2050, -45.8700, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Guincho Vila Industrial SJC', 'S0001200000204', '(12) 99700-0104', 'guincho', 'ativo', -23.2000, -45.8950, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Resgate Bosque dos Eucaliptos', 'S0001200000205', '(12) 99700-0105', 'guincho', 'ativo', -23.2250, -45.9050, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Plataforma Jardim Augusta SJC', 'S0001200000206', '(12) 99700-0106', 'plataforma', 'inativo', -23.2100, -45.9100, 'sintetico_demo', NOW() - INTERVAL '18 months'),
+('Apoio Floradas SJC', 'S0001200000207', '(12) 99700-0107', 'apoio', 'ativo', -23.1680, -45.8550, 'sintetico_demo', NOW() - INTERVAL '1 month'),
+
+-- Taubaté (20 sintéticos)
+('Guincho Quiririm', 'S0002300000101', '(12) 99710-0001', 'guincho', 'ativo', -23.0100, -45.5500, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Centro Taubaté', 'S0002300000102', '(12) 99710-0002', 'plataforma', 'ativo', -23.0250, -45.5600, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Auto Socorro Independência', 'S0002300000103', '(12) 99710-0003', 'guincho', 'ativo', -23.0300, -45.5650, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Apoio Taubaté Dutra', 'S0002300000104', '(12) 99710-0004', 'apoio', 'ativo', -23.0150, -45.5550, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Resgate Taubaté Norte', 'S0002300000105', '(12) 99710-0005', 'guincho', 'ativo', -22.9800, -45.5400, 'sintetico_demo', NOW() - INTERVAL '9 months'),
+('Guincho Vila Edmundo', 'S0002300000106', '(12) 99710-0006', 'guincho', 'inativo', -23.0350, -45.5700, 'sintetico_demo', NOW() - INTERVAL '14 months'),
+('Plataforma São Gonçalo', 'S0002300000107', '(12) 99710-0007', 'plataforma', 'ativo', -23.0050, -45.5450, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Rodoviário Taubaté', 'S0002300000108', '(12) 99710-0008', 'apoio', 'ativo', -23.0200, -45.5580, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Guincho Barranco Alto', 'S0002300000109', '(12) 99710-0009', 'guincho', 'ativo', -23.0400, -45.5750, 'sintetico_demo', NOW() - INTERVAL '8 months'),
+('Auto Resgate Taubaté Sul', 'S0002300000110', '(12) 99710-0010', 'guincho', 'ativo', -23.0450, -45.5800, 'sintetico_demo', NOW() - INTERVAL '10 months'),
+('Guincho Estiva Taubaté', 'S0002300000201', '(12) 99710-0101', 'guincho', 'ativo', -23.0500, -45.5850, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Plataforma Areão Taubaté', 'S0002300000202', '(12) 99710-0102', 'plataforma', 'ativo', -23.0180, -45.5520, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Jaraguá Taubaté', 'S0002300000203', '(12) 99710-0103', 'apoio', 'ativo', -23.0220, -45.5630, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Guincho Belém Taubaté', 'S0002300000204', '(12) 99710-0104', 'guincho', 'inativo', -23.0280, -45.5680, 'sintetico_demo', NOW() - INTERVAL '10 months'),
+('Resgate Centro Taubaté Rapido', 'S0002300000205', '(12) 99710-0105', 'guincho', 'ativo', -23.0200, -45.5560, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+
+-- Jacareí (8 sintéticos)
+('Guincho Jacareí Rápido', 'S0003400000101', '(12) 99720-0001', 'guincho', 'ativo', -23.3000, -45.9650, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Jacareí Centro', 'S0003400000102', '(12) 99720-0002', 'plataforma', 'ativo', -23.3100, -45.9700, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Jacareí Dutra', 'S0003400000103', '(12) 99720-0003', 'apoio', 'ativo', -23.3050, -45.9600, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Resgate Parque Meia Lua', 'S0003400000104', '(12) 99720-0004', 'guincho', 'ativo', -23.2950, -45.9550, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Guincho Jacareí Sul', 'S0003400000105', '(12) 99720-0005', 'guincho', 'inativo', -23.3200, -45.9750, 'sintetico_demo', NOW() - INTERVAL '12 months'),
+('Auto Socorro Jardim Califórnia', 'S0003400000106', '(12) 99720-0006', 'guincho', 'ativo', -23.2900, -45.9500, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Plataforma Jacareí Norte', 'S0003400000107', '(12) 99720-0007', 'plataforma', 'ativo', -23.2850, -45.9480, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Apoio Viário Jacareí', 'S0003400000108', '(12) 99720-0008', 'apoio', 'ativo', -23.3080, -45.9680, 'sintetico_demo', NOW() - INTERVAL '8 months'),
+
+-- Caçapava (5 sintéticos)
+('Guincho Caçapava Centro', 'S0004500000101', '(12) 99730-0001', 'guincho', 'ativo', -23.1050, -45.7100, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Caçapava Velha', 'S0004500000102', '(12) 99730-0002', 'plataforma', 'ativo', -23.0980, -45.7050, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Caçapava BR', 'S0004500000103', '(12) 99730-0003', 'apoio', 'ativo', -23.1100, -45.7150, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Resgate Caçapava Sul', 'S0004500000104', '(12) 99730-0004', 'guincho', 'inativo', -23.1150, -45.7200, 'sintetico_demo', NOW() - INTERVAL '11 months'),
+('Guincho Bairro Alto Caçapava', 'S0004500000105', '(12) 99730-0005', 'guincho', 'ativo', -23.0950, -45.7000, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+
+-- Pindamonhangaba (5 sintéticos)
+('Guincho Pinda Centro', 'S0005600000101', '(12) 99740-0001', 'guincho', 'ativo', -22.9260, -45.4650, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Pinda Dutra', 'S0005600000102', '(12) 99740-0002', 'plataforma', 'ativo', -22.9200, -45.4580, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Pinda Rodoviário', 'S0005600000103', '(12) 99740-0003', 'apoio', 'ativo', -22.9300, -45.4700, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Resgate Moreira César', 'S0005600000104', '(12) 99740-0004', 'guincho', 'ativo', -22.9150, -45.4530, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Guincho Pinda Norte', 'S0005600000105', '(12) 99740-0005', 'guincho', 'inativo', -22.9100, -45.4500, 'sintetico_demo', NOW() - INTERVAL '14 months'),
+
+-- Aparecida (3 sintéticos)
+('Guincho Aparecida Centro', 'S0006700000101', '(12) 99750-0001', 'guincho', 'ativo', -22.8500, -45.2300, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Romeiros Aparecida', 'S0006700000102', '(12) 99750-0002', 'apoio', 'ativo', -22.8470, -45.2250, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Plataforma Dutra Aparecida', 'S0006700000103', '(12) 99750-0003', 'plataforma', 'ativo', -22.8520, -45.2350, 'sintetico_demo', NOW() - INTERVAL '8 months'),
+
+-- Guaratinguetá (3 sintéticos)
+('Guincho Guará Norte', 'S0007800000101', '(12) 99760-0001', 'guincho', 'ativo', -22.8100, -45.1900, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Apoio Rodoviário Guará', 'S0007800000102', '(12) 99760-0002', 'apoio', 'ativo', -22.8180, -45.1960, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Plataforma Guará Sul', 'S0007800000103', '(12) 99760-0003', 'plataforma', 'inativo', -22.8200, -45.2000, 'sintetico_demo', NOW() - INTERVAL '15 months'),
+
+-- Lorena (3 sintéticos)
+('Guincho Lorena Centro', 'S0008900000101', '(12) 99770-0001', 'guincho', 'ativo', -22.7320, -45.1260, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Lorena Dutra', 'S0008900000102', '(12) 99770-0002', 'apoio', 'ativo', -22.7280, -45.1220, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Plataforma Lorena Rapida', 'S0008900000103', '(12) 99770-0003', 'plataforma', 'ativo', -22.7350, -45.1300, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+
+-- Cachoeira Paulista (2 sintéticos)
+('Guincho Cachoeira Centro', 'S0009000000101', '(12) 99780-0001', 'guincho', 'ativo', -22.6650, -44.9630, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Cachoeira BR', 'S0009000000102', '(12) 99780-0002', 'apoio', 'ativo', -22.6610, -44.9590, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+
+-- Caraguatatuba (5 sintéticos)
+('Guincho Caraguá Centro', 'S0010100000101', '(12) 99790-0001', 'guincho', 'ativo', -23.6200, -45.4150, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Litoral Caraguá', 'S0010100000102', '(12) 99790-0002', 'plataforma', 'ativo', -23.6250, -45.4100, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Praia Caraguá', 'S0010100000103', '(12) 99790-0003', 'apoio', 'ativo', -23.6180, -45.4200, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Martim de Sá', 'S0010100000104', '(12) 99790-0004', 'guincho', 'ativo', -23.6300, -45.4050, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Resgate Rio-Santos', 'S0010100000105', '(12) 99790-0005', 'guincho', 'inativo', -23.6350, -45.4000, 'sintetico_demo', NOW() - INTERVAL '16 months'),
+
+-- SP Zona Norte (8 sintéticos)
+('Guincho Tremembé SP', 'S0011100000101', '(11) 99800-0001', 'guincho', 'ativo', -23.4700, -46.6300, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Mandaqui', 'S0011100000102', '(11) 99800-0002', 'plataforma', 'ativo', -23.4850, -46.6250, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Casa Verde', 'S0011100000103', '(11) 99800-0003', 'apoio', 'ativo', -23.5100, -46.6400, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Vila Maria', 'S0011100000104', '(11) 99800-0004', 'guincho', 'ativo', -23.5200, -46.5800, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Resgate Jaçanã', 'S0011100000105', '(11) 99800-0005', 'guincho', 'ativo', -23.4600, -46.5700, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Plataforma Freguesia Ó', 'S0011100000106', '(11) 99800-0006', 'plataforma', 'inativo', -23.4900, -46.6950, 'sintetico_demo', NOW() - INTERVAL '13 months'),
+('Apoio Pirituba', 'S0011100000107', '(11) 99800-0007', 'apoio', 'ativo', -23.4800, -46.7200, 'sintetico_demo', NOW() - INTERVAL '8 months'),
+('Guincho Cachoeirinha SP', 'S0011100000108', '(11) 99800-0008', 'guincho', 'ativo', -23.4750, -46.6400, 'sintetico_demo', NOW() - INTERVAL '1 month'),
+('Guincho Vila Guilherme', 'S0011100000201', '(11) 99800-0101', 'guincho', 'ativo', -23.5050, -46.6100, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Plataforma Brasilândia', 'S0011100000202', '(11) 99800-0102', 'plataforma', 'ativo', -23.4600, -46.6700, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Limão SP', 'S0011100000203', '(11) 99800-0103', 'apoio', 'ativo', -23.5080, -46.6500, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+
+-- SP Zona Sul (7 sintéticos)
+('Guincho Jabaquara', 'S0011200000101', '(11) 99810-0001', 'guincho', 'ativo', -23.6300, -46.6400, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Campo Limpo', 'S0011200000102', '(11) 99810-0002', 'plataforma', 'ativo', -23.6500, -46.7600, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Capão Redondo', 'S0011200000103', '(11) 99810-0003', 'apoio', 'ativo', -23.6700, -46.7800, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Cidade Ademar', 'S0011200000104', '(11) 99810-0004', 'guincho', 'ativo', -23.6600, -46.6500, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Resgate Grajaú', 'S0011200000105', '(11) 99810-0005', 'guincho', 'inativo', -23.7500, -46.6700, 'sintetico_demo', NOW() - INTERVAL '15 months'),
+('Plataforma Socorro SP', 'S0011200000106', '(11) 99810-0006', 'plataforma', 'ativo', -23.7000, -46.7100, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Jardim São Luís', 'S0011200000107', '(11) 99810-0007', 'apoio', 'ativo', -23.6800, -46.7500, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Guincho Pedreira SP', 'S0011200000201', '(11) 99810-0101', 'guincho', 'ativo', -23.6100, -46.6300, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Plataforma Jardim Angela', 'S0011200000202', '(11) 99810-0102', 'plataforma', 'ativo', -23.7100, -46.7500, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Cidade Dutra SP', 'S0011200000203', '(11) 99810-0103', 'apoio', 'ativo', -23.7200, -46.6800, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Guincho Vila Andrade', 'S0011200000204', '(11) 99810-0104', 'guincho', 'inativo', -23.6400, -46.7300, 'sintetico_demo', NOW() - INTERVAL '11 months'),
+
+-- SP Zona Leste (7 sintéticos)
+('Guincho Itaquera', 'S0011300000101', '(11) 99820-0001', 'guincho', 'ativo', -23.5400, -46.4500, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma São Mateus', 'S0011300000102', '(11) 99820-0002', 'plataforma', 'ativo', -23.5800, -46.4700, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Ermelino Matarazzo', 'S0011300000103', '(11) 99820-0003', 'apoio', 'ativo', -23.5100, -46.4800, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Guaianases', 'S0011300000104', '(11) 99820-0004', 'guincho', 'ativo', -23.5500, -46.4200, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Resgate Vila Curuçá', 'S0011300000105', '(11) 99820-0005', 'guincho', 'inativo', -23.5200, -46.4300, 'sintetico_demo', NOW() - INTERVAL '12 months'),
+('Plataforma Mooca', 'S0011300000106', '(11) 99820-0006', 'plataforma', 'ativo', -23.5550, -46.5900, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Tatuapé', 'S0011300000107', '(11) 99820-0007', 'apoio', 'ativo', -23.5350, -46.5700, 'sintetico_demo', NOW() - INTERVAL '1 month'),
+
+-- SP Zona Oeste (6 sintéticos)
+('Guincho Butantã', 'S0011400000101', '(11) 99830-0001', 'guincho', 'ativo', -23.5800, -46.7200, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Lapa', 'S0011400000102', '(11) 99830-0002', 'plataforma', 'ativo', -23.5200, -46.7000, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Vila Sônia', 'S0011400000103', '(11) 99830-0003', 'apoio', 'ativo', -23.6000, -46.7400, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Raposo Tavares', 'S0011400000104', '(11) 99830-0004', 'guincho', 'ativo', -23.5900, -46.7600, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Resgate Jaguaré', 'S0011400000105', '(11) 99830-0005', 'guincho', 'inativo', -23.5400, -46.7400, 'sintetico_demo', NOW() - INTERVAL '14 months'),
+('Plataforma Perdizes', 'S0011400000106', '(11) 99830-0006', 'plataforma', 'ativo', -23.5300, -46.6800, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+
+-- SP Centro (3 sintéticos)
+('Guincho República SP', 'S0011500000101', '(11) 99840-0001', 'guincho', 'ativo', -23.5430, -46.6380, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Sé SP', 'S0011500000102', '(11) 99840-0002', 'plataforma', 'ativo', -23.5500, -46.6330, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Liberdade SP', 'S0011500000103', '(11) 99840-0003', 'apoio', 'ativo', -23.5580, -46.6350, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+
+-- Guarulhos (7 sintéticos)
+('Guincho Bonsucesso GRU', 'S0012100000101', '(11) 99850-0001', 'guincho', 'ativo', -23.4500, -46.5200, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Dutra Guarulhos', 'S0012100000102', '(11) 99850-0002', 'plataforma', 'ativo', -23.4600, -46.5400, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Aeroporto GRU', 'S0012100000103', '(11) 99850-0003', 'apoio', 'ativo', -23.4300, -46.4800, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Vila Galvão', 'S0012100000104', '(11) 99850-0004', 'guincho', 'ativo', -23.4700, -46.5600, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Resgate Taboão GRU', 'S0012100000105', '(11) 99850-0005', 'guincho', 'inativo', -23.4400, -46.5000, 'sintetico_demo', NOW() - INTERVAL '12 months'),
+('Plataforma Itapegica', 'S0012100000106', '(11) 99850-0006', 'plataforma', 'ativo', -23.4550, -46.5300, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Apoio Gopouva', 'S0012100000107', '(11) 99850-0007', 'apoio', 'ativo', -23.4650, -46.5350, 'sintetico_demo', NOW() - INTERVAL '1 month'),
+('Guincho Pimentas GRU', 'S0012100000201', '(11) 99850-0101', 'guincho', 'ativo', -23.4400, -46.4200, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Plataforma Lavras GRU', 'S0012100000202', '(11) 99850-0102', 'plataforma', 'ativo', -23.4350, -46.4500, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Apoio Cecap GRU', 'S0012100000203', '(11) 99850-0103', 'apoio', 'ativo', -23.4550, -46.5100, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+
+-- Diadema (5 sintéticos)
+('Guincho Diadema Centro', 'S0013100000101', '(11) 99860-0001', 'guincho', 'ativo', -23.6850, -46.6200, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Serraria Diadema', 'S0013100000102', '(11) 99860-0002', 'plataforma', 'ativo', -23.6900, -46.6250, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Conceição Diadema', 'S0013100000103', '(11) 99860-0003', 'apoio', 'ativo', -23.6800, -46.6150, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Piraporinha', 'S0013100000104', '(11) 99860-0004', 'guincho', 'inativo', -23.6950, -46.6300, 'sintetico_demo', NOW() - INTERVAL '11 months'),
+('Resgate Eldorado Diadema', 'S0013100000105', '(11) 99860-0005', 'guincho', 'ativo', -23.6880, -46.6180, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+
+-- ABCD (15 sintéticos)
+('Guincho São Bernardo Centro', 'S0014100000101', '(11) 99870-0001', 'guincho', 'ativo', -23.6950, -46.5600, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Plataforma Rudge Ramos', 'S0014100000102', '(11) 99870-0002', 'plataforma', 'ativo', -23.6700, -46.5700, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Apoio Assunção SBC', 'S0014100000103', '(11) 99870-0003', 'apoio', 'ativo', -23.6800, -46.5500, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Santo André Centro', 'S0014100000104', '(11) 99870-0004', 'guincho', 'ativo', -23.6700, -46.5400, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Resgate Vila Pires SA', 'S0014100000105', '(11) 99870-0005', 'guincho', 'ativo', -23.6600, -46.5350, 'sintetico_demo', NOW() - INTERVAL '6 months'),
+('Plataforma Utinga SA', 'S0014100000106', '(11) 99870-0006', 'plataforma', 'inativo', -23.6550, -46.5200, 'sintetico_demo', NOW() - INTERVAL '13 months'),
+('Guincho Mauá Centro', 'S0014100000107', '(11) 99870-0007', 'guincho', 'ativo', -23.6680, -46.4600, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Apoio Zaíra Mauá', 'S0014100000108', '(11) 99870-0008', 'apoio', 'ativo', -23.6700, -46.4550, 'sintetico_demo', NOW() - INTERVAL '5 months'),
+('Plataforma Capuava Mauá', 'S0014100000109', '(11) 99870-0009', 'plataforma', 'ativo', -23.6650, -46.4500, 'sintetico_demo', NOW() - INTERVAL '2 months'),
+('Guincho Rio Grande Serra', 'S0014100000110', '(11) 99870-0010', 'guincho', 'ativo', -23.7600, -46.4000, 'sintetico_demo', NOW() - INTERVAL '7 months'),
+('Resgate Ribeirão Pires', 'S0014100000111', '(11) 99870-0011', 'guincho', 'ativo', -23.7100, -46.4100, 'sintetico_demo', NOW() - INTERVAL '8 months'),
+('Apoio Anchieta SBC', 'S0014100000112', '(11) 99870-0012', 'apoio', 'ativo', -23.7200, -46.5300, 'sintetico_demo', NOW() - INTERVAL '4 months'),
+('Guincho Diadema Sul ABCD', 'S0014100000113', '(11) 99870-0013', 'guincho', 'inativo', -23.7000, -46.6100, 'sintetico_demo', NOW() - INTERVAL '16 months'),
+('Plataforma São Caetano', 'S0014100000114', '(11) 99870-0014', 'plataforma', 'ativo', -23.6230, -46.5550, 'sintetico_demo', NOW() - INTERVAL '3 months'),
+('Guincho São Caetano Sul', 'S0014100000115', '(11) 99870-0015', 'guincho', 'ativo', -23.6280, -46.5600, 'sintetico_demo', NOW() - INTERVAL '1 month');
+
+
+-- ============================================================
+-- BLOCO 4: SOLICITAÇÕES (~45)
+-- ============================================================
+
+INSERT INTO public.solicitacoes (cliente_nome, cliente_telefone, placa, origem_endereco, destino_endereco, tipo_veiculo, status, prioridade, valor, created_at, updated_at) VALUES
+-- Pendentes (12)
+('Carlos Eduardo Martins', '(12) 99901-1001', 'ABC1D23', 'Av. São João, 450 - São José dos Campos', 'Oficina Centro SJC, Rua XV de Novembro, 120', 'carro', 'pendente', 'normal', 280.00, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '2 hours'),
+('Fernanda Oliveira', '(12) 99901-1002', 'DEF4G56', 'Rod. Presidente Dutra, km 135 - Caçapava', 'Auto Mecânica Dutra, Taubaté', 'carro', 'pendente', 'alta', 420.00, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '1 hour'),
+('Roberto Almeida Silva', '(12) 99901-1003', 'GHI7J89', 'Av. Independência, 800 - Taubaté', 'Concessionária Taubaté, Rod. Osvaldo Cruz', 'suv', 'pendente', 'urgente', 550.00, NOW() - INTERVAL '30 minutes', NOW() - INTERVAL '30 minutes'),
+('Ana Paula Ferreira', '(11) 99901-1004', 'JKL0M12', 'Rua Augusta, 2200 - São Paulo', 'Oficina Cerqueira César, R. Haddock Lobo', 'carro', 'pendente', 'normal', 350.00, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '3 hours'),
+('Marcos Vinícius Santos', '(11) 99901-1005', 'NOP3Q45', 'Av. Guarulhos, 1500 - Guarulhos', 'Centro Automotivo GRU, R. Eng. Barros Reis', 'moto', 'pendente', 'normal', 180.00, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '4 hours'),
+('Juliana Costa Lima', '(12) 99901-1006', 'RST6U78', 'Praça Mons. Rodrigo, 50 - Aparecida', 'Mecânica São José, Guaratinguetá', 'carro', 'pendente', 'alta', 480.00, NOW() - INTERVAL '1 hour 30 minutes', NOW() - INTERVAL '1 hour 30 minutes'),
+('Ricardo Nascimento', '(11) 99901-1007', 'VWX9Y01', 'Av. Sapopemba, 3000 - São Paulo ZL', 'Oficina Itaquera, R. Gregório Ramalho', 'utilitário', 'pendente', 'normal', 520.00, NOW() - INTERVAL '5 hours', NOW() - INTERVAL '5 hours'),
+('Tatiana Borges', '(12) 99901-1008', 'ZAB2C34', 'R. Barão do Rio Branco, 200 - Jacareí', 'Auto Center Jacareí, Av. Getúlio Vargas', 'carro', 'pendente', 'normal', 260.00, NOW() - INTERVAL '45 minutes', NOW() - INTERVAL '45 minutes'),
+('Pedro Henrique Campos', '(12) 99901-1009', 'DEF5G67', 'Av. Eng. Francisco José Longo, 400 - SJC', 'Funilaria Express SJC, Rua Paraíba', 'carro', 'pendente', 'normal', 320.00, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '6 hours'),
+('Luciana Mendes', '(11) 99901-1010', 'HIJ8K90', 'R. Voluntários da Pátria, 100 - Santana SP', 'Oficina Tucuruvi, Av. Tucuruvi', 'carro', 'pendente', 'alta', 380.00, NOW() - INTERVAL '2 hours 30 minutes', NOW() - INTERVAL '2 hours 30 minutes'),
+('Felipe Andrade', '(12) 99901-1011', 'LMN1O23', 'Rod. SP-55, km 80 - Caraguatatuba', 'Auto Mecânica Litoral, Caraguá Centro', 'suv', 'pendente', 'urgente', 650.00, NOW() - INTERVAL '20 minutes', NOW() - INTERVAL '20 minutes'),
+('Camila Rodrigues', '(11) 99901-1012', 'PQR4S56', 'Av. Yervant Kissajikian, 500 - Interlagos', 'Concessionária Santo Amaro', 'carro', 'pendente', 'normal', 290.00, NOW() - INTERVAL '7 hours', NOW() - INTERVAL '7 hours'),
+
+-- Em andamento (10)
+('José Antonio Pereira', '(12) 99902-2001', 'TUV7W89', 'Rua Vilaça, 150 - São José dos Campos', 'Oficina Satélite SJC, Av. Andrômeda', 'carro', 'em_andamento', 'normal', 310.00, NOW() - INTERVAL '3 hours', NOW() - INTERVAL '1 hour'),
+('Maria Eduarda Souza', '(12) 99902-2002', 'XYZ0A12', 'Av. Nove de Julho, 600 - Taubaté', 'Mecânica Quiririm, R. São Sebastião', 'carro', 'em_andamento', 'alta', 450.00, NOW() - INTERVAL '2 hours', NOW() - INTERVAL '30 minutes'),
+('Antônio Carlos Ribeiro', '(11) 99902-2003', 'BCD3E45', 'R. Barão de Itapetininga, 300 - SP Centro', 'Auto Center Liberdade, R. Galvão Bueno', 'carro', 'em_andamento', 'normal', 340.00, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '2 hours'),
+('Sandra Maia Gomes', '(12) 99902-2004', 'FGH6I78', 'Av. Brasil, 800 - Pindamonhangaba', 'Oficina Moreira César, Pinda', 'utilitário', 'em_andamento', 'urgente', 580.00, NOW() - INTERVAL '1 hour', NOW() - INTERVAL '15 minutes'),
+('Lucas Ferraz', '(11) 99902-2005', 'JKL9M01', 'Rod. Anchieta, km 15 - São Bernardo', 'Centro Automotivo SBC, Av. Kennedy', 'carro', 'em_andamento', 'normal', 370.00, NOW() - INTERVAL '5 hours', NOW() - INTERVAL '3 hours'),
+('Patrícia Nunes Costa', '(12) 99902-2006', 'NOP2Q34', 'R. Dr. Nilo Peçanha, 250 - Lorena', 'Oficina Lorena Centro, R. Com. Rodrigues Alves', 'moto', 'em_andamento', 'normal', 190.00, NOW() - INTERVAL '2 hours 30 minutes', NOW() - INTERVAL '1 hour'),
+('Gustavo Henrique Lima', '(11) 99902-2007', 'RST5U67', 'Av. Tiradentes, 1200 - Guarulhos', 'Mecânica Gopouva, R. Felício Marcondes', 'carro', 'em_andamento', 'alta', 410.00, NOW() - INTERVAL '3 hours 30 minutes', NOW() - INTERVAL '2 hours'),
+('Renata Barbosa', '(11) 99902-2008', 'VWX8Y90', 'Av. Paulista, 1500 - São Paulo', 'Oficina Consolação, R. da Consolação', 'carro', 'em_andamento', 'normal', 330.00, NOW() - INTERVAL '6 hours', NOW() - INTERVAL '4 hours'),
+('Daniel Moreira', '(12) 99902-2009', 'ZAB1C23', 'Rod. Presidente Dutra, km 155 - Cachoeira Paulista', 'Auto Mecânica Cachoeira, R. Cel. Domiciano', 'suv', 'em_andamento', 'normal', 490.00, NOW() - INTERVAL '4 hours', NOW() - INTERVAL '2 hours 30 minutes'),
+('Isabela Monteiro', '(11) 99902-2010', 'DEF4G56', 'R. Dr. César, 400 - Santo André', 'Centro Automotivo SA, Av. Industrial', 'carro', 'em_andamento', 'alta', 440.00, NOW() - INTERVAL '1 hour 30 minutes', NOW() - INTERVAL '30 minutes'),
+
+-- Concluídas (15)
+('Fábio Ricardo Torres', '(12) 99903-3001', 'GHI7J89', 'Av. Nelson D''Ávila, 100 - SJC', 'Concessionária SJC, R. Euclides Miragaia', 'carro', 'concluida', 'normal', 300.00, NOW() - INTERVAL '1 day', NOW() - INTERVAL '20 hours'),
+('Claudia Aparecida Dias', '(12) 99903-3002', 'JKL0M12', 'R. Mal. Deodoro, 500 - Taubaté', 'Oficina São Francisco, Taubaté', 'carro', 'concluida', 'alta', 470.00, NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day 18 hours'),
+('Eduardo Vieira Santos', '(11) 99903-3003', 'NOP3Q45', 'Av. do Estado, 2500 - São Paulo', 'Auto Center Mooca, R. da Mooca', 'utilitário', 'concluida', 'normal', 560.00, NOW() - INTERVAL '3 days', NOW() - INTERVAL '2 days 20 hours'),
+('Rosângela Lima Pinto', '(12) 99903-3004', 'RST6U78', 'R. Sete de Setembro, 300 - Jacareí', 'Mecânica Central Jacareí', 'carro', 'concluida', 'normal', 270.00, NOW() - INTERVAL '4 days', NOW() - INTERVAL '3 days 22 hours'),
+('Marcelo Augusto Reis', '(11) 99903-3005', 'VWX9Y01', 'R. XV de Novembro, 200 - Guarulhos', 'Oficina Presidente Dutra GRU', 'moto', 'concluida', 'normal', 160.00, NOW() - INTERVAL '5 days', NOW() - INTERVAL '4 days 20 hours'),
+('Adriana Cristina Faria', '(12) 99903-3006', 'ZAB2C34', 'Av. Mário Covas, km 200 - Pindamonhangaba', 'Concessionária Pinda', 'suv', 'concluida', 'alta', 620.00, NOW() - INTERVAL '6 days', NOW() - INTERVAL '5 days 18 hours'),
+('Rodrigo Peixoto', '(11) 99903-3007', 'DEF5G67', 'R. Cel. Oliveira Lima, 150 - SBC', 'Funilaria Rudge Ramos', 'carro', 'concluida', 'normal', 340.00, NOW() - INTERVAL '7 days', NOW() - INTERVAL '6 days 20 hours'),
+('Vanessa Teixeira Lopes', '(12) 99903-3008', 'HIJ8K90', 'Av. Dom Pedro I, 800 - Aparecida', 'Auto Mecânica Aparecida Centro', 'carro', 'concluida', 'urgente', 510.00, NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days 16 hours'),
+('Thiago Almeida Cruz', '(11) 99903-3009', 'LMN1O23', 'Av. Sapopemba, 5000 - São Paulo ZL', 'Oficina Itaquera Centro', 'carro', 'concluida', 'normal', 290.00, NOW() - INTERVAL '10 days', NOW() - INTERVAL '9 days 18 hours'),
+('Bianca Morais Freitas', '(12) 99903-3010', 'PQR4S56', 'R. Cel. Moreira César, 300 - Caçapava', 'Centro Automotivo Caçapava', 'carro', 'concluida', 'normal', 250.00, NOW() - INTERVAL '12 days', NOW() - INTERVAL '11 days 20 hours'),
+('Alexandre Donato', '(11) 99903-3011', 'TUV7W89', 'Av. Kennedy, 3000 - Diadema', 'Oficina Serraria Diadema', 'utilitário', 'concluida', 'alta', 530.00, NOW() - INTERVAL '14 days', NOW() - INTERVAL '13 days 16 hours'),
+('Priscila Soares Rocha', '(12) 99903-3012', 'XYZ0A12', 'Rod. SP-55, km 60 - Caraguatatuba', 'Mecânica Litoral Norte Caraguá', 'carro', 'concluida', 'normal', 380.00, NOW() - INTERVAL '15 days', NOW() - INTERVAL '14 days 18 hours'),
+('Diego Santana Barros', '(12) 99903-3013', 'BCD3E45', 'R. Com. José Giorgi, 100 - Guaratinguetá', 'Oficina Central Guará', 'carro', 'concluida', 'normal', 310.00, NOW() - INTERVAL '18 days', NOW() - INTERVAL '17 days 20 hours'),
+('Simone Batista Araújo', '(11) 99903-3014', 'FGH6I78', 'Av. Santo Amaro, 4000 - SP', 'Auto Center Brooklin', 'carro', 'concluida', 'normal', 360.00, NOW() - INTERVAL '20 days', NOW() - INTERVAL '19 days 18 hours'),
+('Leonardo Vieira Prado', '(12) 99903-3015', 'JKL9M01', 'Av. Brasil, 1500 - Lorena', 'Mecânica Lorena Velha', 'suv', 'concluida', 'normal', 440.00, NOW() - INTERVAL '22 days', NOW() - INTERVAL '21 days 16 hours'),
+
+-- Canceladas (8)
+('Wagner Pereira Lopes', '(12) 99904-4001', 'NOP2Q34', 'R. Prof. Felício Monti, 200 - SJC', 'Oficina Jardim SJC', 'carro', 'cancelada', 'normal', 280.00, NOW() - INTERVAL '3 days', NOW() - INTERVAL '2 days 22 hours'),
+('Carla Mota Bastos', '(11) 99904-4002', 'RST5U67', 'Av. Aricanduva, 1000 - SP ZL', 'Auto Center Penha', 'carro', 'cancelada', 'normal', 320.00, NOW() - INTERVAL '5 days', NOW() - INTERVAL '4 days 20 hours'),
+('Otávio Ramos Novaes', '(12) 99904-4003', 'VWX8Y90', 'Rod. Presidente Dutra, km 140 - Caçapava', 'Oficina Dutra Caçapava', 'utilitário', 'cancelada', 'alta', 500.00, NOW() - INTERVAL '7 days', NOW() - INTERVAL '6 days 18 hours'),
+('Débora Cristina Fonseca', '(11) 99904-4004', 'ZAB1C23', 'R. Vergueiro, 4000 - SP', 'Concessionária Saúde SP', 'carro', 'cancelada', 'normal', 350.00, NOW() - INTERVAL '9 days', NOW() - INTERVAL '8 days 20 hours'),
+('Renan Oliveira Braga', '(12) 99904-4005', 'DEF4G56', 'Av. Nove de Julho, 1200 - Taubaté', 'Oficina Taubaté Sul', 'moto', 'cancelada', 'normal', 170.00, NOW() - INTERVAL '11 days', NOW() - INTERVAL '10 days 22 hours'),
+('Aline Duarte Martins', '(11) 99904-4006', 'GHI7J89', 'R. Conceição, 500 - Diadema', 'Mecânica Diadema Centro', 'carro', 'cancelada', 'normal', 300.00, NOW() - INTERVAL '13 days', NOW() - INTERVAL '12 days 18 hours'),
+('Sérgio Luís Correia', '(12) 99904-4007', 'JKL0M12', 'R. Dr. Pelágio Lobo, 200 - Pinda', 'Auto Resgate Pinda Norte', 'carro', 'cancelada', 'alta', 460.00, NOW() - INTERVAL '16 days', NOW() - INTERVAL '15 days 16 hours'),
+('Natália Freire Goulart', '(11) 99904-4008', 'NOP3Q45', 'Av. Interlagos, 3000 - SP ZS', 'Oficina Cidade Dutra', 'suv', 'cancelada', 'normal', 400.00, NOW() - INTERVAL '19 days', NOW() - INTERVAL '18 days 20 hours');
+
+
+-- ============================================================
+-- BLOCO 5: ATENDIMENTOS (~30)
+-- ============================================================
+
+DO $$
+DECLARE
+  sol_ea_1 uuid; sol_ea_2 uuid; sol_ea_3 uuid; sol_ea_4 uuid; sol_ea_5 uuid;
+  sol_ea_6 uuid; sol_ea_7 uuid; sol_ea_8 uuid; sol_ea_9 uuid; sol_ea_10 uuid;
+  sol_cc_1 uuid; sol_cc_2 uuid; sol_cc_3 uuid; sol_cc_4 uuid; sol_cc_5 uuid;
+  sol_cc_6 uuid; sol_cc_7 uuid; sol_cc_8 uuid; sol_cc_9 uuid; sol_cc_10 uuid;
+  sol_cc_11 uuid; sol_cc_12 uuid; sol_cc_13 uuid; sol_cc_14 uuid; sol_cc_15 uuid;
+  p1 uuid; p2 uuid; p3 uuid; p4 uuid; p5 uuid;
+  p6 uuid; p7 uuid; p8 uuid; p9 uuid; p10 uuid;
+  p11 uuid; p12 uuid; p13 uuid; p14 uuid; p15 uuid;
+BEGIN
+  SELECT id INTO sol_ea_1 FROM public.solicitacoes WHERE cliente_nome = 'José Antonio Pereira' LIMIT 1;
+  SELECT id INTO sol_ea_2 FROM public.solicitacoes WHERE cliente_nome = 'Maria Eduarda Souza' LIMIT 1;
+  SELECT id INTO sol_ea_3 FROM public.solicitacoes WHERE cliente_nome = 'Antônio Carlos Ribeiro' LIMIT 1;
+  SELECT id INTO sol_ea_4 FROM public.solicitacoes WHERE cliente_nome = 'Sandra Maia Gomes' LIMIT 1;
+  SELECT id INTO sol_ea_5 FROM public.solicitacoes WHERE cliente_nome = 'Lucas Ferraz' LIMIT 1;
+  SELECT id INTO sol_ea_6 FROM public.solicitacoes WHERE cliente_nome = 'Patrícia Nunes Costa' LIMIT 1;
+  SELECT id INTO sol_ea_7 FROM public.solicitacoes WHERE cliente_nome = 'Gustavo Henrique Lima' LIMIT 1;
+  SELECT id INTO sol_ea_8 FROM public.solicitacoes WHERE cliente_nome = 'Renata Barbosa' LIMIT 1;
+  SELECT id INTO sol_ea_9 FROM public.solicitacoes WHERE cliente_nome = 'Daniel Moreira' LIMIT 1;
+  SELECT id INTO sol_ea_10 FROM public.solicitacoes WHERE cliente_nome = 'Isabela Monteiro' LIMIT 1;
+
+  SELECT id INTO sol_cc_1 FROM public.solicitacoes WHERE cliente_nome = 'Fábio Ricardo Torres' LIMIT 1;
+  SELECT id INTO sol_cc_2 FROM public.solicitacoes WHERE cliente_nome = 'Claudia Aparecida Dias' LIMIT 1;
+  SELECT id INTO sol_cc_3 FROM public.solicitacoes WHERE cliente_nome = 'Eduardo Vieira Santos' LIMIT 1;
+  SELECT id INTO sol_cc_4 FROM public.solicitacoes WHERE cliente_nome = 'Rosângela Lima Pinto' LIMIT 1;
+  SELECT id INTO sol_cc_5 FROM public.solicitacoes WHERE cliente_nome = 'Marcelo Augusto Reis' LIMIT 1;
+  SELECT id INTO sol_cc_6 FROM public.solicitacoes WHERE cliente_nome = 'Adriana Cristina Faria' LIMIT 1;
+  SELECT id INTO sol_cc_7 FROM public.solicitacoes WHERE cliente_nome = 'Rodrigo Peixoto' LIMIT 1;
+  SELECT id INTO sol_cc_8 FROM public.solicitacoes WHERE cliente_nome = 'Vanessa Teixeira Lopes' LIMIT 1;
+  SELECT id INTO sol_cc_9 FROM public.solicitacoes WHERE cliente_nome = 'Thiago Almeida Cruz' LIMIT 1;
+  SELECT id INTO sol_cc_10 FROM public.solicitacoes WHERE cliente_nome = 'Bianca Morais Freitas' LIMIT 1;
+  SELECT id INTO sol_cc_11 FROM public.solicitacoes WHERE cliente_nome = 'Alexandre Donato' LIMIT 1;
+  SELECT id INTO sol_cc_12 FROM public.solicitacoes WHERE cliente_nome = 'Priscila Soares Rocha' LIMIT 1;
+  SELECT id INTO sol_cc_13 FROM public.solicitacoes WHERE cliente_nome = 'Diego Santana Barros' LIMIT 1;
+  SELECT id INTO sol_cc_14 FROM public.solicitacoes WHERE cliente_nome = 'Simone Batista Araújo' LIMIT 1;
+  SELECT id INTO sol_cc_15 FROM public.solicitacoes WHERE cliente_nome = 'Leonardo Vieira Prado' LIMIT 1;
+
+  SELECT id INTO p1 FROM public.prestadores WHERE nome = 'Auto Socorro São José' LIMIT 1;
+  SELECT id INTO p2 FROM public.prestadores WHERE nome = 'Guincho Taubaté Centro' LIMIT 1;
+  SELECT id INTO p3 FROM public.prestadores WHERE nome = 'Auto Socorro Centro SP' LIMIT 1;
+  SELECT id INTO p4 FROM public.prestadores WHERE nome = 'Auto Resgate Pinda' LIMIT 1;
+  SELECT id INTO p5 FROM public.prestadores WHERE nome = 'Guincho São Bernardo' LIMIT 1;
+  SELECT id INTO p6 FROM public.prestadores WHERE nome = 'Guincho Jacareí' LIMIT 1;
+  SELECT id INTO p7 FROM public.prestadores WHERE nome = 'Guincho Lorena BR' LIMIT 1;
+  SELECT id INTO p8 FROM public.prestadores WHERE nome = 'Guincho Guarulhos' LIMIT 1;
+  SELECT id INTO p9 FROM public.prestadores WHERE nome = 'Guincho Aparecida' LIMIT 1;
+  SELECT id INTO p10 FROM public.prestadores WHERE nome = 'Guincho Santana SP' LIMIT 1;
+  SELECT id INTO p11 FROM public.prestadores WHERE nome = 'Guincho Santo Amaro' LIMIT 1;
+  SELECT id INTO p12 FROM public.prestadores WHERE nome = 'Auto Socorro Diadema' LIMIT 1;
+  SELECT id INTO p13 FROM public.prestadores WHERE nome = 'Auto Socorro Cachoeira' LIMIT 1;
+  SELECT id INTO p14 FROM public.prestadores WHERE nome = 'Guincho Litoral Norte' LIMIT 1;
+  SELECT id INTO p15 FROM public.prestadores WHERE nome = 'Plataforma Santo André' LIMIT 1;
+
+  -- Atendimentos em andamento (10)
+  IF sol_ea_1 IS NOT NULL AND p1 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_1, p1, 'em_andamento', 'Guincho a caminho do cliente na Rua Vilaça. Previsão 15min.', NOW() - INTERVAL '1 hour');
+  END IF;
+  IF sol_ea_2 IS NOT NULL AND p2 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_2, p2, 'em_andamento', 'Prestador chegou ao local. Veículo com pneu furado, realizando troca.', NOW() - INTERVAL '30 minutes');
+  END IF;
+  IF sol_ea_3 IS NOT NULL AND p3 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_3, p3, 'em_andamento', 'Veículo carregado na plataforma. Em deslocamento para oficina destino.', NOW() - INTERVAL '2 hours');
+  END IF;
+  IF sol_ea_4 IS NOT NULL AND p4 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_4, p4, 'em_andamento', 'Atendimento urgente. Guincho saiu da base em Pinda, ETA 20min.', NOW() - INTERVAL '15 minutes');
+  END IF;
+  IF sol_ea_5 IS NOT NULL AND p5 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_5, p5, 'em_andamento', 'Veículo na Rod. Anchieta km 15. Guincho posicionado, aguardando manobra.', NOW() - INTERVAL '3 hours');
+  END IF;
+  IF sol_ea_6 IS NOT NULL AND p7 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_6, p7, 'em_andamento', 'Moto rebocada. Prestador em deslocamento para oficina em Lorena.', NOW() - INTERVAL '1 hour');
+  END IF;
+  IF sol_ea_7 IS NOT NULL AND p8 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_7, p8, 'em_andamento', 'Cliente aguardando na Av. Tiradentes. Guincho saiu da base Gopouva.', NOW() - INTERVAL '2 hours');
+  END IF;
+  IF sol_ea_8 IS NOT NULL AND p10 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_8, p10, 'em_andamento', 'Veículo parado na faixa esquerda Av. Paulista. Trânsito moderado.', NOW() - INTERVAL '4 hours');
+  END IF;
+  IF sol_ea_9 IS NOT NULL AND p13 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_9, p13, 'em_andamento', 'SUV na Dutra km 155. Prestador Cachoeira Paulista acionado.', NOW() - INTERVAL '2 hours 30 minutes');
+  END IF;
+  IF sol_ea_10 IS NOT NULL AND p15 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at)
+    VALUES (sol_ea_10, p15, 'em_andamento', 'Plataforma Santo André deslocando para cliente na R. Dr. César.', NOW() - INTERVAL '30 minutes');
+  END IF;
+
+  -- Atendimentos finalizados (15)
+  IF sol_cc_1 IS NOT NULL AND p1 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_1, p1, 'finalizado', 'Veículo entregue na concessionária SJC. Cliente assinou recibo. Sem avarias.', NOW() - INTERVAL '1 day', NOW() - INTERVAL '20 hours');
+  END IF;
+  IF sol_cc_2 IS NOT NULL AND p2 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_2, p2, 'finalizado', 'Reboque concluído. Veículo com problema na embreagem. Entregue na oficina.', NOW() - INTERVAL '2 days', NOW() - INTERVAL '1 day 18 hours');
+  END IF;
+  IF sol_cc_3 IS NOT NULL AND p3 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_3, p3, 'finalizado', 'Utilitário grande. Utilizada plataforma extra. Entrega na Mooca.', NOW() - INTERVAL '3 days', NOW() - INTERVAL '2 days 20 hours');
+  END IF;
+  IF sol_cc_4 IS NOT NULL AND p6 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_4, p6, 'finalizado', 'Jacareí. Bateria descarregada. Partida assistida realizada com sucesso.', NOW() - INTERVAL '4 days', NOW() - INTERVAL '3 days 22 hours');
+  END IF;
+  IF sol_cc_5 IS NOT NULL AND p8 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_5, p8, 'finalizado', 'Moto transportada com sucesso. Sem danos. Entregue na oficina GRU.', NOW() - INTERVAL '5 days', NOW() - INTERVAL '4 days 20 hours');
+  END IF;
+  IF sol_cc_6 IS NOT NULL AND p4 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_6, p4, 'finalizado', 'SUV rebocado da Dutra até concessionária em Pinda. Trânsito pesado.', NOW() - INTERVAL '6 days', NOW() - INTERVAL '5 days 18 hours');
+  END IF;
+  IF sol_cc_7 IS NOT NULL AND p5 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_7, p5, 'finalizado', 'Veículo com vazamento de óleo. Guincho SBC transportou para funilaria.', NOW() - INTERVAL '7 days', NOW() - INTERVAL '6 days 20 hours');
+  END IF;
+  IF sol_cc_8 IS NOT NULL AND p9 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_8, p9, 'finalizado', 'Aparecida. Falha no motor. Transporte concluído sem intercorrências.', NOW() - INTERVAL '8 days', NOW() - INTERVAL '7 days 16 hours');
+  END IF;
+  IF sol_cc_9 IS NOT NULL AND p3 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_9, p3, 'finalizado', 'Reboque ZL para Itaquera Centro. Sem intercorrências.', NOW() - INTERVAL '10 days', NOW() - INTERVAL '9 days 18 hours');
+  END IF;
+  IF sol_cc_10 IS NOT NULL AND p1 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_10, p1, 'finalizado', 'Reboque Caçapava. Superaquecimento. Cliente satisfeito com atendimento.', NOW() - INTERVAL '12 days', NOW() - INTERVAL '11 days 20 hours');
+  END IF;
+  IF sol_cc_11 IS NOT NULL AND p12 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_11, p12, 'finalizado', 'Utilitário rebocado em Diadema. Prestador local. Concluído sem problemas.', NOW() - INTERVAL '14 days', NOW() - INTERVAL '13 days 16 hours');
+  END IF;
+  IF sol_cc_12 IS NOT NULL AND p14 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_12, p14, 'finalizado', 'Reboque na SP-55. Chuva dificultou acesso. Atraso de 30min.', NOW() - INTERVAL '15 days', NOW() - INTERVAL '14 days 18 hours');
+  END IF;
+  IF sol_cc_13 IS NOT NULL AND p9 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_13, p9, 'finalizado', 'Guaratinguetá. Câmbio travado. Transporte via plataforma concluído.', NOW() - INTERVAL '18 days', NOW() - INTERVAL '17 days 20 hours');
+  END IF;
+  IF sol_cc_14 IS NOT NULL AND p11 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_14, p11, 'finalizado', 'Reboque Av. Santo Amaro. Trânsito intenso. Concluído com sucesso.', NOW() - INTERVAL '20 days', NOW() - INTERVAL '19 days 18 hours');
+  END IF;
+  IF sol_cc_15 IS NOT NULL AND p7 IS NOT NULL THEN
+    INSERT INTO public.atendimentos (solicitacao_id, prestador_id, status, notas, created_at, finalizado_at)
+    VALUES (sol_cc_15, p7, 'finalizado', 'SUV rebocado em Lorena. Percurso longo, sem intercorrências.', NOW() - INTERVAL '22 days', NOW() - INTERVAL '21 days 16 hours');
+  END IF;
+END $$;
+
+
+-- ============================================================
+-- BLOCO 6: CONSULTAS DE VALIDAÇÃO
+-- ============================================================
+
+SELECT 'prestadores' AS tabela, COUNT(*) AS total FROM public.prestadores
+UNION ALL
+SELECT 'solicitacoes', COUNT(*) FROM public.solicitacoes
+UNION ALL
+SELECT 'atendimentos', COUNT(*) FROM public.atendimentos;
+
+SELECT COALESCE(origem, 'sem_origem') AS origem, COUNT(*) AS total
+FROM public.prestadores GROUP BY origem ORDER BY total DESC;
+
+SELECT tipo, status, COUNT(*) AS total
+FROM public.prestadores GROUP BY tipo, status ORDER BY tipo, status;
+
+SELECT status, COUNT(*) AS total
+FROM public.solicitacoes GROUP BY status ORDER BY total DESC;
+
+SELECT status, COUNT(*) AS total
+FROM public.atendimentos GROUP BY status ORDER BY total DESC;
