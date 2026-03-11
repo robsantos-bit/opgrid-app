@@ -261,7 +261,7 @@ export default function Dashboard() {
                   <p className="text-[11px] text-muted-foreground">Localização via link — sem app</p>
                 </div>
               </div>
-              <Link to="/mapa" className="text-[11px] text-primary font-medium hover:underline">Ver mapa →</Link>
+              <Link to="/app/mapa" className="text-[11px] text-primary font-medium hover:underline">Ver mapa →</Link>
             </div>
           </CardHeader>
           <CardContent className="px-4 pb-4 space-y-3">
