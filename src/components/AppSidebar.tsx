@@ -102,7 +102,7 @@ export function AppSidebar() {
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <NavLink to={item.url} end={item.url === '/'}
+                          <NavLink to={item.url} end={item.url === '/app'}
                             className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-100 ${
                               active
                                 ? 'bg-sidebar-primary/15 text-sidebar-primary-foreground font-semibold'
