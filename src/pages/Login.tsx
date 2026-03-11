@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import {
-  Hexagon, Mail, Lock, Eye, EyeOff, ArrowRight, ChevronRight, Zap,
+  Hexagon, Mail, Lock, Eye, EyeOff, ArrowRight, Zap,
   MessageCircle, Radar, Smartphone, Link2, Bell
 } from 'lucide-react';
 
@@ -21,77 +21,35 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) { toast.error('Informe o e-mail'); return; }
+    if (!email || !password) { toast.error('Informe e-mail e senha'); return; }
     setLoading(true);
-    await new Promise(r => setTimeout(r, 500));
-    if (login(email, password)) { toast.success('Bem-vindo ao OpGrid'); navigate('/app'); }
-    else { toast.error('Credenciais inválidas.'); }
+    const { error } = await login(email, password);
+    if (error) {
+      toast.error('Credenciais inválidas: ' + error);
+    } else {
+      toast.success('Bem-vindo ao OpGrid');
+      navigate('/app');
+    }
     setLoading(false);
   };
 
-  const handleQuickLogin = (demoEmail: string) => { setEmail(demoEmail); setPassword('demo'); };
-
   const differentials = [
-    {
-      icon: MessageCircle,
-      number: '01',
-      title: 'Solicitação via WhatsApp',
-      desc: 'Cliente pede guincho pelo WhatsApp. Dados coletados, valor calculado e proposta enviada automaticamente.',
-      accent: 'from-success/20 to-success/5',
-      iconColor: 'text-success',
-    },
-    {
-      icon: Bell,
-      number: '02',
-      title: 'Sirene na central',
-      desc: 'Quando a solicitação chega no sistema, toca uma sirene sonora na central operacional. Nada passa despercebido.',
-      accent: 'from-destructive/20 to-destructive/5',
-      iconColor: 'text-destructive',
-    },
-    {
-      icon: Radar,
-      number: '03',
-      title: 'Despacho automático',
-      desc: 'Sistema localiza os 2 prestadores mais próximos e aptos. Envia oferta automática. Primeiro que aceita, ganha a OS.',
-      accent: 'from-primary/20 to-primary/5',
-      iconColor: 'text-primary',
-    },
-    {
-      icon: Bell,
-      number: '04',
-      title: 'Sirene no prestador',
-      desc: 'Quando a oferta chega no celular do prestador, toca uma sirene de alerta. Resposta rápida garantida.',
-      accent: 'from-warning/20 to-warning/5',
-      iconColor: 'text-warning',
-    },
-    {
-      icon: Smartphone,
-      number: '05',
-      title: 'Portal do prestador por link',
-      desc: 'Sem app. O prestador recebe um link, aceita a OS, compartilha localização e gerencia o atendimento pelo navegador.',
-      accent: 'from-info/20 to-info/5',
-      iconColor: 'text-info',
-    },
-    {
-      icon: Link2,
-      number: '06',
-      title: 'Acompanhamento do cliente',
-      desc: 'O cliente recebe um link para acompanhar em tempo real: mapa, ETA, status e timeline. Sem baixar nada.',
-      accent: 'from-accent/20 to-accent/5',
-      iconColor: 'text-accent',
-    },
+    { icon: MessageCircle, number: '01', title: 'Solicitação via WhatsApp', desc: 'Cliente pede guincho pelo WhatsApp. Dados coletados, valor calculado e proposta enviada automaticamente.', accent: 'from-success/20 to-success/5', iconColor: 'text-success' },
+    { icon: Bell, number: '02', title: 'Sirene na central', desc: 'Quando a solicitação chega no sistema, toca uma sirene sonora na central operacional.', accent: 'from-destructive/20 to-destructive/5', iconColor: 'text-destructive' },
+    { icon: Radar, number: '03', title: 'Despacho automático', desc: 'Sistema localiza os 2 prestadores mais próximos e aptos. Primeiro que aceita, ganha a OS.', accent: 'from-primary/20 to-primary/5', iconColor: 'text-primary' },
+    { icon: Bell, number: '04', title: 'Sirene no prestador', desc: 'Quando a oferta chega no celular do prestador, toca uma sirene de alerta.', accent: 'from-warning/20 to-warning/5', iconColor: 'text-warning' },
+    { icon: Smartphone, number: '05', title: 'Portal do prestador por link', desc: 'Sem app. O prestador recebe um link, aceita a OS e gerencia o atendimento pelo navegador.', accent: 'from-info/20 to-info/5', iconColor: 'text-info' },
+    { icon: Link2, number: '06', title: 'Acompanhamento do cliente', desc: 'O cliente recebe um link para acompanhar em tempo real: mapa, ETA, status e timeline.', accent: 'from-accent/20 to-accent/5', iconColor: 'text-accent' },
   ];
 
   return (
     <div className="min-h-screen flex bg-background">
       {/* Left brand panel */}
       <div className="hidden lg:flex w-[520px] bg-gradient-to-b from-[hsl(228,36%,6%)] via-[hsl(228,36%,8%)] to-[hsl(228,36%,12%)] flex-col justify-between p-8 text-white relative overflow-hidden">
-        {/* Grid pattern */}
         <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'radial-gradient(circle at 1px 1px, currentColor 1px, transparent 0)', backgroundSize: '20px 20px' }} />
         <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-[100px]" />
         <div className="absolute top-20 -left-20 w-60 h-60 bg-success/8 rounded-full blur-[80px]" />
 
-        {/* Logo */}
         <div className="relative z-10">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 bg-primary/20 backdrop-blur-sm rounded-xl flex items-center justify-center border border-primary/20">
@@ -104,7 +62,6 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Differentials */}
         <div className="relative z-10 space-y-5 flex-1 flex flex-col justify-center -mt-4">
           <div className="mb-2">
             <p className="text-xl font-bold leading-tight tracking-tight">Operação completa<br />sem nenhum app</p>
@@ -112,14 +69,9 @@ export default function Login() {
               Do WhatsApp do cliente ao link do prestador — toda a jornada acontece sem download, sem fricção, com despacho inteligente automático.
             </p>
           </div>
-
           <div className="grid grid-cols-2 gap-2.5">
             {differentials.map((d, i) => (
-              <div
-                key={d.number}
-                className="group relative rounded-xl border border-white/5 bg-white/[0.02] p-3 hover:bg-white/[0.04] transition-all"
-                style={{ animationDelay: `${i * 100}ms` }}
-              >
+              <div key={d.number} className="group relative rounded-xl border border-white/5 bg-white/[0.02] p-3 hover:bg-white/[0.04] transition-all">
                 <div className="flex items-start gap-2.5">
                   <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${d.accent} flex items-center justify-center shrink-0`}>
                     <d.icon className={`h-4 w-4 ${d.iconColor}`} />
@@ -137,18 +89,10 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Bottom stats */}
         <div className="relative z-10">
           <div className="flex gap-8 pt-4 border-t border-white/5">
-            {[
-              { v: 'Zero', l: 'Apps para baixar' },
-              { v: '< 3min', l: 'Tempo de despacho' },
-              { v: '100%', l: 'Via WhatsApp + Link' },
-            ].map(s => (
-              <div key={s.l}>
-                <p className="text-sm font-bold text-primary">{s.v}</p>
-                <p className="text-[8px] text-white/25 uppercase tracking-wider font-semibold mt-0.5">{s.l}</p>
-              </div>
+            {[{ v: 'Zero', l: 'Apps para baixar' }, { v: '< 3min', l: 'Tempo de despacho' }, { v: '100%', l: 'Via WhatsApp + Link' }].map(s => (
+              <div key={s.l}><p className="text-sm font-bold text-primary">{s.v}</p><p className="text-[8px] text-white/25 uppercase tracking-wider font-semibold mt-0.5">{s.l}</p></div>
             ))}
           </div>
           <p className="text-[9px] text-white/15 mt-4">© 2026 OpGrid. Plataforma operacional de guincho e assistência 24h.</p>
@@ -172,7 +116,6 @@ export default function Login() {
             <p className="text-[13px] text-muted-foreground mt-0.5">Plataforma operacional com despacho inteligente</p>
           </div>
 
-          {/* Mobile differentials summary */}
           <div className="lg:hidden flex items-center gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
             <Zap className="h-4 w-4 text-primary shrink-0" />
             <p className="text-[11px] text-muted-foreground">
@@ -207,42 +150,7 @@ export default function Login() {
             </CardContent>
           </Card>
 
-          <Card className="bg-muted/20 border-dashed border-border/40">
-            <CardContent className="py-3 px-4 space-y-2.5">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Demo</p>
-                <span className="text-[9px] text-muted-foreground/40 bg-muted px-1.5 py-0.5 rounded font-medium">Ambiente de teste</span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5">
-                {[
-                  { label: 'Admin Master', email: 'admin@demo.com', desc: 'Acesso total' },
-                  { label: 'Operações', email: 'operador@demo.com', desc: 'Operação e rede' },
-                  { label: 'Financeiro', email: 'financeiro@demo.com', desc: 'Faturamento' },
-                  { label: 'Prestador', email: 'prestador@demo.com', desc: 'Visão restrita' },
-                ].map(d => (
-                  <button key={d.email} onClick={() => handleQuickLogin(d.email)}
-                    className="text-left px-3 py-2 rounded-md border bg-card hover:bg-muted/30 hover:border-primary/20 transition-all group">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-semibold group-hover:text-primary transition-colors">{d.label}</p>
-                      <ChevronRight className="h-3 w-3 text-muted-foreground/20 group-hover:text-primary/40" />
-                    </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{d.desc}</p>
-                  </button>
-                ))}
-              </div>
-              <p className="text-[10px] text-muted-foreground/40 text-center">Qualquer senha funciona no ambiente demo</p>
-            </CardContent>
-          </Card>
-
-          {/* Demo portal links */}
-          <div className="flex gap-2">
-            <a href="/prestador/oferta/of1" target="_blank" className="flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border bg-card hover:bg-muted/30 transition-all text-[10px] font-medium text-muted-foreground hover:text-primary">
-              <Smartphone className="h-3 w-3" />Portal Prestador
-            </a>
-            <a href="/acompanhar/a1" target="_blank" className="flex-1 flex items-center gap-1.5 px-3 py-2 rounded-lg border bg-card hover:bg-muted/30 transition-all text-[10px] font-medium text-muted-foreground hover:text-primary">
-              <Link2 className="h-3 w-3" />Acompanhamento Cliente
-            </a>
-          </div>
+          <p className="text-[10px] text-muted-foreground/40 text-center">Use suas credenciais cadastradas no sistema</p>
         </div>
       </div>
     </div>
