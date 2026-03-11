@@ -270,7 +270,7 @@ export default function MapaOperacional() {
                   )}
 
                   <div className="flex gap-2">
-                    <Button className="flex-1 text-xs" variant="outline" onClick={() => { setSelectedPrestador(null); navigate('/prestadores'); }}>
+                    <Button className="flex-1 text-xs" variant="outline" onClick={() => { setSelectedPrestador(null); navigate('/app/prestadores'); }}>
                       <Eye className="h-3.5 w-3.5 mr-1.5" />Ver Perfil Completo
                     </Button>
                     <Button className="flex-1 text-xs" variant="outline">

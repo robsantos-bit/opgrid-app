@@ -39,26 +39,35 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
-      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/solicitacoes" element={<ProtectedRoute><Solicitacoes /></ProtectedRoute>} />
-      <Route path="/whatsapp" element={<ProtectedRoute><WhatsAppSimulador /></ProtectedRoute>} />
-      <Route path="/sandbox" element={<ProtectedRoute><SandboxWhatsApp /></ProtectedRoute>} />
-      <Route path="/automacao-whatsapp" element={<ProtectedRoute><AutomacaoWhatsApp /></ProtectedRoute>} />
-      <Route path="/despacho" element={<ProtectedRoute><Despacho /></ProtectedRoute>} />
-      <Route path="/prestadores" element={<ProtectedRoute><Prestadores /></ProtectedRoute>} />
-      <Route path="/tarifas" element={<ProtectedRoute><Tarifas /></ProtectedRoute>} />
-      <Route path="/tabela-precos" element={<ProtectedRoute><TabelaPrecos /></ProtectedRoute>} />
-      <Route path="/atendimentos" element={<ProtectedRoute><Atendimentos /></ProtectedRoute>} />
-      <Route path="/faturamento" element={<ProtectedRoute><Faturamento /></ProtectedRoute>} />
-      <Route path="/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
-      <Route path="/contratos" element={<ProtectedRoute><Contratos /></ProtectedRoute>} />
-      <Route path="/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
-      <Route path="/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-      <Route path="/mapa" element={<ProtectedRoute><MapaOperacional /></ProtectedRoute>} />
-      {/* Public portals — no auth required */}
+      {/* Auth */}
+      <Route path="/login" element={user ? <Navigate to="/app" replace /> : <Login />} />
+
+      {/* Backoffice — /app/* (protected) */}
+      <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/app/solicitacoes" element={<ProtectedRoute><Solicitacoes /></ProtectedRoute>} />
+      <Route path="/app/whatsapp" element={<ProtectedRoute><WhatsAppSimulador /></ProtectedRoute>} />
+      <Route path="/app/sandbox" element={<ProtectedRoute><SandboxWhatsApp /></ProtectedRoute>} />
+      <Route path="/app/automacao-whatsapp" element={<ProtectedRoute><AutomacaoWhatsApp /></ProtectedRoute>} />
+      <Route path="/app/despacho" element={<ProtectedRoute><Despacho /></ProtectedRoute>} />
+      <Route path="/app/prestadores" element={<ProtectedRoute><Prestadores /></ProtectedRoute>} />
+      <Route path="/app/tarifas" element={<ProtectedRoute><Tarifas /></ProtectedRoute>} />
+      <Route path="/app/tabela-precos" element={<ProtectedRoute><TabelaPrecos /></ProtectedRoute>} />
+      <Route path="/app/atendimentos" element={<ProtectedRoute><Atendimentos /></ProtectedRoute>} />
+      <Route path="/app/faturamento" element={<ProtectedRoute><Faturamento /></ProtectedRoute>} />
+      <Route path="/app/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
+      <Route path="/app/contratos" element={<ProtectedRoute><Contratos /></ProtectedRoute>} />
+      <Route path="/app/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
+      <Route path="/app/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
+      <Route path="/app/mapa" element={<ProtectedRoute><MapaOperacional /></ProtectedRoute>} />
+
+      {/* Portal do Prestador — /prestador/* (public) */}
       <Route path="/prestador/:tipo/:id" element={<PortalPrestador />} />
+
+      {/* Portal do Cliente — /acompanhar/* (public) */}
       <Route path="/acompanhar/:id" element={<AcompanhamentoCliente />} />
+
+      {/* Root redirect */}
+      <Route path="/" element={<Navigate to="/app" replace />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

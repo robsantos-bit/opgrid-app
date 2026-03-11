@@ -57,7 +57,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="h-full flex items-center justify-between px-5 max-w-[1600px] mx-auto">
           {/* Logo + Nav */}
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
+            <Link to="/app" className="flex items-center gap-2 shrink-0">
               <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
                 <Hexagon className="h-4 w-4 text-primary-foreground" />
               </div>
@@ -90,7 +90,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </Button>
 
             {/* Support */}
-            <Button variant="ghost" size="icon" className="h-8 w-8" title="Suporte" onClick={() => navigate('/configuracoes')}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" title="Suporte" onClick={() => navigate('/app/configuracoes')}>
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
 
@@ -117,8 +117,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate('/configuracoes')} className="gap-2 text-xs"><User className="h-3.5 w-3.5" />Meu Perfil</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/configuracoes')} className="gap-2 text-xs"><Settings className="h-3.5 w-3.5" />Configurações</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/app/configuracoes')} className="gap-2 text-xs"><User className="h-3.5 w-3.5" />Meu Perfil</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/app/configuracoes')} className="gap-2 text-xs"><Settings className="h-3.5 w-3.5" />Configurações</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive gap-2 text-xs"><LogOut className="h-3.5 w-3.5" />Sair</DropdownMenuItem>
               </DropdownMenuContent>
