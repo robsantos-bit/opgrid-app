@@ -90,7 +90,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             </Button>
 
             {/* Support */}
-            <Button variant="ghost" size="icon" className="h-8 w-8" title="Suporte" onClick={() => navigate('/configuracoes')}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" title="Suporte" onClick={() => navigate('/app/configuracoes')}>
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
 
