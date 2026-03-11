@@ -96,43 +96,6 @@ export default function Configuracoes() {
           </CardContent></Card>
         </TabsContent>
 
-        {isAdmin && <TabsContent value="usuarios" className="mt-4" key={usersKey}>
-          <Card className="max-w-2xl">
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                <CardTitle className="text-sm">Gerenciar Usuários</CardTitle>
-              </div>
-              <p className="text-[11px] text-muted-foreground">Edite nome, e-mail e perfil dos usuários do sistema.</p>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-0">
-                {allUsers.map(u => (
-                  <div key={u.id} className="flex items-center justify-between py-3 border-b border-dashed border-border/60 last:border-b-0">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
-                        {u.nome.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-medium truncate">{u.nome}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{u.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Badge variant={roleVariant[u.role] || 'secondary'} className="text-[10px]">
-                        {roleLabels[u.role]}
-                      </Badge>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditUser(u)}>
-                        <Pencil className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>}
-
         {isAdmin && <TabsContent value="permissoes" className="mt-4">
           <Card className="max-w-xl"><CardHeader className="pb-2"><CardTitle className="text-sm">Permissões por Perfil</CardTitle></CardHeader><CardContent>
             <div className="space-y-4 text-[13px]">
@@ -160,41 +123,6 @@ export default function Configuracoes() {
           </CardContent></Card>
         </TabsContent>}
       </Tabs>
-
-      {/* Edit user dialog */}
-      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-sm">Editar Usuário</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Nome</Label>
-              <Input value={editName} onChange={e => setEditName(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">E-mail</Label>
-              <Input type="email" value={editEmail} onChange={e => setEditEmail(e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Perfil</Label>
-              <Select value={editRole} onValueChange={(v) => setEditRole(v as UserRole)}>
-                <SelectTrigger className="text-xs"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="admin">Admin Master</SelectItem>
-                  <SelectItem value="operador">Operações</SelectItem>
-                  <SelectItem value="financeiro">Financeiro</SelectItem>
-                  <SelectItem value="prestador">Prestador</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setEditingUser(null)}>Cancelar</Button>
-            <Button size="sm" onClick={handleSaveUser}><Save className="h-3.5 w-3.5 mr-1.5" />Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
