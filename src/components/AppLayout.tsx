@@ -93,6 +93,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="icon" className="h-8 w-8" title="Suporte" onClick={() => navigate('/configuracoes')}>
               <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
             </Button>
+
+            {/* Notifications bell */}
+            <Button variant="ghost" size="icon" className="relative h-8 w-8">
               <Bell className={`h-3.5 w-3.5 ${sirenActive && !sirenMuted ? 'text-destructive animate-siren-glow' : 'text-muted-foreground'}`} />
               {sirenActive && !sirenMuted && (
                 <>
@@ -124,23 +127,18 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Mobile nav */}
+      {/* Mobile nav — show top-level groups */}
       <div className="lg:hidden border-b bg-card overflow-x-auto scrollbar-thin">
         <nav className="flex items-center gap-0.5 px-3 py-1.5 min-w-max">
-          {visibleNav.map(item => {
-            const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`px-3 py-1.5 rounded-md text-[12px] font-medium whitespace-nowrap transition-colors ${
-                  active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
+          {menuGroups.map(group => (
+            <Link
+              key={group.label}
+              to={group.items[0].path}
+              className="px-3 py-1.5 rounded-md text-[12px] font-medium whitespace-nowrap transition-colors text-muted-foreground hover:text-foreground"
+            >
+              {group.label}
+            </Link>
+          ))}
         </nav>
       </div>
 
