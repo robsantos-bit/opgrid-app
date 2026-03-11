@@ -84,22 +84,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             )}
 
             {/* Mute toggle */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={toggleMute}
-              title={sirenMuted ? 'Ativar som da sirene' : 'Silenciar sirene'}
-            >
-              {sirenMuted ? (
-                <VolumeX className="h-3.5 w-3.5 text-muted-foreground" />
-              ) : (
-                <Volume2 className="h-3.5 w-3.5 text-foreground" />
-              )}
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleMute}
+              title={sirenMuted ? 'Ativar som da sirene' : 'Silenciar sirene'}>
+              {sirenMuted ? <VolumeX className="h-3.5 w-3.5 text-muted-foreground" /> : <Volume2 className="h-3.5 w-3.5 text-foreground" />}
             </Button>
 
-            {/* Siren bell */}
-            <Button variant="ghost" size="icon" className="relative h-8 w-8">
+            {/* Support */}
+            <Button variant="ghost" size="icon" className="h-8 w-8" title="Suporte" onClick={() => navigate('/configuracoes')}>
+              <HelpCircle className="h-3.5 w-3.5 text-muted-foreground" />
+            </Button>
               <Bell className={`h-3.5 w-3.5 ${sirenActive && !sirenMuted ? 'text-destructive animate-siren-glow' : 'text-muted-foreground'}`} />
               {sirenActive && !sirenMuted && (
                 <>
