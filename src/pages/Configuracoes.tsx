@@ -47,25 +47,8 @@ export default function Configuracoes() {
     }
   };
 
-  const openEditUser = (u: User) => {
-    setEditingUser(u);
-    setEditName(u.nome);
-    setEditEmail(u.email);
-    setEditRole(u.role);
-  };
 
-  const handleSaveUser = () => {
-    if (!editingUser) return;
-    const name = editName.trim();
-    const email = editEmail.trim();
-    if (!name || !email) { toast.error('Nome e e-mail são obrigatórios'); return; }
-    updateAnyUser(editingUser.id, { nome: name, email, role: editRole });
-    setEditingUser(null);
-    setUsersKey(k => k + 1);
-    toast.success(`Usuário ${name} atualizado!`);
-  };
-
-  const allUsers = getAllUsers();
+  const allUsers: any[] = [];
 
   return (
     <div className="space-y-5 animate-fade-in">
