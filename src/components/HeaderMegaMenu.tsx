@@ -46,14 +46,14 @@ const menuGroups: MenuGroup[] = [
   {
     label: 'Financeiro',
     items: [
-      { label: 'Faturamento', path: '/app/faturamento', icon: DollarSign, description: 'Ciclos de cobrança' },
+      { label: 'Faturamento', path: '/app/financeiro/faturamento', icon: DollarSign, description: 'Ciclos de cobrança' },
     ],
   },
   {
     label: 'Admin',
     items: [
       { label: 'Usuários', path: '/app/admin/usuarios', icon: Lock, description: 'Gerenciar usuários' },
-      { label: 'Configurações', path: '/app/configuracoes', icon: Settings, description: 'Preferências do sistema' },
+      { label: 'Configurações', path: '/app/admin/configuracoes', icon: Settings, description: 'Preferências do sistema' },
     ],
   },
 ];
