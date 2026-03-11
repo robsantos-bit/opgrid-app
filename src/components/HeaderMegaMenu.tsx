@@ -53,7 +53,7 @@ const menuGroups: MenuGroup[] = [
     label: 'Admin',
     items: [
       { label: 'Usuários', path: '/app/admin/usuarios', icon: Lock, description: 'Gerenciar usuários' },
-      { label: 'Configurações', path: '/app/configuracoes', icon: Settings, description: 'Preferências do sistema' },
+      { label: 'Configurações', path: '/app/admin/configuracoes', icon: Settings, description: 'Preferências do sistema' },
     ],
   },
 ];
