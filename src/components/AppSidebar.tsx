@@ -16,39 +16,39 @@ const menuGroups = [
   {
     label: 'Visão Geral',
     items: [
-      { title: 'Dashboard', url: '/', icon: LayoutDashboard, module: 'dashboard' },
+      { title: 'Dashboard', url: '/app', icon: LayoutDashboard, module: 'dashboard' },
     ],
   },
   {
     label: 'Operação',
     items: [
-      { title: 'Operações', url: '/atendimentos', icon: ClipboardList, module: 'atendimentos' },
-      { title: 'Simulador WhatsApp', url: '/whatsapp', icon: MessageCircle, module: 'solicitacoes' },
-      { title: 'Sandbox WhatsApp', url: '/sandbox', icon: Radio, module: 'solicitacoes' },
-      { title: 'Automação WhatsApp', url: '/automacao-whatsapp', icon: Zap, module: 'solicitacoes' },
-      { title: 'Prestadores', url: '/prestadores', icon: Users, module: 'prestadores' },
+      { title: 'Operações', url: '/app/atendimentos', icon: ClipboardList, module: 'atendimentos' },
+      { title: 'Simulador WhatsApp', url: '/app/whatsapp', icon: MessageCircle, module: 'solicitacoes' },
+      { title: 'Sandbox WhatsApp', url: '/app/sandbox', icon: Radio, module: 'solicitacoes' },
+      { title: 'Automação WhatsApp', url: '/app/automacao-whatsapp', icon: Zap, module: 'solicitacoes' },
+      { title: 'Prestadores', url: '/app/prestadores', icon: Users, module: 'prestadores' },
     ],
   },
   {
     label: 'Comercial',
     items: [
-      { title: 'Tarifas', url: '/tarifas', icon: Tag, module: 'tarifas' },
-      { title: 'Tabelas Comerciais', url: '/tabela-precos', icon: TableProperties, module: 'tabela-precos' },
-      { title: 'Contratos', url: '/contratos', icon: FileText, module: 'contratos' },
+      { title: 'Tarifas', url: '/app/tarifas', icon: Tag, module: 'tarifas' },
+      { title: 'Tabelas Comerciais', url: '/app/tabela-precos', icon: TableProperties, module: 'tabela-precos' },
+      { title: 'Contratos', url: '/app/contratos', icon: FileText, module: 'contratos' },
     ],
   },
   {
     label: 'Financeiro',
     items: [
-      { title: 'Faturamento', url: '/faturamento', icon: DollarSign, module: 'faturamento' },
-      { title: 'Relatórios', url: '/relatorios', icon: BarChart3, module: 'relatorios' },
+      { title: 'Faturamento', url: '/app/faturamento', icon: DollarSign, module: 'faturamento' },
+      { title: 'Relatórios', url: '/app/relatorios', icon: BarChart3, module: 'relatorios' },
     ],
   },
   {
     label: 'Governança',
     items: [
-      { title: 'Auditoria', url: '/auditoria', icon: History, module: 'auditoria' },
-      { title: 'Configurações', url: '/configuracoes', icon: Settings, module: 'configuracoes' },
+      { title: 'Auditoria', url: '/app/auditoria', icon: History, module: 'auditoria' },
+      { title: 'Configurações', url: '/app/configuracoes', icon: Settings, module: 'configuracoes' },
     ],
   },
 ];
