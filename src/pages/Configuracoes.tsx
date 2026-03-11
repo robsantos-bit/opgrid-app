@@ -24,11 +24,6 @@ export default function Configuracoes() {
   const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
   const [profileName, setProfileName] = useState(user?.nome || '');
   const [profileEmail, setProfileEmail] = useState(user?.email || '');
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editEmail, setEditEmail] = useState('');
-  const [editRole, setEditRole] = useState<UserRole>('operador');
-  const [usersKey, setUsersKey] = useState(0);
 
   const updateField = (field: keyof ConfigEmpresa, value: any) => setConfig(prev => ({ ...prev, [field]: value }));
   const handleSave = () => { saveConfig(config); toast.success('Configurações salvas!'); };
