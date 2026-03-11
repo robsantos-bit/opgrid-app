@@ -6,64 +6,64 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import Login from "@/pages/Login";
-import Dashboard from "@/pages/Dashboard";
-import Solicitacoes from "@/pages/Solicitacoes";
-import Despacho from "@/pages/Despacho";
-import Prestadores from "@/pages/Prestadores";
-import Tarifas from "@/pages/Tarifas";
-import TabelaPrecos from "@/pages/TabelaPrecos";
-import Atendimentos from "@/pages/Atendimentos";
-import Faturamento from "@/pages/Faturamento";
-import Relatorios from "@/pages/Relatorios";
-import Contratos from "@/pages/Contratos";
-import Auditoria from "@/pages/Auditoria";
-import Configuracoes from "@/pages/Configuracoes";
-import MapaOperacional from "@/pages/MapaOperacional";
-import PortalPrestador from "@/pages/PortalPrestador";
+import PainelDashboard from "@/pages/PainelDashboard";
+import OperacaoSolicitacoes from "@/pages/OperacaoSolicitacoes";
+import OperacaoAtendimentos from "@/pages/OperacaoAtendimentos";
+import RedePrestadores from "@/pages/RedePrestadores";
+import AdminUsuarios from "@/pages/AdminUsuarios";
+import PrestadorInicio from "@/pages/PrestadorInicio";
+import PrestadorAtendimentos from "@/pages/PrestadorAtendimentos";
+import PrestadorPerfil from "@/pages/PrestadorPerfil";
 import AcompanhamentoCliente from "@/pages/AcompanhamentoCliente";
-import WhatsAppSimulador from "@/pages/WhatsAppSimulador";
-import SandboxWhatsApp from "@/pages/SandboxWhatsApp";
-import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
 import NotFound from "@/pages/NotFound";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+function ProtectedRoute({ children, requiredModules }: { children: React.ReactNode; requiredModules?: string[] }) {
+  const { user, loading, hasAccess } = useAuth();
+  if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   if (!user) return <Navigate to="/login" replace />;
+  // Prestador cannot access /app/*
+  if (user.role === 'prestador') return <Navigate to="/prestador/inicio" replace />;
+  if (requiredModules && !hasAccess(requiredModules)) return <Navigate to="/app" replace />;
   return <AppLayout>{children}</AppLayout>;
 }
 
+function PrestadorRoute({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.role !== 'prestador') return <Navigate to="/app" replace />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
 
   return (
     <Routes>
       {/* Auth */}
-      <Route path="/login" element={user ? <Navigate to="/app" replace /> : <Login />} />
+      <Route path="/login" element={user ? (user.role === 'prestador' ? <Navigate to="/prestador/inicio" replace /> : <Navigate to="/app" replace />) : <Login />} />
 
-      {/* Backoffice — /app/* (protected) */}
-      <Route path="/app" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-      <Route path="/app/solicitacoes" element={<ProtectedRoute><Solicitacoes /></ProtectedRoute>} />
-      <Route path="/app/whatsapp" element={<ProtectedRoute><WhatsAppSimulador /></ProtectedRoute>} />
-      <Route path="/app/sandbox" element={<ProtectedRoute><SandboxWhatsApp /></ProtectedRoute>} />
-      <Route path="/app/automacao-whatsapp" element={<ProtectedRoute><AutomacaoWhatsApp /></ProtectedRoute>} />
-      <Route path="/app/despacho" element={<ProtectedRoute><Despacho /></ProtectedRoute>} />
-      <Route path="/app/prestadores" element={<ProtectedRoute><Prestadores /></ProtectedRoute>} />
-      <Route path="/app/tarifas" element={<ProtectedRoute><Tarifas /></ProtectedRoute>} />
-      <Route path="/app/tabela-precos" element={<ProtectedRoute><TabelaPrecos /></ProtectedRoute>} />
-      <Route path="/app/atendimentos" element={<ProtectedRoute><Atendimentos /></ProtectedRoute>} />
-      <Route path="/app/faturamento" element={<ProtectedRoute><Faturamento /></ProtectedRoute>} />
-      <Route path="/app/relatorios" element={<ProtectedRoute><Relatorios /></ProtectedRoute>} />
-      <Route path="/app/contratos" element={<ProtectedRoute><Contratos /></ProtectedRoute>} />
-      <Route path="/app/auditoria" element={<ProtectedRoute><Auditoria /></ProtectedRoute>} />
-      <Route path="/app/configuracoes" element={<ProtectedRoute><Configuracoes /></ProtectedRoute>} />
-      <Route path="/app/mapa" element={<ProtectedRoute><MapaOperacional /></ProtectedRoute>} />
+      {/* Backoffice — /app/* */}
+      <Route path="/app" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
+      <Route path="/app/painel" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
+      <Route path="/app/operacao/solicitacoes" element={<ProtectedRoute requiredModules={['operacao', 'solicitacoes']}><OperacaoSolicitacoes /></ProtectedRoute>} />
+      <Route path="/app/operacao/atendimentos" element={<ProtectedRoute requiredModules={['operacao', 'atendimentos']}><OperacaoAtendimentos /></ProtectedRoute>} />
+      <Route path="/app/rede/prestadores" element={<ProtectedRoute requiredModules={['rede', 'prestadores']}><RedePrestadores /></ProtectedRoute>} />
+      <Route path="/app/admin/usuarios" element={<ProtectedRoute requiredModules={['admin', 'usuarios']}><AdminUsuarios /></ProtectedRoute>} />
 
-      {/* Portal do Prestador — /prestador/* (public) */}
-      <Route path="/prestador/:tipo/:id" element={<PortalPrestador />} />
+      {/* Portal do Prestador — /prestador/* */}
+      <Route path="/prestador/inicio" element={<PrestadorRoute><PrestadorInicio /></PrestadorRoute>} />
+      <Route path="/prestador/atendimentos" element={<PrestadorRoute><PrestadorAtendimentos /></PrestadorRoute>} />
+      <Route path="/prestador/perfil" element={<PrestadorRoute><PrestadorPerfil /></PrestadorRoute>} />
 
-      {/* Portal do Cliente — /acompanhar/* (public) */}
+      {/* Portal do Cliente */}
       <Route path="/acompanhar/:id" element={<AcompanhamentoCliente />} />
 
       {/* Root redirect */}

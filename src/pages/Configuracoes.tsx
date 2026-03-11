@@ -19,7 +19,7 @@ const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'O
 const roleVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = { admin: 'default', operador: 'secondary', financeiro: 'secondary', prestador: 'outline' };
 
 export default function Configuracoes() {
-  const { user, isAdmin, updateUser, updateAnyUser, getAllUsers } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [config, setConfig] = useState<ConfigEmpresa>(getConfig);
   const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
   const [profileName, setProfileName] = useState(user?.nome || '');
