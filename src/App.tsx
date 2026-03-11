@@ -81,6 +81,10 @@ function AppRoutes() {
       <Route path="/app/admin/automacoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminAutomacoes /></ProtectedRoute>} />
       <Route path="/app/admin/configuracoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><Configuracoes /></ProtectedRoute>} />
 
+      {/* Legacy redirects */}
+      <Route path="/app/faturamento" element={<Navigate to="/app/financeiro/faturamento" replace />} />
+      <Route path="/app/configuracoes" element={<Navigate to="/app/admin/configuracoes" replace />} />
+
       {/* Portal do Prestador */}
       <Route path="/prestador" element={<PrestadorRoute><PrestadorInicio /></PrestadorRoute>} />
       <Route path="/prestador/inicio" element={<PrestadorRoute><PrestadorInicio /></PrestadorRoute>} />
