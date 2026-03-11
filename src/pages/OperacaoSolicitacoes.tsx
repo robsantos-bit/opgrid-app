@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +23,6 @@ export default function OperacaoSolicitacoes() {
   const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
-    setPage(0);
     return solicitacoes.filter((s: any) => {
       const q = search.toLowerCase();
       const matchSearch = !q || (s.cliente_nome || '').toLowerCase().includes(q) || (s.placa || '').toLowerCase().includes(q);
@@ -32,6 +31,8 @@ export default function OperacaoSolicitacoes() {
       return matchSearch && matchStatus && matchPrio;
     });
   }, [solicitacoes, search, filterStatus, filterPrioridade]);
+
+  useEffect(() => { setPage(0); }, [search, filterStatus, filterPrioridade]);
 
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
