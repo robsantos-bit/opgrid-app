@@ -45,7 +45,7 @@ export default function Configuracoes() {
   };
 
 
-  const allUsers: any[] = [];
+  
 
   return (
     <div className="space-y-5 animate-fade-in">
