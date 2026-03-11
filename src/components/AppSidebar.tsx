@@ -5,7 +5,8 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
 import {
-  LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send
+  LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send,
+  Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -23,23 +24,36 @@ const menuGroups = [
     label: 'Operação',
     items: [
       { title: 'Solicitações', url: '/app/operacao/solicitacoes', icon: ClipboardList, module: 'solicitacoes' },
-      { title: 'Atendimentos', url: '/app/operacao/atendimentos', icon: ClipboardList, module: 'atendimentos' },
       { title: 'Despacho', url: '/app/operacao/despacho', icon: Send, module: 'despacho' },
+      { title: 'Atendimentos', url: '/app/operacao/atendimentos', icon: Headphones, module: 'atendimentos' },
       { title: 'Mapa Operacional', url: '/app/operacao/mapa', icon: Map, module: 'mapa' },
+      { title: 'Teste de Acionamento', url: '/app/operacao/teste-acionamento', icon: Radio, module: 'operacao' },
+      { title: 'Acompanhamento', url: '/app/operacao/acompanhamento', icon: Activity, module: 'operacao' },
+      { title: 'Checklists', url: '/app/operacao/checklists', icon: CheckSquare, module: 'operacao' },
     ],
   },
   {
     label: 'Rede',
     items: [
       { title: 'Prestadores', url: '/app/rede/prestadores', icon: Users, module: 'prestadores' },
+      { title: 'Cobertura', url: '/app/rede/cobertura', icon: Globe, module: 'rede' },
+      { title: 'Disponibilidade', url: '/app/rede/disponibilidade', icon: Radio, module: 'rede' },
+      { title: 'Homologação', url: '/app/rede/homologacao', icon: Shield, module: 'rede' },
+      { title: 'Performance', url: '/app/rede/performance', icon: TrendingUp, module: 'rede' },
+      { title: 'Comunicação', url: '/app/rede/comunicacao', icon: MessageCircle, module: 'rede' },
+      { title: 'Disparo em Massa', url: '/app/rede/disparo-massa', icon: Megaphone, module: 'rede' },
     ],
   },
   {
     label: 'Financeiro',
     items: [
       { title: 'Faturamento', url: '/app/financeiro/faturamento', icon: DollarSign, module: 'faturamento' },
+      { title: 'Conferência', url: '/app/financeiro/conferencia', icon: FileSearch, module: 'financeiro' },
+      { title: 'Divergências', url: '/app/financeiro/divergencias', icon: AlertCircle, module: 'financeiro' },
+      { title: 'Glosas', url: '/app/financeiro/glosas', icon: XCircle, module: 'financeiro' },
       { title: 'Tarifas', url: '/app/financeiro/tarifas', icon: Tag, module: 'tarifas' },
       { title: 'Tabelas Comerciais', url: '/app/financeiro/tabelas', icon: TableProperties, module: 'tabela-precos' },
+      { title: 'Relatórios', url: '/app/financeiro/relatorios', icon: BarChart3, module: 'financeiro' },
     ],
   },
   {
@@ -48,7 +62,11 @@ const menuGroups = [
       { title: 'Usuários', url: '/app/admin/usuarios', icon: Users, module: 'usuarios' },
       { title: 'Templates', url: '/app/admin/templates', icon: FileText, module: 'configuracoes' },
       { title: 'Automações', url: '/app/admin/automacoes', icon: Zap, module: 'configuracoes' },
+      { title: 'Checklists Digitais', url: '/app/admin/checklists', icon: ListChecks, module: 'configuracoes' },
+      { title: 'Auditoria', url: '/app/admin/auditoria', icon: History, module: 'configuracoes' },
+      { title: 'Permissões', url: '/app/admin/permissoes', icon: Lock, module: 'configuracoes' },
       { title: 'Configurações', url: '/app/admin/configuracoes', icon: Settings, module: 'configuracoes' },
+      { title: 'Suporte', url: '/app/admin/suporte', icon: HelpCircle, module: 'configuracoes' },
     ],
   },
 ];

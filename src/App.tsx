@@ -11,14 +11,30 @@ import OperacaoSolicitacoes from "@/pages/OperacaoSolicitacoes";
 import OperacaoAtendimentos from "@/pages/OperacaoAtendimentos";
 import Despacho from "@/pages/Despacho";
 import MapaOperacional from "@/pages/MapaOperacional";
+import OperacaoTesteAcionamento from "@/pages/OperacaoTesteAcionamento";
+import OperacaoChecklists from "@/pages/OperacaoChecklists";
 import RedePrestadores from "@/pages/RedePrestadores";
+import RedeCobertura from "@/pages/RedeCobertura";
+import RedeDisponibilidade from "@/pages/RedeDisponibilidade";
+import RedeHomologacao from "@/pages/RedeHomologacao";
+import RedePerformance from "@/pages/RedePerformance";
+import RedeComunicacao from "@/pages/RedeComunicacao";
+import RedeDisparoMassa from "@/pages/RedeDisparoMassa";
 import Faturamento from "@/pages/Faturamento";
+import FinanceiroConferencia from "@/pages/FinanceiroConferencia";
+import FinanceiroDivergencias from "@/pages/FinanceiroDivergencias";
+import FinanceiroGlosas from "@/pages/FinanceiroGlosas";
 import FinanceiroTarifas from "@/pages/FinanceiroTarifas";
 import FinanceiroTabelas from "@/pages/FinanceiroTabelas";
+import FinanceiroRelatorios from "@/pages/FinanceiroRelatorios";
 import AdminUsuarios from "@/pages/AdminUsuarios";
 import AdminTemplates from "@/pages/AdminTemplates";
 import AdminAutomacoes from "@/pages/AdminAutomacoes";
+import AdminChecklists from "@/pages/AdminChecklists";
+import AdminAuditoria from "@/pages/AdminAuditoria";
+import AdminPermissoes from "@/pages/AdminPermissoes";
 import Configuracoes from "@/pages/Configuracoes";
+import AdminSuporte from "@/pages/AdminSuporte";
 import PrestadorInicio from "@/pages/PrestadorInicio";
 import PrestadorAtendimentos from "@/pages/PrestadorAtendimentos";
 import PrestadorPerfil from "@/pages/PrestadorPerfil";
@@ -66,20 +82,37 @@ function AppRoutes() {
       <Route path="/app/operacao/atendimentos" element={<ProtectedRoute requiredModules={['operacao', 'atendimentos']}><OperacaoAtendimentos /></ProtectedRoute>} />
       <Route path="/app/operacao/despacho" element={<ProtectedRoute requiredModules={['operacao', 'despacho']}><Despacho /></ProtectedRoute>} />
       <Route path="/app/operacao/mapa" element={<ProtectedRoute requiredModules={['operacao', 'mapa']}><MapaOperacional /></ProtectedRoute>} />
+      <Route path="/app/operacao/teste-acionamento" element={<ProtectedRoute requiredModules={['operacao']}><OperacaoTesteAcionamento /></ProtectedRoute>} />
+      <Route path="/app/operacao/acompanhamento" element={<ProtectedRoute requiredModules={['operacao']}><AcompanhamentoCliente /></ProtectedRoute>} />
+      <Route path="/app/operacao/checklists" element={<ProtectedRoute requiredModules={['operacao']}><OperacaoChecklists /></ProtectedRoute>} />
 
       {/* Rede */}
       <Route path="/app/rede/prestadores" element={<ProtectedRoute requiredModules={['rede', 'prestadores']}><RedePrestadores /></ProtectedRoute>} />
+      <Route path="/app/rede/cobertura" element={<ProtectedRoute requiredModules={['rede']}><RedeCobertura /></ProtectedRoute>} />
+      <Route path="/app/rede/disponibilidade" element={<ProtectedRoute requiredModules={['rede']}><RedeDisponibilidade /></ProtectedRoute>} />
+      <Route path="/app/rede/homologacao" element={<ProtectedRoute requiredModules={['rede']}><RedeHomologacao /></ProtectedRoute>} />
+      <Route path="/app/rede/performance" element={<ProtectedRoute requiredModules={['rede']}><RedePerformance /></ProtectedRoute>} />
+      <Route path="/app/rede/comunicacao" element={<ProtectedRoute requiredModules={['rede']}><RedeComunicacao /></ProtectedRoute>} />
+      <Route path="/app/rede/disparo-massa" element={<ProtectedRoute requiredModules={['rede']}><RedeDisparoMassa /></ProtectedRoute>} />
 
       {/* Financeiro */}
       <Route path="/app/financeiro/faturamento" element={<ProtectedRoute requiredModules={['financeiro', 'faturamento']}><Faturamento /></ProtectedRoute>} />
+      <Route path="/app/financeiro/conferencia" element={<ProtectedRoute requiredModules={['financeiro']}><FinanceiroConferencia /></ProtectedRoute>} />
+      <Route path="/app/financeiro/divergencias" element={<ProtectedRoute requiredModules={['financeiro']}><FinanceiroDivergencias /></ProtectedRoute>} />
+      <Route path="/app/financeiro/glosas" element={<ProtectedRoute requiredModules={['financeiro']}><FinanceiroGlosas /></ProtectedRoute>} />
       <Route path="/app/financeiro/tarifas" element={<ProtectedRoute requiredModules={['financeiro', 'tarifas']}><FinanceiroTarifas /></ProtectedRoute>} />
       <Route path="/app/financeiro/tabelas" element={<ProtectedRoute requiredModules={['financeiro', 'tabela-precos']}><FinanceiroTabelas /></ProtectedRoute>} />
+      <Route path="/app/financeiro/relatorios" element={<ProtectedRoute requiredModules={['financeiro']}><FinanceiroRelatorios /></ProtectedRoute>} />
 
       {/* Admin */}
       <Route path="/app/admin/usuarios" element={<ProtectedRoute requiredModules={['admin', 'usuarios']}><AdminUsuarios /></ProtectedRoute>} />
       <Route path="/app/admin/templates" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminTemplates /></ProtectedRoute>} />
       <Route path="/app/admin/automacoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminAutomacoes /></ProtectedRoute>} />
+      <Route path="/app/admin/checklists" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminChecklists /></ProtectedRoute>} />
+      <Route path="/app/admin/auditoria" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminAuditoria /></ProtectedRoute>} />
+      <Route path="/app/admin/permissoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminPermissoes /></ProtectedRoute>} />
       <Route path="/app/admin/configuracoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><Configuracoes /></ProtectedRoute>} />
+      <Route path="/app/admin/suporte" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminSuporte /></ProtectedRoute>} />
 
       {/* Legacy redirects */}
       <Route path="/app/faturamento" element={<Navigate to="/app/financeiro/faturamento" replace />} />
