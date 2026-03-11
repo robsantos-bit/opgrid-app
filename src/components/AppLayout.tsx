@@ -3,25 +3,12 @@ import { playCentralSiren } from '@/lib/sirenSound';
 import { useAuth } from '@/contexts/AuthContext';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Bell, Search, ChevronDown, User, Settings, LogOut, Hexagon, MessageCircle, Radar, Smartphone, Volume2, VolumeX } from 'lucide-react';
+import { Bell, Search, ChevronDown, User, Settings, LogOut, Hexagon, HelpCircle, Volume2, VolumeX } from 'lucide-react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
+import HeaderMegaMenu, { menuGroups } from '@/components/HeaderMegaMenu';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
-
-const navItems = [
-  { label: 'Visão Geral', path: '/', module: 'dashboard' },
-  { label: 'Solicitações', path: '/solicitacoes', module: 'solicitacoes' },
-  { label: 'Despacho', path: '/despacho', module: 'despacho' },
-  { label: 'Operações', path: '/atendimentos', module: 'atendimentos' },
-  { label: 'Mapa', path: '/mapa', module: 'atendimentos' },
-  { label: 'Prestadores', path: '/prestadores', module: 'prestadores' },
-  { label: 'Tarifas', path: '/tarifas', module: 'tarifas' },
-  { label: 'Tabelas', path: '/tabela-precos', module: 'tabela-precos' },
-  { label: 'Faturamento', path: '/faturamento', module: 'faturamento' },
-  { label: 'Auditoria', path: '/auditoria', module: 'auditoria' },
-];
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { user, logout, hasAccess } = useAuth();
