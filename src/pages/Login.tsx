@@ -24,7 +24,7 @@ export default function Login() {
     if (!email) { toast.error('Informe o e-mail'); return; }
     setLoading(true);
     await new Promise(r => setTimeout(r, 500));
-    if (login(email, password)) { toast.success('Bem-vindo ao OpGrid'); navigate('/'); }
+    if (login(email, password)) { toast.success('Bem-vindo ao OpGrid'); navigate('/app'); }
     else { toast.error('Credenciais inválidas.'); }
     setLoading(false);
   };

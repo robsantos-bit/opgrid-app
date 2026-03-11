@@ -117,8 +117,8 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate('/configuracoes')} className="gap-2 text-xs"><User className="h-3.5 w-3.5" />Meu Perfil</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/configuracoes')} className="gap-2 text-xs"><Settings className="h-3.5 w-3.5" />Configurações</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/app/configuracoes')} className="gap-2 text-xs"><User className="h-3.5 w-3.5" />Meu Perfil</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/app/configuracoes')} className="gap-2 text-xs"><Settings className="h-3.5 w-3.5" />Configurações</DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive gap-2 text-xs"><LogOut className="h-3.5 w-3.5" />Sair</DropdownMenuItem>
               </DropdownMenuContent>
