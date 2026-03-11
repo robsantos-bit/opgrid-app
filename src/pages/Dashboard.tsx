@@ -368,7 +368,7 @@ export default function Dashboard() {
           <CardHeader className="pb-1 pt-4 px-4">
             <div className="flex items-center justify-between">
               <CardTitle className="text-[12px] font-semibold text-muted-foreground uppercase tracking-wider">Últimas Operações</CardTitle>
-              <Link to="/atendimentos" className="text-[11px] text-primary font-medium hover:underline">Ver todas →</Link>
+              <Link to="/app/atendimentos" className="text-[11px] text-primary font-medium hover:underline">Ver todas →</Link>
             </div>
           </CardHeader>
           <CardContent className="p-0">
