@@ -46,7 +46,7 @@ const menuGroups: MenuGroup[] = [
   {
     label: 'Financeiro',
     items: [
-      { label: 'Faturamento', path: '/app/faturamento', icon: DollarSign, description: 'Ciclos de cobrança' },
+      { label: 'Faturamento', path: '/app/financeiro/faturamento', icon: DollarSign, description: 'Ciclos de cobrança' },
     ],
   },
   {
