@@ -23,6 +23,7 @@ import PortalPrestador from "@/pages/PortalPrestador";
 import AcompanhamentoCliente from "@/pages/AcompanhamentoCliente";
 import WhatsAppSimulador from "@/pages/WhatsAppSimulador";
 import SandboxWhatsApp from "@/pages/SandboxWhatsApp";
+import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ function AppRoutes() {
       <Route path="/solicitacoes" element={<ProtectedRoute><Solicitacoes /></ProtectedRoute>} />
       <Route path="/whatsapp" element={<ProtectedRoute><WhatsAppSimulador /></ProtectedRoute>} />
       <Route path="/sandbox" element={<ProtectedRoute><SandboxWhatsApp /></ProtectedRoute>} />
+      <Route path="/automacao-whatsapp" element={<ProtectedRoute><AutomacaoWhatsApp /></ProtectedRoute>} />
       <Route path="/despacho" element={<ProtectedRoute><Despacho /></ProtectedRoute>} />
       <Route path="/prestadores" element={<ProtectedRoute><Prestadores /></ProtectedRoute>} />
       <Route path="/tarifas" element={<ProtectedRoute><Tarifas /></ProtectedRoute>} />
