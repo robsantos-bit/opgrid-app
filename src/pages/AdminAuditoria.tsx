@@ -24,7 +24,7 @@ export default function AdminAuditoria() {
   const filtered = useMemo(() => logs.filter(l =>
     (!search || l.descricao.toLowerCase().includes(search.toLowerCase()) || l.usuario.toLowerCase().includes(search.toLowerCase())) &&
     (filterAction === 'all' || l.acao === filterAction)
-  ).sort((a, b) => new Date(b.dataHora).getTime() - new Date(a.dataHora).getTime()), [logs, search, filterAction]);
+  ).sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime()), [logs, search, filterAction]);
 
   return (
     <div className="space-y-5 animate-fade-in">
