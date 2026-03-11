@@ -32,6 +32,8 @@ export default function OperacaoSolicitacoes() {
     });
   }, [solicitacoes, search, filterStatus, filterPrioridade]);
 
+  useEffect(() => { setPage(0); }, [search, filterStatus, filterPrioridade]);
+
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
