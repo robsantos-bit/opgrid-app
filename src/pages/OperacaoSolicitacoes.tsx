@@ -23,7 +23,6 @@ export default function OperacaoSolicitacoes() {
   const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
-    setPage(0);
     return solicitacoes.filter((s: any) => {
       const q = search.toLowerCase();
       const matchSearch = !q || (s.cliente_nome || '').toLowerCase().includes(q) || (s.placa || '').toLowerCase().includes(q);
