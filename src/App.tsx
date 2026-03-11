@@ -23,6 +23,7 @@ import PortalPrestador from "@/pages/PortalPrestador";
 import AcompanhamentoCliente from "@/pages/AcompanhamentoCliente";
 import WhatsAppSimulador from "@/pages/WhatsAppSimulador";
 import SandboxWhatsApp from "@/pages/SandboxWhatsApp";
+import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
