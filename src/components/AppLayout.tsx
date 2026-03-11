@@ -19,7 +19,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const [sirenMuted, setSirenMuted] = useState(() => localStorage.getItem('opgrid-siren-muted') === 'true');
   const handleLogout = () => { logout(); navigate('/login'); };
 
-  const visibleNav = navItems.filter(item => hasAccess([item.module]));
+  
 
   const sirenPlayedRef = useRef(false);
 
