@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,6 @@ export default function RedePrestadores() {
   const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
-    setPage(0);
     return prestadores.filter((p: any) => {
       const s = search.toLowerCase();
       const matchSearch = !s || (p.nome || '').toLowerCase().includes(s) || (p.cnpj || '').includes(s);
@@ -29,6 +28,8 @@ export default function RedePrestadores() {
       return matchSearch && matchStatus && matchTipo;
     });
   }, [prestadores, search, filterStatus, filterTipo]);
+
+  useEffect(() => { setPage(0); }, [search, filterStatus, filterTipo]);
 
   const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
