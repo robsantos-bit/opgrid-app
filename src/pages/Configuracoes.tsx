@@ -56,7 +56,7 @@ export default function Configuracoes() {
           <TabsTrigger value="empresa" className="text-xs">Empresa</TabsTrigger>
           <TabsTrigger value="parametros" className="text-xs">Parâmetros</TabsTrigger>
           <TabsTrigger value="perfil" className="text-xs">Meu Perfil</TabsTrigger>
-          {isAdmin && <TabsTrigger value="usuarios" className="text-xs">Usuários</TabsTrigger>}
+          
           {isAdmin && <TabsTrigger value="permissoes" className="text-xs">Permissões</TabsTrigger>}
           {isAdmin && <TabsTrigger value="sistema" className="text-xs">Sistema</TabsTrigger>}
         </TabsList>
