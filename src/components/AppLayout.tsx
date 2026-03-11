@@ -57,7 +57,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <div className="h-full flex items-center justify-between px-5 max-w-[1600px] mx-auto">
           {/* Logo + Nav */}
           <div className="flex items-center gap-6">
-            <Link to="/" className="flex items-center gap-2 shrink-0">
+            <Link to="/app" className="flex items-center gap-2 shrink-0">
               <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/70 rounded-lg flex items-center justify-center">
                 <Hexagon className="h-4 w-4 text-primary-foreground" />
               </div>
