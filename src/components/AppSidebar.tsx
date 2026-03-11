@@ -5,7 +5,7 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
 import {
-  LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap
+  LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -16,39 +16,39 @@ const menuGroups = [
   {
     label: 'Visão Geral',
     items: [
-      { title: 'Dashboard', url: '/app', icon: LayoutDashboard, module: 'dashboard' },
+      { title: 'Dashboard', url: '/app/painel', icon: LayoutDashboard, module: 'dashboard' },
     ],
   },
   {
     label: 'Operação',
     items: [
-      { title: 'Operações', url: '/app/atendimentos', icon: ClipboardList, module: 'atendimentos' },
-      { title: 'Simulador WhatsApp', url: '/app/whatsapp', icon: MessageCircle, module: 'solicitacoes' },
-      { title: 'Sandbox WhatsApp', url: '/app/sandbox', icon: Radio, module: 'solicitacoes' },
-      { title: 'Automação WhatsApp', url: '/app/automacao-whatsapp', icon: Zap, module: 'solicitacoes' },
-      { title: 'Prestadores', url: '/app/prestadores', icon: Users, module: 'prestadores' },
+      { title: 'Solicitações', url: '/app/operacao/solicitacoes', icon: ClipboardList, module: 'solicitacoes' },
+      { title: 'Atendimentos', url: '/app/operacao/atendimentos', icon: ClipboardList, module: 'atendimentos' },
+      { title: 'Despacho', url: '/app/operacao/despacho', icon: Send, module: 'despacho' },
+      { title: 'Mapa Operacional', url: '/app/operacao/mapa', icon: Map, module: 'mapa' },
     ],
   },
   {
-    label: 'Comercial',
+    label: 'Rede',
     items: [
-      { title: 'Tarifas', url: '/app/tarifas', icon: Tag, module: 'tarifas' },
-      { title: 'Tabelas Comerciais', url: '/app/tabela-precos', icon: TableProperties, module: 'tabela-precos' },
-      { title: 'Contratos', url: '/app/contratos', icon: FileText, module: 'contratos' },
+      { title: 'Prestadores', url: '/app/rede/prestadores', icon: Users, module: 'prestadores' },
     ],
   },
   {
     label: 'Financeiro',
     items: [
-      { title: 'Faturamento', url: '/app/faturamento', icon: DollarSign, module: 'faturamento' },
-      { title: 'Relatórios', url: '/app/relatorios', icon: BarChart3, module: 'relatorios' },
+      { title: 'Faturamento', url: '/app/financeiro/faturamento', icon: DollarSign, module: 'faturamento' },
+      { title: 'Tarifas', url: '/app/financeiro/tarifas', icon: Tag, module: 'tarifas' },
+      { title: 'Tabelas Comerciais', url: '/app/financeiro/tabelas', icon: TableProperties, module: 'tabela-precos' },
     ],
   },
   {
-    label: 'Governança',
+    label: 'Admin',
     items: [
-      { title: 'Auditoria', url: '/app/auditoria', icon: History, module: 'auditoria' },
-      { title: 'Configurações', url: '/app/configuracoes', icon: Settings, module: 'configuracoes' },
+      { title: 'Usuários', url: '/app/admin/usuarios', icon: Users, module: 'usuarios' },
+      { title: 'Templates', url: '/app/admin/templates', icon: FileText, module: 'configuracoes' },
+      { title: 'Automações', url: '/app/admin/automacoes', icon: Zap, module: 'configuracoes' },
+      { title: 'Configurações', url: '/app/admin/configuracoes', icon: Settings, module: 'configuracoes' },
     ],
   },
 ];
@@ -98,11 +98,11 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-px px-2">
                   {visibleItems.map((item) => {
-                    const active = location.pathname === item.url || (item.url !== '/app' && location.pathname.startsWith(item.url));
+                    const active = location.pathname === item.url || (item.url !== '/app/painel' && location.pathname.startsWith(item.url));
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
-                          <NavLink to={item.url} end={item.url === '/app'}
+                          <NavLink to={item.url} end={item.url === '/app/painel'}
                             className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-100 ${
                               active
                                 ? 'bg-sidebar-primary/15 text-sidebar-primary-foreground font-semibold'
