@@ -98,7 +98,7 @@ export function AppSidebar() {
               <SidebarGroupContent>
                 <SidebarMenu className="gap-px px-2">
                   {visibleItems.map((item) => {
-                    const active = location.pathname === item.url || (item.url !== '/' && location.pathname.startsWith(item.url));
+                    const active = location.pathname === item.url || (item.url !== '/app' && location.pathname.startsWith(item.url));
                     return (
                       <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton asChild>
