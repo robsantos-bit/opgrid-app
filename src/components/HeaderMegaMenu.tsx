@@ -161,7 +161,7 @@ export default function HeaderMegaMenu() {
     group.items.some(
       item =>
         location.pathname === item.path ||
-        (item.path !== '/' && location.pathname.startsWith(item.path))
+        (item.path !== '/app' && location.pathname.startsWith(item.path))
     );
 
   return (
