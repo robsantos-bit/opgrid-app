@@ -104,21 +104,35 @@ export function useDashboardStats() {
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
       const [prestadores, solicitacoes, atendimentos] = await Promise.all([
-        supabase.from('prestadores').select('id, status', { count: 'exact' }),
-        supabase.from('solicitacoes').select('id, status', { count: 'exact' }),
-        supabase.from('atendimentos').select('id, status', { count: 'exact' }),
+        supabase.from('prestadores').select('id, status, tipo'),
+        supabase.from('solicitacoes').select('id, status'),
+        supabase.from('atendimentos').select('id, status'),
       ]);
 
       const prestList = prestadores.data || [];
       const solList = solicitacoes.data || [];
       const atdList = atendimentos.data || [];
 
+      const prestadoresAtivos = prestList.filter((p: any) => p.status === 'ativo' || p.status === 'Ativo').length;
+      const prestadoresInativos = prestList.length - prestadoresAtivos;
+
       return {
         totalPrestadores: prestList.length,
+        prestadoresAtivos,
+        prestadoresInativos,
+        prestGuincho: prestList.filter((p: any) => p.tipo === 'guincho').length,
+        prestPlataforma: prestList.filter((p: any) => p.tipo === 'plataforma').length,
+        prestApoio: prestList.filter((p: any) => p.tipo === 'apoio').length,
+
         totalSolicitacoes: solList.length,
+        solPendentes: solList.filter((s: any) => s.status === 'pendente').length,
+        solEmAndamento: solList.filter((s: any) => s.status === 'em_andamento').length,
+        solConcluidas: solList.filter((s: any) => s.status === 'concluida').length,
+        solCanceladas: solList.filter((s: any) => s.status === 'cancelada').length,
+
         totalAtendimentos: atdList.length,
         atendimentosEmAndamento: atdList.filter((a: any) => a.status === 'em_andamento' || a.status === 'Em andamento').length,
-        prestadoresAtivos: prestList.filter((p: any) => p.status === 'ativo' || p.status === 'Ativo').length,
+        atdFinalizados: atdList.filter((a: any) => a.status === 'finalizado' || a.status === 'Finalizado').length,
       };
     },
   });

@@ -7,22 +7,31 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { usePrestadores } from '@/hooks/useSupabaseData';
-import { Search, X, Eye, Loader2, Users } from 'lucide-react';
+import { Search, X, Eye, Loader2, Users, MapPin } from 'lucide-react';
+
+const PAGE_SIZE = 25;
 
 export default function RedePrestadores() {
   const { data: prestadores = [], isLoading } = usePrestadores();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterTipo, setFilterTipo] = useState('all');
   const [selected, setSelected] = useState<any>(null);
+  const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
+    setPage(0);
     return prestadores.filter((p: any) => {
       const s = search.toLowerCase();
-      const matchSearch = !s || (p.nome || '').toLowerCase().includes(s);
+      const matchSearch = !s || (p.nome || '').toLowerCase().includes(s) || (p.cnpj || '').includes(s);
       const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-      return matchSearch && matchStatus;
+      const matchTipo = filterTipo === 'all' || p.tipo === filterTipo;
+      return matchSearch && matchStatus && matchTipo;
     });
-  }, [prestadores, search, filterStatus]);
+  }, [prestadores, search, filterStatus, filterTipo]);
+
+  const paged = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -37,30 +46,52 @@ export default function RedePrestadores() {
     }
   };
 
+  const tipoBadge = (tipo: string) => {
+    switch (tipo) {
+      case 'guincho': return 'default' as const;
+      case 'plataforma': return 'info' as const;
+      case 'apoio': return 'outline' as const;
+      default: return 'secondary' as const;
+    }
+  };
+
+  const ativos = prestadores.filter((p: any) => p.status === 'ativo' || p.status === 'Ativo').length;
+
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
         <div className="page-header-text">
           <h1>Prestadores</h1>
-          <p>Rede de prestadores cadastrados no sistema</p>
+          <p>Rede de prestadores cadastrados · <strong>{prestadores.length}</strong> total · <strong>{ativos}</strong> ativos</p>
         </div>
       </div>
 
       <Card><CardContent className="p-3"><div className="flex gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-          <Input placeholder="Buscar por nome..." className="pl-9 h-9 text-xs" value={search} onChange={e => setSearch(e.target.value)} />
+          <Input placeholder="Buscar por nome ou CNPJ..." className="pl-9 h-9 text-xs" value={search} onChange={e => setSearch(e.target.value)} />
           {search && <button onClick={() => setSearch('')} className="absolute right-2.5 top-1/2 -translate-y-1/2"><X className="h-3 w-3 text-muted-foreground" /></button>}
         </div>
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-[140px] h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+          <SelectTrigger className="w-[130px] h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos</SelectItem>
+            <SelectItem value="all">Todos status</SelectItem>
             <SelectItem value="ativo">Ativo</SelectItem>
             <SelectItem value="inativo">Inativo</SelectItem>
-            <SelectItem value="bloqueado">Bloqueado</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={filterTipo} onValueChange={setFilterTipo}>
+          <SelectTrigger className="w-[130px] h-9 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos tipos</SelectItem>
+            <SelectItem value="guincho">Guincho</SelectItem>
+            <SelectItem value="plataforma">Plataforma</SelectItem>
+            <SelectItem value="apoio">Apoio</SelectItem>
+          </SelectContent>
+        </Select>
+        <Badge variant="outline" className="h-9 px-3 flex items-center text-[11px] font-medium">
+          {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+        </Badge>
       </div></CardContent></Card>
 
       <Card><CardContent className="p-0">
@@ -69,23 +100,23 @@ export default function RedePrestadores() {
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Nome</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">CNPJ</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Telefone</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Tipo</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Tipo</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Cadastro</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right w-[60px]">Ações</TableHead>
           </TableRow></TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paged.length === 0 ? (
               <TableRow><TableCell colSpan={7} className="text-center py-16">
                 <div className="flex flex-col items-center gap-2"><Users className="h-5 w-5 text-muted-foreground" /><p className="text-sm text-muted-foreground">Nenhum prestador encontrado</p></div>
               </TableCell></TableRow>
-            ) : filtered.map((p: any) => (
+            ) : paged.map((p: any) => (
               <TableRow key={p.id} className="table-row-hover cursor-pointer" onClick={() => setSelected(p)}>
                 <TableCell className="font-medium text-[13px]">{p.nome || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{p.cnpj || '—'}</TableCell>
                 <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{p.telefone || '—'}</TableCell>
-                <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{p.tipo || '—'}</TableCell>
-                <TableCell><Badge variant={statusBadge(p.status)}>{p.status || '—'}</Badge></TableCell>
+                <TableCell><Badge variant={tipoBadge(p.tipo)} className="text-[10px] capitalize">{p.tipo || '—'}</Badge></TableCell>
+                <TableCell><Badge variant={statusBadge(p.status)} className="text-[10px] capitalize">{p.status || '—'}</Badge></TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); }}>
@@ -96,6 +127,19 @@ export default function RedePrestadores() {
             ))}
           </TableBody>
         </Table>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t">
+            <p className="text-[11px] text-muted-foreground">
+              Página {page + 1} de {totalPages} · {filtered.length} registro{filtered.length !== 1 ? 's' : ''}
+            </p>
+            <div className="flex gap-1">
+              <Button variant="outline" size="sm" className="h-7 text-[11px]" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Anterior</Button>
+              <Button variant="outline" size="sm" className="h-7 text-[11px]" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>Próxima</Button>
+            </div>
+          </div>
+        )}
       </CardContent></Card>
 
       {/* Detail sheet */}
@@ -105,7 +149,10 @@ export default function RedePrestadores() {
             <>
               <SheetHeader>
                 <SheetTitle>{selected.nome}</SheetTitle>
-                <Badge variant={statusBadge(selected.status)}>{selected.status}</Badge>
+                <div className="flex gap-2">
+                  <Badge variant={statusBadge(selected.status)} className="capitalize">{selected.status}</Badge>
+                  <Badge variant={tipoBadge(selected.tipo)} className="capitalize">{selected.tipo}</Badge>
+                </div>
               </SheetHeader>
               <div className="mt-4 space-y-3 text-[13px]">
                 {[
@@ -117,9 +164,15 @@ export default function RedePrestadores() {
                 ].map(([label, val]) => (
                   <div key={String(label)} className="flex justify-between py-2 border-b border-dashed border-border/60">
                     <span className="text-muted-foreground">{label}</span>
-                    <span className="font-medium">{val || '—'}</span>
+                    <span className="font-medium capitalize">{val || '—'}</span>
                   </div>
                 ))}
+                {(selected.latitude && selected.longitude) && (
+                  <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5" />
+                    <span>{selected.latitude?.toFixed(4)}, {selected.longitude?.toFixed(4)}</span>
+                  </div>
+                )}
               </div>
             </>
           )}

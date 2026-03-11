@@ -9,17 +9,14 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { useAtendimentos } from '@/hooks/useSupabaseData';
 import { Search, X, Eye, Loader2, Headphones } from 'lucide-react';
 
+const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
+const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR');
+
 export default function OperacaoAtendimentos() {
   const { data: atendimentos = [], isLoading } = useAtendimentos();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState<any>(null);
-
-  const statuses = useMemo(() => {
-    const set = new Set<string>();
-    atendimentos.forEach((a: any) => { if (a.status) set.add(a.status); });
-    return Array.from(set);
-  }, [atendimentos]);
 
   const filtered = useMemo(() => {
     return atendimentos.filter((a: any) => {
@@ -37,19 +34,28 @@ export default function OperacaoAtendimentos() {
   }
 
   const statusVariant = (status: string) => {
-    const s = status?.toLowerCase();
-    if (s?.includes('conclu') || s?.includes('fatura')) return 'success' as const;
-    if (s?.includes('cancel')) return 'destructive' as const;
-    if (s?.includes('aberto') || s?.includes('pend')) return 'warning' as const;
-    return 'info' as const;
+    switch (status) {
+      case 'finalizado': return 'success' as const;
+      case 'em_andamento': return 'info' as const;
+      case 'cancelado': return 'destructive' as const;
+      default: return 'secondary' as const;
+    }
   };
+
+  const statusLabel = (s: string) => {
+    const map: Record<string, string> = { em_andamento: 'Em andamento', finalizado: 'Finalizado', cancelado: 'Cancelado' };
+    return map[s] || s;
+  };
+
+  const emAndamento = atendimentos.filter((a: any) => a.status === 'em_andamento').length;
+  const finalizados = atendimentos.filter((a: any) => a.status === 'finalizado').length;
 
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
         <div className="page-header-text">
           <h1>Atendimentos</h1>
-          <p>Atendimentos registrados com dados de prestadores e solicitações</p>
+          <p>{atendimentos.length} registrados · <strong>{emAndamento}</strong> em andamento · <strong>{finalizados}</strong> finalizados</p>
         </div>
       </div>
 
@@ -63,39 +69,43 @@ export default function OperacaoAtendimentos() {
           <SelectTrigger className="w-[160px] h-9 text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todos</SelectItem>
-            {statuses.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            <SelectItem value="em_andamento">Em andamento</SelectItem>
+            <SelectItem value="finalizado">Finalizado</SelectItem>
           </SelectContent>
         </Select>
+        <Badge variant="outline" className="h-9 px-3 flex items-center text-[11px] font-medium">
+          {filtered.length} resultado{filtered.length !== 1 ? 's' : ''}
+        </Badge>
       </div></CardContent></Card>
 
       <Card><CardContent className="p-0">
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent">
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold">ID</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Solicitação</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Cliente</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Prestador</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Cliente</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Placa</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Notas</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Criado em</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Finalizado em</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Criado</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Finalizado</TableHead>
             <TableHead className="text-right w-[60px]"></TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={9} className="text-center py-16">
+              <TableRow><TableCell colSpan={8} className="text-center py-16">
                 <div className="flex flex-col items-center gap-2"><Headphones className="h-5 w-5 text-muted-foreground" /><p className="text-sm text-muted-foreground">Nenhum atendimento encontrado</p></div>
               </TableCell></TableRow>
             ) : filtered.map((a: any) => (
               <TableRow key={a.id} className="table-row-hover cursor-pointer" onClick={() => setSelected(a)}>
-                <TableCell className="font-mono text-[11px] text-muted-foreground">{a.id?.substring(0, 8)}</TableCell>
-                <TableCell className="hidden md:table-cell font-mono text-[11px] text-muted-foreground">{a.solicitacao_id?.substring(0, 8) || '—'}</TableCell>
-                <TableCell className="hidden md:table-cell text-[13px]">{a.solicitacoes?.cliente_nome || '—'}</TableCell>
                 <TableCell className="text-[13px] font-medium">{a.prestadores?.nome || '—'}</TableCell>
-                <TableCell><Badge variant={statusVariant(a.status)}>{a.status || '—'}</Badge></TableCell>
-                <TableCell className="hidden lg:table-cell text-[12px] text-muted-foreground max-w-[150px] truncate">{a.notas || '—'}</TableCell>
-                <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{a.created_at ? new Date(a.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
-                <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{a.finalizado_at ? new Date(a.finalizado_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
+                <TableCell className="hidden md:table-cell text-[13px]">{a.solicitacoes?.cliente_nome || '—'}</TableCell>
+                <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{a.solicitacoes?.placa || '—'}</TableCell>
+                <TableCell><Badge variant={statusVariant(a.status)} className="text-[10px]">{statusLabel(a.status)}</Badge></TableCell>
+                <TableCell className="hidden lg:table-cell text-[12px] text-muted-foreground max-w-[180px] truncate">{a.notas || '—'}</TableCell>
+                <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{a.created_at ? fmtDate(a.created_at) : '—'}</TableCell>
+                <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">
+                  {a.finalizado_at ? fmtDate(a.finalizado_at) : <span className="text-info text-[11px]">Em aberto</span>}
+                </TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(a); }}>
                     <Eye className="h-3.5 w-3.5" />
@@ -113,22 +123,22 @@ export default function OperacaoAtendimentos() {
             <>
               <SheetHeader>
                 <SheetTitle>Atendimento</SheetTitle>
-                <Badge variant={statusVariant(selected.status)}>{selected.status}</Badge>
+                <Badge variant={statusVariant(selected.status)}>{statusLabel(selected.status)}</Badge>
               </SheetHeader>
               <div className="mt-4 space-y-3 text-[13px]">
                 {[
-                  ['ID', selected.id],
-                  ['Solicitação', selected.solicitacao_id || '—'],
-                  ['Cliente', selected.solicitacoes?.cliente_nome || '—'],
-                  ['Prestador', selected.prestadores?.nome || '—'],
-                  ['Status', selected.status],
-                  ['Notas', selected.notas || '—'],
-                  ['Criado em', selected.created_at ? new Date(selected.created_at).toLocaleString('pt-BR') : '—'],
-                  ['Finalizado em', selected.finalizado_at ? new Date(selected.finalizado_at).toLocaleString('pt-BR') : '—'],
+                  ['Prestador', selected.prestadores?.nome],
+                  ['Tel. Prestador', selected.prestadores?.telefone],
+                  ['Cliente', selected.solicitacoes?.cliente_nome],
+                  ['Tel. Cliente', selected.solicitacoes?.cliente_telefone],
+                  ['Placa', selected.solicitacoes?.placa],
+                  ['Notas', selected.notas],
+                  ['Criado em', selected.created_at ? fmtDateTime(selected.created_at) : '—'],
+                  ['Finalizado em', selected.finalizado_at ? fmtDateTime(selected.finalizado_at) : 'Em aberto'],
                 ].map(([label, val]) => (
                   <div key={String(label)} className="flex justify-between py-2 border-b border-dashed border-border/60">
                     <span className="text-muted-foreground">{label}</span>
-                    <span className="font-medium text-right max-w-[60%] break-all">{val || '—'}</span>
+                    <span className="font-medium text-right max-w-[60%] break-words">{val || '—'}</span>
                   </div>
                 ))}
               </div>
