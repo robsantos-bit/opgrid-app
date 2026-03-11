@@ -67,26 +67,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
               </div>
             </Link>
 
-            <nav className="hidden lg:flex items-center gap-0.5">
-              {visibleNav.map(item => {
-                const active = location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path));
-                return (
-                  <Link
-                    key={item.path}
-                    to={item.path}
-                    className={`px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors ${
-                      active ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                    }`}
-                  >
-                    {item.label}
-                  </Link>
-                );
-              })}
-            </nav>
+            <HeaderMegaMenu />
           </div>
 
           {/* Right side */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {searchOpen ? (
               <div className="relative">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -97,19 +82,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
                 <Search className="h-3.5 w-3.5" /><span>Buscar</span><kbd className="hidden xl:inline text-[10px] bg-background px-1.5 py-0.5 rounded border ml-3 font-mono">⌘K</kbd>
               </button>
             )}
-
-            {/* Differential badges */}
-            <div className="hidden xl:flex items-center gap-1.5 text-[10px] text-success border border-success/20 bg-success/5 rounded-md px-2 py-1 font-medium">
-              <MessageCircle className="h-3 w-3" /><span>WhatsApp ativo</span>
-            </div>
-
-            <div className="hidden xl:flex items-center gap-1.5 text-[10px] text-primary border border-primary/20 bg-primary/5 rounded-md px-2 py-1 font-medium">
-              <Radar className="h-3 w-3" /><span>Despacho auto</span>
-            </div>
-
-            <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] text-info border border-info/20 bg-info/5 rounded-md px-2 py-1 font-medium">
-              <Smartphone className="h-3 w-3" /><span>Sem app</span>
-            </div>
 
             {/* Mute toggle */}
             <Button
