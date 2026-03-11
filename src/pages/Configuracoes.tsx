@@ -29,10 +29,7 @@ export default function Configuracoes() {
   const handleSave = () => { saveConfig(config); toast.success('Configurações salvas!'); };
   const handleReset = () => { resetAllData(); toast.success('Dados resetados. Recarregando...'); setTimeout(() => window.location.reload(), 1000); };
   const handleProfileSave = () => {
-    if (user) {
-      updateUser({ nome: profileName, email: profileEmail });
-      toast.success('Perfil atualizado!');
-    }
+    toast.info('Edição de perfil via Supabase em breve.');
   };
 
   const handleCnpjChange = async (value: string) => {
