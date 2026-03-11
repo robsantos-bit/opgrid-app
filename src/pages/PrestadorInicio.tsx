@@ -1,16 +1,20 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePrestadorById } from '@/hooks/useSupabaseData';
-import { Loader2, User, Building2, Phone, Tag } from 'lucide-react';
+import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabaseData';
+import { Loader2, User, Building2, Headphones, Activity, CheckCircle2 } from 'lucide-react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
   const { data: prestador, isLoading } = usePrestadorById(user?.provider_id);
+  const { data: atendimentos = [] } = useAtendimentosByPrestador(user?.provider_id);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
+
+  const emAndamento = atendimentos.filter((a: any) => a.status === 'em_andamento').length;
+  const finalizados = atendimentos.filter((a: any) => a.status === 'finalizado').length;
 
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl mx-auto p-4">
@@ -20,31 +24,55 @@ export default function PrestadorInicio() {
       </div>
 
       {prestador ? (
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                <Building2 className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-lg font-bold">{prestador.nome}</p>
-                <Badge variant={prestador.status === 'ativo' ? 'success' : 'secondary'}>{prestador.status}</Badge>
-              </div>
-            </div>
-            <div className="space-y-2 text-[13px]">
-              {[
-                ['CNPJ', prestador.cnpj],
-                ['Telefone', prestador.telefone],
-                ['Tipo', prestador.tipo],
-              ].map(([label, val]) => (
-                <div key={String(label)} className="flex justify-between py-2 border-b border-dashed border-border/60">
-                  <span className="text-muted-foreground">{label}</span>
-                  <span className="font-medium">{val || '—'}</span>
+        <>
+          <Card>
+            <CardContent className="p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Building2 className="h-6 w-6 text-primary" />
                 </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                <div>
+                  <p className="text-lg font-bold">{prestador.nome}</p>
+                  <div className="flex gap-2 mt-0.5">
+                    <Badge variant={prestador.status === 'ativo' ? 'success' : 'secondary'} className="capitalize">{prestador.status}</Badge>
+                    <Badge variant="outline" className="capitalize text-[10px]">{prestador.tipo}</Badge>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-2 text-[13px]">
+                {[
+                  ['CNPJ', prestador.cnpj],
+                  ['Telefone', prestador.telefone],
+                  ['Tipo', prestador.tipo],
+                ].map(([label, val]) => (
+                  <div key={String(label)} className="flex justify-between py-2 border-b border-dashed border-border/60">
+                    <span className="text-muted-foreground">{label}</span>
+                    <span className="font-medium capitalize">{val || '—'}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick stats */}
+          <div className="grid grid-cols-3 gap-3">
+            {[
+              { label: 'Total', value: atendimentos.length, icon: Headphones, bg: 'bg-primary/10', color: 'text-primary' },
+              { label: 'Em andamento', value: emAndamento, icon: Activity, bg: 'bg-info/10', color: 'text-info' },
+              { label: 'Finalizados', value: finalizados, icon: CheckCircle2, bg: 'bg-success/10', color: 'text-success' },
+            ].map(k => (
+              <Card key={k.label}>
+                <CardContent className="p-4 text-center">
+                  <div className={`w-9 h-9 rounded-lg ${k.bg} flex items-center justify-center mx-auto mb-2`}>
+                    <k.icon className={`h-4.5 w-4.5 ${k.color}`} />
+                  </div>
+                  <p className="text-xl font-bold tabular-nums">{k.value}</p>
+                  <p className="text-[10px] text-muted-foreground font-medium uppercase tracking-wider mt-0.5">{k.label}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       ) : (
         <Card>
           <CardContent className="p-8 text-center">
