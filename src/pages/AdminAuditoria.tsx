@@ -66,7 +66,7 @@ export default function AdminAuditoria() {
               const Icon = actionIcon(l.acao);
               return (
                 <TableRow key={l.id} className="table-row-hover">
-                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">{new Date(l.dataHora).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</TableCell>
+                  <TableCell className="text-[12px] text-muted-foreground tabular-nums">{new Date(l.data).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}</TableCell>
                   <TableCell><span className="font-semibold text-[13px]">{l.usuario}</span></TableCell>
                   <TableCell><Badge variant="outline" className="font-semibold text-[11px] gap-1"><Icon className="h-3 w-3" />{l.acao}</Badge></TableCell>
                   <TableCell className="text-[13px] text-muted-foreground max-w-[300px] truncate">{l.descricao}</TableCell>
