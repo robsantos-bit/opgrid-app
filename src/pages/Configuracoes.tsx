@@ -4,19 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { getConfig, saveConfig, resetAllData } from '@/data/store';
-import { ConfigEmpresa, User, UserRole } from '@/types';
+import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, RotateCcw, Loader2, Pencil, Users, X } from 'lucide-react';
+import { Save, RotateCcw, Loader2 } from 'lucide-react';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
-import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
-const roleVariant: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = { admin: 'default', operador: 'secondary', financeiro: 'secondary', prestador: 'outline' };
+
 
 export default function Configuracoes() {
   const { user, isAdmin } = useAuth();
