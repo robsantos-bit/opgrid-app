@@ -14,10 +14,11 @@ import { OfertaPrestador, Atendimento, Solicitacao, Prestador, StatusOsPrestador
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from 'sonner';
+import ChecklistExecucao from '@/components/ChecklistExecucao';
 import {
   Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, XCircle, AlertTriangle,
   Navigation, Camera, FileText, Timer, Shield, Zap, ArrowRight, User, Car, DollarSign,
-  Send, ChevronRight, Radio, Eye, LocateFixed, Upload, Lock, KeyRound
+  Send, ChevronRight, Radio, Eye, LocateFixed, Upload, Lock, KeyRound, Trash2
 } from 'lucide-react';
 
 function formatDate(d: string) {
