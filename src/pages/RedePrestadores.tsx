@@ -237,6 +237,81 @@ export default function RedePrestadores() {
           )}
         </SheetContent>
       </Sheet>
+      {/* Cadastro Dialog */}
+      <Dialog open={showCadastro} onOpenChange={setShowCadastro}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Cadastrar Prestador</DialogTitle>
+            <p className="text-sm text-muted-foreground">Preencha os dados básicos e o prestador receberá a senha por email</p>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Nome da Empresa <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Nome da empresa" className="pl-10" value={cadastroForm.nome} onChange={e => setCadastroForm(p => ({ ...p, nome: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">CNPJ <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="00.000.000/0000-00" className="pl-10" value={cadastroForm.cnpj}
+                  onChange={e => setCadastroForm(p => ({ ...p, cnpj: formatCnpj(e.target.value) }))}
+                  onBlur={handleCnpjBlur} />
+                {cnpjLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">WhatsApp <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="(00) 00000-0000" className="pl-10" value={cadastroForm.whatsapp}
+                    onChange={e => setCadastroForm(p => ({ ...p, whatsapp: formatPhone(e.target.value) }))} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Email <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="empresa@exemplo.com" className="pl-10" type="email" value={cadastroForm.email}
+                    onChange={e => setCadastroForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Qtd. de Veículos <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Truck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Ex: 5" className="pl-10" type="number" value={cadastroForm.qtdVeiculos}
+                    onChange={e => setCadastroForm(p => ({ ...p, qtdVeiculos: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Qtd. de Motoristas <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <UsersRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Ex: 10" className="pl-10" type="number" value={cadastroForm.qtdMotoristas}
+                    onChange={e => setCadastroForm(p => ({ ...p, qtdMotoristas: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-3 flex gap-3 items-start">
+              <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
+              <div className="text-xs text-blue-700 dark:text-blue-300">
+                <p className="font-semibold mb-1">📧 Geraremos uma senha automática</p>
+                <p>Após o cadastro, o prestador receberá um email com sua senha de acesso.</p>
+              </div>
+            </div>
+            <Button onClick={handleCadastroSubmit} disabled={cadastroSaving} className="w-full gap-2 h-11">
+              {cadastroSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Cadastrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
