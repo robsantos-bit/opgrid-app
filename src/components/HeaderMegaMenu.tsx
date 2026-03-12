@@ -46,6 +46,7 @@ const menuGroups: MenuGroup[] = [
       { label: 'Acompanhamento do Cliente', path: '/app/operacao/acompanhamento', icon: Activity, description: 'Links de tracking' },
       { label: 'Checklists Executados', path: '/app/operacao/checklists', icon: CheckSquare, description: 'Checklists em campo' },
       { label: 'Simulador WhatsApp', path: '/app/operacao/whatsapp-simulador', icon: Smartphone, description: 'Jornada do cliente via WhatsApp' },
+      { label: 'Conversas WhatsApp', path: '/app/operacao/conversas', icon: MessageCircle, description: 'Monitor de conversas ativas' },
     ],
   },
   {
