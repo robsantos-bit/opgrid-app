@@ -24,6 +24,65 @@ function formatDate(d: string) {
   return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
+// ====== COUNTDOWN TIMER CIRCLE ======
+function CountdownCircle({ expiresAt, totalMinutes }: { expiresAt: number; totalMinutes: number }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const remaining = Math.max(0, expiresAt - now);
+  const totalMs = totalMinutes * 60000;
+  const progress = remaining / totalMs;
+  const minutes = Math.floor(remaining / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+
+  const radius = 70;
+  const circumference = 2 * Math.PI * radius;
+  const strokeDashoffset = circumference * (1 - progress);
+
+  return (
+    <div className="flex flex-col items-center py-6">
+      <div className="relative w-[180px] h-[180px]">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
+          <circle cx="80" cy="80" r={radius} fill="none" stroke="hsl(var(--muted))" strokeWidth="8" />
+          <circle
+            cx="80" cy="80" r={radius} fill="none"
+            stroke={progress > 0.3 ? 'hsl(24, 85%, 55%)' : 'hsl(var(--destructive))'}
+            strokeWidth="8" strokeLinecap="round"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            className="transition-all duration-1000"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="text-4xl font-bold tracking-tight text-foreground">
+            {minutes}:{seconds.toString().padStart(2, '0')}
+          </span>
+        </div>
+      </div>
+      <p className="text-sm text-muted-foreground mt-2">Tempo para aceitar o chamado</p>
+    </div>
+  );
+}
+
+// ====== INFO ROW CARD ======
+function InfoRow({ icon: Icon, label, value, iconColor }: { icon: typeof Truck; label: string; value: string; iconColor?: string }) {
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-b-0">
+      <div className={`mt-0.5 ${iconColor || 'text-muted-foreground'}`}>
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className="text-sm font-semibold text-foreground truncate">{value}</p>
+      </div>
+    </div>
+  );
+}
+
 // ====== OFFER PAGE ======
 function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestador; solicitacao: Solicitacao | undefined; prestador: Prestador | undefined }) {
   const [status, setStatus] = useState(oferta.status);
@@ -31,7 +90,8 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
   const [motivoRecusa, setMotivoRecusa] = useState('');
   const [sirenPlayed, setSirenPlayed] = useState(false);
 
-  const expired = status === 'Pendente' && new Date(oferta.enviadaEm).getTime() + oferta.tempoLimiteMinutos * 60000 < Date.now();
+  const expiresAt = new Date(oferta.enviadaEm).getTime() + oferta.tempoLimiteMinutos * 60000;
+  const expired = status === 'Pendente' && expiresAt < Date.now();
 
   useEffect(() => {
     if (status === 'Pendente' && !expired && !sirenPlayed) {
@@ -62,13 +122,11 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     if (desp) {
       const now = new Date().toISOString();
       desp.ofertas = desp.ofertas.map(o => o.id === oferta.id ? { ...o, status: 'Aceita' as const, respondidaEm: now } : o);
-      // Close other pending offers
       desp.ofertas = desp.ofertas.map(o => o.id !== oferta.id && o.status === 'Pendente' ? { ...o, status: 'Encerrada' as const, respondidaEm: now } : o);
       desp.status = 'Aceito';
       desp.prestadorAceitoId = oferta.prestadorId;
       desp.atualizadoEm = now;
       updateDespacho(desp);
-      // Update atendimento with prestador
       if (desp.atendimentoId) {
         const atendimentos = getAtendimentos();
         const atd = atendimentos.find(a => a.id === desp.atendimentoId);
@@ -81,7 +139,6 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
           updateAtendimento(atd);
         }
       }
-      // Update solicitacao
       const sols = getSolicitacoes();
       const sol = sols.find(s => s.id === desp.solicitacaoId);
       if (sol) {
@@ -141,7 +198,6 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     );
   }
 
-  // After acceptance — link to OS page
   if (status === 'Aceita') {
     const desp = getDespachos().find(d => d.id === oferta.despachoId);
     const osId = desp?.atendimentoId;
@@ -180,81 +236,59 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
 
   return (
     <MobileShell>
-      {/* Header with siren */}
-      <div className="bg-primary text-primary-foreground px-5 py-6 relative overflow-hidden">
-        <div className="absolute top-3 right-3 flex items-center gap-1.5">
-          <div className="relative">
-            <div className="w-3 h-3 bg-destructive rounded-full animate-siren-pulse" />
-            <div className="absolute inset-0 w-3 h-3 bg-destructive rounded-full animate-siren-glow" />
+      {/* Header — green bar like reference */}
+      <div className="bg-[hsl(160,60%,38%)] text-white px-5 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+            <Truck className="h-4.5 w-4.5 text-white" />
           </div>
-          <span className="text-[9px] font-semibold uppercase tracking-wider opacity-60">Sirene ativa</span>
+          <span className="text-base font-bold uppercase tracking-wide">Novo Chamado</span>
         </div>
-        <div className="flex items-center gap-2 mb-1">
-          <Zap className="h-4 w-4" />
-          <span className="text-xs font-semibold uppercase tracking-wider opacity-80">🔔 Nova oferta de serviço</span>
-        </div>
-        <h1 className="text-xl font-bold">Você recebeu uma OS!</h1>
-        <p className="text-sm opacity-80 mt-1">Primeiro que aceitar, ganha a OS. Sem app necessário.</p>
+        <button className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+          <Radio className="h-4 w-4 text-white/80" />
+        </button>
       </div>
 
-      {/* Timer */}
-      <div className="mx-4 -mt-3">
-        <div className="bg-destructive/10 border border-destructive/30 rounded-xl px-4 py-3 flex items-center gap-3 animate-siren-glow">
-          <Timer className="h-5 w-5 text-destructive shrink-0" />
-          <div>
-            <p className="text-sm font-bold text-destructive">⏱ Oferta expira em {oferta.tempoLimiteMinutos} min</p>
-            <p className="text-xs text-muted-foreground">Ao aceitar, a OS fica reservada para você</p>
-          </div>
-        </div>
+      {/* Countdown timer circle */}
+      <CountdownCircle expiresAt={expiresAt} totalMinutes={oferta.tempoLimiteMinutos} />
+
+      {/* Info cards */}
+      <div className="px-4 pb-4">
+        <Card className="overflow-hidden">
+          <InfoRow icon={Car} label="Veículo" value={solicitacao ? `${solicitacao.veiculoModelo} • ${solicitacao.veiculoPlaca}` : 'N/D'} iconColor="text-muted-foreground" />
+          <InfoRow icon={User} label="Cliente" value={solicitacao?.clienteNome || 'Cliente não encontrado'} iconColor="text-muted-foreground" />
+          <InfoRow icon={MapPin} label="Origem" value={solicitacao?.origemEndereco || 'N/D'} iconColor="text-warning" />
+          <InfoRow icon={MapPin} label="Destino" value={solicitacao?.destinoEndereco || 'N/D'} iconColor="text-destructive" />
+        </Card>
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Value highlight */}
+      {/* Value + distance */}
+      <div className="px-4 pb-4 grid grid-cols-2 gap-3">
         <Card className="border-2 border-success/30 bg-success/5">
-          <CardContent className="p-4 text-center">
-            <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Valor do serviço</p>
-            <p className="text-3xl font-bold text-success">R$ {oferta.valorServico.toFixed(2)}</p>
+          <CardContent className="p-3 text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Valor</p>
+            <p className="text-xl font-bold text-success">R$ {oferta.valorServico.toFixed(2)}</p>
           </CardContent>
         </Card>
-
-        {/* Service details */}
         <Card>
-          <CardContent className="p-4 space-y-3">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Detalhes do serviço</p>
-            {solicitacao && (
-              <>
-                <Row icon={Car} label="Veículo" value={`${solicitacao.veiculoModelo} • ${solicitacao.veiculoPlaca}`} />
-                <Row icon={AlertTriangle} label="Problema" value={solicitacao.motivo} />
-                <Separator />
-                <Row icon={MapPin} label="Origem" value={solicitacao.origemEndereco} />
-                <Row icon={MapPin} label="Destino" value={solicitacao.destinoEndereco} />
-                <Separator />
-              </>
-            )}
-            <Row icon={Navigation} label="Distância estimada" value={`${oferta.distanciaEstimadaKm} km`} />
-            <Row icon={Clock} label="Tempo estimado" value={`${oferta.tempoEstimadoMinutos} min`} />
-            {solicitacao?.observacoes && (
-              <>
-                <Separator />
-                <div>
-                  <p className="text-xs text-muted-foreground mb-1">Observações</p>
-                  <p className="text-sm italic text-foreground">"{solicitacao.observacoes}"</p>
-                </div>
-              </>
-            )}
+          <CardContent className="p-3 text-center">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Distância</p>
+            <p className="text-xl font-bold text-foreground">{oferta.distanciaEstimadaKm} km</p>
           </CardContent>
         </Card>
+      </div>
 
-        {/* Actions */}
+      {/* Actions */}
+      <div className="px-4 pb-6 space-y-2.5">
         {!showRecusa ? (
-          <div className="space-y-2.5">
-            <Button className="w-full h-14 text-base font-bold" onClick={handleAceitar}>
-              <CheckCircle2 className="h-5 w-5 mr-2" />Aceitar oferta
+          <>
+            <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={handleAceitar}>
+              <CheckCircle2 className="h-5 w-5 mr-2" />Aceitar chamado
             </Button>
-            <Button variant="outline" className="w-full h-12" onClick={handleRecusar}>
+            <Button variant="outline" className="w-full h-12 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={handleRecusar}>
               <XCircle className="h-4 w-4 mr-2" />Recusar
             </Button>
-          </div>
+          </>
         ) : (
           <Card>
             <CardContent className="p-4 space-y-3">
@@ -279,7 +313,7 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
         )}
 
         <p className="text-[10px] text-center text-muted-foreground px-4">
-          Aceite sujeito à sua disponibilidade e localização. Ao aceitar, você confirma estar apto para este serviço.
+          Ao aceitar, você confirma estar disponível para este serviço.
         </p>
       </div>
     </MobileShell>
