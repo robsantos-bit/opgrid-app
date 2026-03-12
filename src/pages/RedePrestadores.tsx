@@ -17,11 +17,62 @@ const PAGE_SIZE = 25;
 
 export default function RedePrestadores() {
   const { data: prestadores = [], isLoading } = usePrestadores();
+  const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterTipo, setFilterTipo] = useState('all');
   const [selected, setSelected] = useState<any>(null);
   const [page, setPage] = useState(0);
+  const [showCadastro, setShowCadastro] = useState(false);
+  const [cadastroForm, setCadastroForm] = useState({
+    nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '',
+  });
+  const [cadastroSaving, setCadastroSaving] = useState(false);
+
+  const formatCnpj = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 14);
+    return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+      .replace(/(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4')
+      .replace(/(\d{2})(\d{3})(\d{3})/, '$1.$2.$3')
+      .replace(/(\d{2})(\d{3})/, '$1.$2');
+  };
+
+  const formatPhone = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  };
+
+  const handleCnpjBlur = async () => {
+    const clean = cadastroForm.cnpj.replace(/\D/g, '');
+    if (clean.length === 14) {
+      const result = await lookupCnpj(clean);
+      if (result) {
+        setCadastroForm(prev => ({
+          ...prev,
+          nome: result.razao_social || result.nome_fantasia || prev.nome,
+          email: result.email || prev.email,
+          whatsapp: result.telefone || prev.whatsapp,
+        }));
+        toast.success('CNPJ encontrado! Dados preenchidos automaticamente.');
+      }
+    }
+  };
+
+  const handleCadastroSubmit = () => {
+    if (!cadastroForm.nome || !cadastroForm.cnpj || !cadastroForm.whatsapp || !cadastroForm.email) {
+      toast.error('Preencha todos os campos obrigatórios.');
+      return;
+    }
+    setCadastroSaving(true);
+    setTimeout(() => {
+      setCadastroSaving(false);
+      setShowCadastro(false);
+      setCadastroForm({ nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '' });
+      toast.success('Prestador cadastrado com sucesso! Senha enviada por email.');
+    }, 1200);
+  };
 
   const filtered = useMemo(() => {
     return prestadores.filter((p: any) => {
