@@ -669,6 +669,38 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
           )}
         </div>
 
+        {/* ===== CHECKLIST ENTREGA ===== */}
+        {(currentStatus === 'Em remoção' || currentStatus === 'Concluído') && (
+          <div>
+            <SectionHeader title="Checklist de Entrega" />
+            {showChecklistEntrega ? (
+              <ChecklistExecucao
+                tipo="entrega"
+                protocolo={atendimento.protocolo}
+                placa={atendimento.placa}
+                prestador={prestador?.nomeFantasia || 'Prestador'}
+                onVoltar={() => setShowChecklistEntrega(false)}
+              />
+            ) : (
+              <div className="space-y-2">
+                <div className="bg-[hsl(200,80%,50%)]/5 border border-[hsl(200,80%,50%)]/20 rounded-lg px-4 py-3">
+                  <p className="text-sm font-medium text-foreground flex items-center gap-2">
+                    <CheckCircle2 className="h-4 w-4 text-[hsl(200,80%,50%)]" />
+                    Registre o estado do veículo na entrega ao destino
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Inclui vistoria, avarias na entrega e assinatura do recebedor.</p>
+                </div>
+                <Button
+                  className="w-full h-12 text-sm font-bold bg-[hsl(200,80%,50%)] hover:bg-[hsl(200,80%,45%)] text-white"
+                  onClick={() => setShowChecklistEntrega(true)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />Abrir Checklist de Entrega
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== ANEXOS DO ATENDIMENTO ===== */}
         <div>
           <SectionHeader title="Anexos do Atendimento" />
