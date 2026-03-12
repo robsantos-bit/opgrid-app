@@ -320,6 +320,63 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
   );
 }
 
+// ====== ELAPSED TIMER ======
+function ElapsedTimer({ startTime }: { startTime: string }) {
+  const [elapsed, setElapsed] = useState('0m 0s');
+  useEffect(() => {
+    const start = new Date(startTime).getTime();
+    const tick = () => {
+      const diff = Math.max(0, Date.now() - start);
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setElapsed(`${m}m ${s.toString().padStart(2, '0')}s`);
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [startTime]);
+  return <span className="text-lg font-bold text-[hsl(160,60%,38%)]">{elapsed}</span>;
+}
+
+// ====== SECTION HEADER ======
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="border-b-2 border-[hsl(160,60%,38%)]/20 pb-1.5 mb-3">
+      <h2 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">{title}</h2>
+    </div>
+  );
+}
+
+// ====== NUMBERED ROW ======
+function NumberedRow({ num, color, label, value }: { num: number; color: string; label: string; value: string }) {
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-border last:border-b-0">
+      <div className={`w-7 h-7 rounded-full ${color} flex items-center justify-center shrink-0`}>
+        <span className="text-white text-xs font-bold">{num}</span>
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</p>
+        <p className="text-sm font-semibold text-foreground">{value}</p>
+      </div>
+    </div>
+  );
+}
+
+// ====== ICON ROW ======
+function IconRow({ icon: Icon, label, value, iconBg }: { icon: typeof Truck; label: string; value: string | React.ReactNode; iconBg?: string }) {
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-border last:border-b-0">
+      <div className={`w-9 h-9 rounded-xl ${iconBg || 'bg-muted'} flex items-center justify-center shrink-0`}>
+        <Icon className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</p>
+        <div className="text-sm font-semibold text-foreground">{value}</div>
+      </div>
+    </div>
+  );
+}
+
 // ====== OS EXECUTION PAGE ======
 function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendimento; solicitacao: Solicitacao | undefined; prestador: Prestador | undefined }) {
   const [currentStatus, setCurrentStatus] = useState<StatusOsPrestador>(atendimento.statusPrestador || 'Aceito');
@@ -331,21 +388,20 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
   const [plateInput, setPlateInput] = useState('');
   const [plateConfirmed, setPlateConfirmed] = useState(false);
   const [plateError, setPlateError] = useState('');
+  const [etaInput, setEtaInput] = useState('');
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const acceptedAt = useRef(new Date().toISOString());
 
   const statusFlow: StatusOsPrestador[] = ['Aceito', 'A caminho', 'Cheguei ao local', 'Em remoção', 'Concluído'];
   const currentIndex = statusFlow.indexOf(currentStatus);
 
-  // Persist status change to store
   const persistStatus = useCallback((newStatus: StatusOsPrestador) => {
     const now = new Date().toISOString();
     const atd = getAtendimentos().find(a => a.id === atendimento.id);
     if (!atd) return;
-
     atd.statusPrestador = newStatus;
     atd.checklist = checklist;
-
     const statusLabels: Record<StatusOsPrestador, string> = {
       'Aceito': 'Prestador aceitou a OS',
       'A caminho': 'Prestador a caminho do local',
@@ -354,18 +410,10 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
       'Concluído': 'Atendimento concluído pelo prestador',
       'Cancelado': 'Atendimento cancelado pelo prestador',
     };
-
     atd.timeline = [...atd.timeline, { data: now, descricao: statusLabels[newStatus] || newStatus }];
-
     if (newStatus === 'Cheguei ao local') atd.horaChegada = now;
-    if (newStatus === 'Concluído') {
-      atd.horaConclusao = now;
-      atd.status = 'Concluído';
-    }
-
+    if (newStatus === 'Concluído') { atd.horaConclusao = now; atd.status = 'Concluído'; }
     updateAtendimento(atd);
-
-    // Update solicitacao status
     if (atd.solicitacaoId) {
       const sol = getSolicitacoes().find(s => s.id === atd.solicitacaoId);
       if (sol) {
@@ -374,8 +422,6 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
         updateSolicitacao(sol);
       }
     }
-
-    // Fire notification to central
     addNotification({
       type: newStatus === 'Concluído' ? 'status_concluido' as any : 'status_atualizado' as any,
       title: newStatus === 'Concluído' ? '✅ OS Concluída' : `📍 ${statusLabels[newStatus]}`,
@@ -385,62 +431,31 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
     });
   }, [atendimento, checklist, prestador]);
 
-  const nextStatus = () => {
-    // At "Cheguei ao local" — require plate confirmation first
-    if (currentStatus === 'A caminho' && !plateConfirmed) {
-      // Will show plate confirmation UI, handled below
-    }
-    if (currentIndex < statusFlow.length - 1) {
-      const newSt = statusFlow[currentIndex + 1];
-      setCurrentStatus(newSt);
-      persistStatus(newSt);
-    }
+  const advanceTo = (newSt: StatusOsPrestador) => {
+    setCurrentStatus(newSt);
+    persistStatus(newSt);
   };
+
+  const handleAcaminho = () => advanceTo('A caminho');
 
   const handlePlateConfirm = () => {
     const expected = atendimento.placa.substring(0, 3).toUpperCase();
     const entered = plateInput.trim().toUpperCase();
-    if (entered.length < 3) {
-      setPlateError('Digite as 3 primeiras letras da placa.');
-      return;
-    }
-    if (entered !== expected) {
-      setPlateError(`Placa não confere. Esperado: ${expected[0]}** — tente novamente.`);
-      return;
-    }
+    if (entered.length < 3) { setPlateError('Digite as 3 primeiras letras da placa.'); return; }
+    if (entered !== expected) { setPlateError(`Placa não confere. Esperado: ${expected[0]}** — tente novamente.`); return; }
     setPlateConfirmed(true);
     setPlateError('');
-    // Advance to "Cheguei ao local"
-    const newSt: StatusOsPrestador = 'Cheguei ao local';
-    setCurrentStatus(newSt);
-    persistStatus(newSt);
+    advanceTo('Cheguei ao local');
     toast.success('Placa confirmada! Chegada registrada.');
   };
 
-  const statusConfig: Record<StatusOsPrestador, { color: string; bg: string; icon: typeof Truck }> = {
-    'Aceito': { color: 'text-primary', bg: 'bg-primary/10', icon: CheckCircle2 },
-    'A caminho': { color: 'text-info', bg: 'bg-info/10', icon: Navigation },
-    'Cheguei ao local': { color: 'text-warning', bg: 'bg-warning/10', icon: MapPin },
-    'Em remoção': { color: 'text-warning', bg: 'bg-warning/10', icon: Truck },
-    'Concluído': { color: 'text-success', bg: 'bg-success/10', icon: CheckCircle2 },
-    'Cancelado': { color: 'text-destructive', bg: 'bg-destructive/10', icon: XCircle },
-  };
-
-  const cfg = statusConfig[currentStatus];
-  const StatusIcon = cfg.icon;
-
-  const nextLabel: Record<string, string> = {
-    'Aceito': 'Estou a caminho',
-    'A caminho': 'Confirmar chegada',
-    'Cheguei ao local': 'Iniciar remoção',
-    'Em remoção': 'Concluir atendimento',
-  };
+  const handleIniciarRemocao = () => advanceTo('Em remoção');
+  const handleConcluir = () => advanceTo('Concluído');
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-    const map = L.map(mapContainerRef.current, { center: [-23.55, -46.65], zoom: 13, zoomControl: false, attributionControl: false });
+    const map = L.map(mapContainerRef.current, { center: [-23.55, -46.65], zoom: 13, zoomControl: true, attributionControl: true });
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png').addTo(map);
-
     if (atendimento.origemCoord) {
       L.marker([atendimento.origemCoord.lat, atendimento.origemCoord.lng], {
         icon: L.divIcon({ className: 'custom-marker', html: `<div style="width:16px;height:16px;border-radius:50%;background:#22c55e;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] })
@@ -451,236 +466,315 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
         icon: L.divIcon({ className: 'custom-marker', html: `<div style="width:16px;height:16px;border-radius:50%;background:#ef4444;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`, iconSize: [16, 16], iconAnchor: [8, 8] })
       }).addTo(map);
     }
-
     const bounds: [number, number][] = [];
     if (atendimento.origemCoord) bounds.push([atendimento.origemCoord.lat, atendimento.origemCoord.lng]);
     if (atendimento.destinoCoord) bounds.push([atendimento.destinoCoord.lat, atendimento.destinoCoord.lng]);
     if (bounds.length >= 2) map.fitBounds(bounds, { padding: [40, 40] });
     else if (bounds.length === 1) map.setView(bounds[0], 14);
-
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  const toggleLocation = () => setLocationActive(!locationActive);
-
-  // Check if we need plate confirmation (transitioning from A caminho → Cheguei ao local)
   const needsPlateConfirmation = currentStatus === 'A caminho' && !plateConfirmed;
+
+  const openGoogleMaps = () => {
+    const dest = atendimento.origemCoord || atendimento.destinoCoord;
+    if (dest) window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest.lat},${dest.lng}`, '_blank');
+  };
+  const openWaze = () => {
+    const dest = atendimento.origemCoord || atendimento.destinoCoord;
+    if (dest) window.open(`https://waze.com/ul?ll=${dest.lat},${dest.lng}&navigate=yes`, '_blank');
+  };
 
   return (
     <MobileShell>
-      {/* Status header */}
-      <div className={`${cfg.bg} px-5 py-5`}>
-        <div className="flex items-center gap-3">
-          <div className={`w-12 h-12 rounded-xl ${cfg.bg} flex items-center justify-center`}>
-            <StatusIcon className={`h-6 w-6 ${cfg.color}`} />
+      {/* ===== GREEN HEADER ===== */}
+      <div className="bg-[hsl(160,60%,38%)] text-white px-5 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+            <Truck className="h-4.5 w-4.5 text-white" />
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">{atendimento.protocolo}</p>
-            <h1 className="text-lg font-bold">{currentStatus}</h1>
-          </div>
+          <span className="text-base font-bold uppercase tracking-wide">Acompanhamento</span>
         </div>
-
-        {/* Status stepper */}
-        <div className="flex items-center gap-1 mt-4">
-          {statusFlow.map((s, i) => (
-            <div key={s} className={`flex-1 h-1.5 rounded-full transition-all ${i <= currentIndex ? 'bg-primary' : 'bg-border'}`} />
-          ))}
-        </div>
+        <button className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+          <Radio className="h-4 w-4 text-white/80" />
+        </button>
       </div>
 
-      {/* Map */}
-      <div className="h-[180px] relative">
+      {/* ===== PROGRESS STEPPER ===== */}
+      <div className="flex items-center gap-0.5 px-1 bg-muted/50 py-1">
+        {statusFlow.map((s, i) => (
+          <div key={s} className={`flex-1 h-2 rounded-full transition-all ${i <= currentIndex ? 'bg-[hsl(200,80%,50%)]' : 'bg-border'}`} />
+        ))}
+      </div>
+
+      {/* ===== MAP ===== */}
+      <div className="h-[200px] relative border-b border-border">
         <div ref={mapContainerRef} style={{ height: '100%', width: '100%' }} />
         <button
-          onClick={toggleLocation}
-          className={`absolute top-3 right-3 z-[1000] flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border shadow-sm ${
+          onClick={() => setLocationActive(!locationActive)}
+          className={`absolute top-3 left-3 z-[1000] flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border shadow-sm ${
             locationActive ? 'bg-success text-success-foreground border-success' : 'bg-card text-foreground'
           }`}
         >
           <LocateFixed className="h-3.5 w-3.5" />
-          {locationActive ? 'Localização ativa' : 'Compartilhar localização'}
+          {locationActive ? 'Ativa' : 'GPS'}
         </button>
-        {locationActive && (
-          <div className="absolute bottom-3 left-3 z-[1000] flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-success/90 text-success-foreground text-[10px] font-medium">
-            <Radio className="h-3 w-3 animate-pulse" />Compartilhando localização
-          </div>
-        )}
       </div>
 
-      <div className="p-4 space-y-4">
-        {/* Plate Confirmation Gate — appears when arriving */}
-        {needsPlateConfirmation && (
-          <Card className="border-2 border-warning/40 bg-warning/5">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
-                  <KeyRound className="h-5 w-5 text-warning" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold">Confirme a placa do veículo</p>
-                  <p className="text-xs text-muted-foreground">Para registrar sua chegada, digite as 3 primeiras letras/números da placa.</p>
-                </div>
+      {/* ===== BRANDING BAR ===== */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-[hsl(24,85%,55%)] flex items-center justify-center">
+            <Truck className="h-5 w-5 text-white" />
+          </div>
+          <span className="text-sm font-black uppercase tracking-wide text-foreground">{prestador?.nomeFantasia || 'OpGrid'}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="w-8 h-8 rounded-full bg-[hsl(160,60%,38%)]/10 flex items-center justify-center">
+            <Phone className="h-4 w-4 text-[hsl(160,60%,38%)]" />
+          </button>
+          <button className="w-8 h-8 rounded-full bg-[hsl(160,60%,38%)]/10 flex items-center justify-center">
+            <MessageCircle className="h-4 w-4 text-[hsl(160,60%,38%)]" />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-4 space-y-5">
+        {/* ===== ENDEREÇOS ===== */}
+        <div>
+          <SectionHeader title="Endereços" />
+          <Card className="overflow-hidden">
+            <NumberedRow num={1} color="bg-[hsl(160,60%,38%)]" label="Partida do Prestador" value={prestador?.cidade ? `${prestador.cidade}, ${prestador.estado}` : 'Localização atual'} />
+            <NumberedRow num={2} color="bg-[hsl(24,85%,55%)]" label="Origem do Atendimento" value={atendimento.origem || 'N/D'} />
+            <NumberedRow num={3} color="bg-destructive" label="Destino do Atendimento" value={atendimento.destino || 'N/D'} />
+            <NumberedRow num={4} color="bg-muted-foreground" label="Retorno do Prestador" value="A definir" />
+            <div className="flex items-start gap-3 py-3 px-4 bg-[hsl(160,60%,38%)]/5">
+              <div className="w-7 h-7 rounded-full bg-[hsl(160,60%,38%)] flex items-center justify-center shrink-0">
+                <span className="text-white text-xs font-bold">5</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex-1">
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Distância Total</p>
+                <p className="text-sm font-bold text-foreground">{atendimento.kmPrevisto} km</p>
+              </div>
+            </div>
+          </Card>
+          <div className="flex gap-2 mt-2">
+            <Button variant="outline" className="flex-1 text-xs h-10" onClick={openGoogleMaps}>
+              <Navigation className="h-3.5 w-3.5 mr-1.5" />Google Maps
+            </Button>
+            <Button variant="outline" className="flex-1 text-xs h-10" onClick={openWaze}>
+              <Navigation className="h-3.5 w-3.5 mr-1.5" />Waze
+            </Button>
+          </div>
+        </div>
+
+        {/* ===== VEÍCULO ===== */}
+        <div>
+          <SectionHeader title="Veículo" />
+          <p className="text-sm font-semibold">{atendimento.veiculo} • {atendimento.placa}</p>
+        </div>
+
+        {/* ===== ATENDIMENTO ===== */}
+        <div>
+          <SectionHeader title="Atendimento" />
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-semibold text-muted-foreground uppercase">Status:</span>
+            <Badge className="font-semibold text-xs bg-[hsl(24,85%,55%)] text-white hover:bg-[hsl(24,85%,50%)]">{currentStatus}</Badge>
+          </div>
+          <Card className="overflow-hidden">
+            <IconRow icon={FileText} label="Protocolo" value={atendimento.protocolo} iconBg="bg-muted" />
+            <IconRow icon={Truck} label="Serviço" value={<span className="font-black">{atendimento.tipoAtendimento}</span>} iconBg="bg-[hsl(160,60%,38%)]/10" />
+            <IconRow icon={User} label="Solicitante" value={atendimento.clienteNome} iconBg="bg-muted" />
+            <IconRow icon={Clock} label="Previsão de Chegada" value={
+              <div className="flex items-center gap-2">
                 <Input
-                  value={plateInput}
-                  onChange={e => { setPlateInput(e.target.value.toUpperCase().slice(0, 3)); setPlateError(''); }}
-                  placeholder="Ex: ABC"
-                  maxLength={3}
-                  className="flex-1 text-center text-lg font-bold uppercase tracking-[0.3em] h-12"
+                  value={etaInput}
+                  onChange={e => setEtaInput(e.target.value)}
+                  placeholder="Ex: 30"
+                  className="w-20 h-7 text-sm text-center"
+                  type="number"
                 />
-                <Button onClick={handlePlateConfirm} className="h-12 px-6" disabled={plateInput.length < 3}>
-                  <Lock className="h-4 w-4 mr-1.5" />Confirmar
-                </Button>
+                <span className="text-xs text-muted-foreground">minutos</span>
               </div>
-              {plateError && (
-                <p className="text-xs text-destructive font-medium flex items-center gap-1">
-                  <AlertTriangle className="h-3 w-3" />{plateError}
-                </p>
-              )}
-              <p className="text-[10px] text-muted-foreground text-center">
-                Verificação de segurança — garante que você está no veículo correto.
+            } iconBg="bg-muted" />
+            <div className="flex items-start gap-3 py-3 px-4 bg-[hsl(160,60%,38%)]/5">
+              <div className="w-9 h-9 rounded-xl bg-[hsl(160,60%,38%)]/10 flex items-center justify-center shrink-0">
+                <Timer className="h-4 w-4 text-[hsl(160,60%,38%)]" />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">Tempo de Atendimento</p>
+                <ElapsedTimer startTime={acceptedAt.current} />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* ===== CHECKLIST VEICULAR ===== */}
+        <div>
+          <SectionHeader title="Checklist Veicular" />
+          {(currentStatus === 'Cheguei ao local' || currentStatus === 'Em remoção' || currentStatus === 'Concluído') ? (
+            <Card>
+              <CardContent className="p-4 space-y-2">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-muted-foreground">Itens verificados</span>
+                  <Badge variant="outline" className="text-[10px]">
+                    {checklist.filter(c => c.checked).length}/{checklist.length}
+                  </Badge>
+                </div>
+                {checklist.map((item, i) => (
+                  <label key={item.id} className="flex items-center gap-3 py-1.5 cursor-pointer">
+                    <Checkbox
+                      checked={item.checked}
+                      onCheckedChange={(checked) => {
+                        const updated = [...checklist];
+                        updated[i] = { ...updated[i], checked: !!checked };
+                        setChecklist(updated);
+                      }}
+                    />
+                    <span className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.label}</span>
+                  </label>
+                ))}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-3 text-center">
+              <p className="text-sm font-medium text-warning flex items-center justify-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Disponível ao chegar no local
               </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Route */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex flex-col items-center gap-1 pt-1">
-                <div className="w-3 h-3 rounded-full bg-success border-2 border-success/30" />
-                <div className="w-px h-6 bg-border" />
-                <div className="w-3 h-3 rounded-full bg-destructive border-2 border-destructive/30" />
-              </div>
-              <div className="flex-1 space-y-3">
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Origem</p>
-                  <p className="text-sm font-medium">{atendimento.origem}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-muted-foreground uppercase font-semibold">Destino</p>
-                  <p className="text-sm font-medium">{atendimento.destino}</p>
-                </div>
-              </div>
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
-        {/* Client + Vehicle */}
-        <Card>
-          <CardContent className="p-4 space-y-2">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Cliente & Veículo</p>
-            <Row icon={User} label="Cliente" value={atendimento.clienteNome} />
-            <Row icon={Car} label="Veículo" value={`${atendimento.veiculo} • ${atendimento.placa}`} />
-            <Row icon={AlertTriangle} label="Problema" value={atendimento.tipoAtendimento} />
-            <Row icon={DollarSign} label="Valor aprovado" value={`R$ ${atendimento.valorTotal.toFixed(2)}`} />
-            <Separator />
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1 text-xs">
-                <Phone className="h-3 w-3 mr-1" />Ligar
-              </Button>
-              <Button variant="outline" size="sm" className="flex-1 text-xs">
-                <MessageCircle className="h-3 w-3 mr-1" />WhatsApp
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* ===== ANEXOS DO ATENDIMENTO ===== */}
+        <div>
+          <SectionHeader title="Anexos do Atendimento" />
+          <div className="flex gap-2 mb-2">
+            <Button className="flex-1 h-11 text-sm font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]">
+              <Camera className="h-4 w-4 mr-1.5" />Tirar Foto
+            </Button>
+            <Button variant="outline" className="flex-1 h-11 text-sm font-bold border-[hsl(160,60%,38%)] text-[hsl(160,60%,38%)]">
+              <Upload className="h-4 w-4 mr-1.5" />Anexar Arquivo
+            </Button>
+          </div>
+          <div className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-2.5 text-center">
+            <p className="text-sm text-warning font-medium">Nenhum anexo adicionado</p>
+          </div>
+        </div>
 
-        {/* Checklist — show after confirming arrival */}
-        {(currentStatus === 'Cheguei ao local' || currentStatus === 'Em remoção') && (
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Checklist do atendimento</p>
-                <Badge variant="outline" className="text-[10px]">
-                  {checklist.filter(c => c.checked).length}/{checklist.length}
-                </Badge>
-              </div>
-              {checklist.map((item, i) => (
-                <label key={item.id} className="flex items-center gap-3 py-1 cursor-pointer">
-                  <Checkbox
-                    checked={item.checked}
-                    onCheckedChange={(checked) => {
-                      const updated = [...checklist];
-                      updated[i] = { ...updated[i], checked: !!checked };
-                      setChecklist(updated);
-                    }}
-                  />
-                  <span className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.label}</span>
-                </label>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        {/* ===== COMPLEMENTO ===== */}
+        <div>
+          <SectionHeader title="Complemento" />
+          <Textarea
+            placeholder="Adicione observações sobre o atendimento..."
+            value={observacoes}
+            onChange={e => setObservacoes(e.target.value)}
+            className="text-sm min-h-[80px] border-[hsl(160,60%,38%)]/30 focus:border-[hsl(160,60%,38%)]"
+          />
+          <div className="flex items-center justify-between mt-2">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <Checkbox />
+              <span className="text-xs text-muted-foreground">Compartilhar com a assistência?</span>
+            </label>
+            <Button size="sm" className="text-xs bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]">
+              + Adicionar
+            </Button>
+          </div>
+        </div>
 
-        {/* Observations + Attachments — show from "Cheguei ao local" onwards */}
-        {['Cheguei ao local', 'Em remoção', 'Concluído'].includes(currentStatus) && (
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Observações e Anexos</p>
-              <Textarea
-                placeholder="Adicionar observações do atendimento..."
-                value={observacoes}
-                onChange={e => setObservacoes(e.target.value)}
-                className="text-sm min-h-[80px]"
-              />
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" className="text-xs">
-                  <Camera className="h-3 w-3 mr-1" />Adicionar fotos
-                </Button>
-                <Button variant="outline" size="sm" className="text-xs">
-                  <Upload className="h-3 w-3 mr-1" />Anexar NF
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        {/* ===== PROTOCOLO BAR ===== */}
+        <div className="bg-[hsl(24,85%,55%)] rounded-lg px-4 py-3">
+          <p className="text-white text-sm">
+            <span className="font-bold">PROTOCOLO:</span> {atendimento.protocolo} — Gerado em: {formatDate(atendimento.dataHora)}
+          </p>
+        </div>
 
-        {/* Main action — different logic for A caminho (plate gate) */}
-        {currentStatus !== 'Concluído' && currentStatus !== 'Cancelado' && (
-          <>
-            {needsPlateConfirmation ? (
-              // Button is disabled — user must use plate confirmation card above
-              <Button className="w-full h-14 text-base font-bold opacity-50" disabled>
-                <Lock className="h-5 w-5 mr-2" />
-                Confirme a placa para registrar chegada
-              </Button>
-            ) : (
-              <Button className="w-full h-14 text-base font-bold" onClick={nextStatus}>
-                <ChevronRight className="h-5 w-5 mr-2" />
-                {nextLabel[currentStatus] || 'Avançar'}
+        {/* ===== AÇÕES ===== */}
+        <div>
+          <SectionHeader title="Ações" />
+          <div className="space-y-2.5">
+            {/* Plate confirmation gate */}
+            {needsPlateConfirmation && (
+              <Card className="border-2 border-warning/40 bg-warning/5 mb-3">
+                <CardContent className="p-4 space-y-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-10 h-10 rounded-xl bg-warning/10 flex items-center justify-center">
+                      <KeyRound className="h-5 w-5 text-warning" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">Confirme a placa do veículo</p>
+                      <p className="text-xs text-muted-foreground">Digite as 3 primeiras letras da placa.</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={plateInput}
+                      onChange={e => { setPlateInput(e.target.value.toUpperCase().slice(0, 3)); setPlateError(''); }}
+                      placeholder="Ex: ABC"
+                      maxLength={3}
+                      className="flex-1 text-center text-lg font-bold uppercase tracking-[0.3em] h-12"
+                    />
+                    <Button onClick={handlePlateConfirm} className="h-12 px-6" disabled={plateInput.length < 3}>
+                      <Lock className="h-4 w-4 mr-1.5" />OK
+                    </Button>
+                  </div>
+                  {plateError && (
+                    <p className="text-xs text-destructive font-medium flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" />{plateError}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Main action button */}
+            {currentStatus === 'Aceito' && (
+              <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={handleAcaminho}>
+                <CheckCircle2 className="h-5 w-5 mr-2" />Estou a caminho
               </Button>
             )}
-          </>
-        )}
+            {currentStatus === 'A caminho' && !needsPlateConfirmation && (
+              <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={() => advanceTo('Cheguei ao local')}>
+                <MapPin className="h-5 w-5 mr-2" />Cheguei ao local
+              </Button>
+            )}
+            {currentStatus === 'Cheguei ao local' && (
+              <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={handleIniciarRemocao}>
+                <Truck className="h-5 w-5 mr-2" />Iniciar remoção
+              </Button>
+            )}
+            {currentStatus === 'Em remoção' && (
+              <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={handleConcluir}>
+                <CheckCircle2 className="h-5 w-5 mr-2" />Concluir atendimento
+              </Button>
+            )}
 
-        {currentStatus === 'Concluído' && (
-          <div className="flex flex-col items-center py-6 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mb-3">
-              <CheckCircle2 className="h-8 w-8 text-success" />
-            </div>
-            <h2 className="text-lg font-bold text-success">Atendimento concluído!</h2>
-            <p className="text-sm text-muted-foreground mt-1">Os dados foram registrados com sucesso.</p>
-            <p className="text-xs text-muted-foreground mt-2">A OS seguirá para conferência e faturamento.</p>
+            {currentStatus === 'Concluído' && (
+              <div className="flex flex-col items-center py-6 text-center">
+                <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mb-3">
+                  <CheckCircle2 className="h-8 w-8 text-success" />
+                </div>
+                <h2 className="text-lg font-bold text-success">Atendimento concluído!</h2>
+                <p className="text-sm text-muted-foreground mt-1">Os dados foram registrados com sucesso.</p>
+              </div>
+            )}
+
+            {/* Secondary actions */}
+            {currentStatus !== 'Concluído' && (
+              <>
+                <Button variant="outline" className="w-full h-12 text-sm font-bold border-[hsl(200,80%,50%)] text-[hsl(200,80%,50%)]">
+                  <Phone className="h-4 w-4 mr-2" />Solicitar Contato da Assistência
+                </Button>
+                <Button className="w-full h-12 text-sm font-bold bg-[hsl(340,75%,55%)] hover:bg-[hsl(340,75%,48%)] text-white">
+                  <XCircle className="h-4 w-4 mr-2" />Cancelar Atendimento
+                </Button>
+              </>
+            )}
           </div>
-        )}
+        </div>
 
-        {/* Secondary actions */}
-        {currentStatus !== 'Concluído' && (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" className="flex-1 text-xs">
-              <Phone className="h-3 w-3 mr-1" />Contato central
-            </Button>
-            <Button variant="outline" size="sm" className="flex-1 text-xs text-destructive hover:text-destructive">
-              <XCircle className="h-3 w-3 mr-1" />Cancelar
-            </Button>
-          </div>
-        )}
-
-        {/* App-less footer */}
+        {/* Footer */}
         <div className="text-center pt-4 pb-8">
           <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/5 border border-primary/10 mb-2">
             <Shield className="h-3 w-3 text-primary" />
@@ -692,7 +786,6 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
     </MobileShell>
   );
 }
-
 // ====== SHELL & HELPERS ======
 function MobileShell({ children }: { children: React.ReactNode }) {
   return (
