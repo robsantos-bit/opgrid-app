@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, BarChart3, AlertTriangle, Gauge, Activity, Map,
-  ClipboardList, Send, Headphones, MapPin, Zap, Users as UsersIcon, CheckSquare,
+  ClipboardList, Send, Headphones, MapPin, Zap, Users as UsersIcon, CheckSquare, Smartphone,
   Users, Globe, Radio, Shield, TrendingUp, MessageCircle, Megaphone,
   DollarSign, FileSearch, AlertCircle, XCircle, Tag, TableProperties, FileText,
   Mail, Settings, ListChecks, History, Lock, HelpCircle,
