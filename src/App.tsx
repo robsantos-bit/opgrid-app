@@ -48,6 +48,7 @@ import PortalPrestador from "@/pages/PortalPrestador";
 import WhatsAppSimulador from "@/pages/WhatsAppSimulador";
 import SandboxWhatsApp from "@/pages/SandboxWhatsApp";
 import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
+import AdminConversas from "@/pages/AdminConversas";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
