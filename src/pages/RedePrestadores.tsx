@@ -115,11 +115,14 @@ export default function RedePrestadores() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div className="page-header">
+      <div className="page-header flex items-center justify-between">
         <div className="page-header-text">
           <h1>Prestadores</h1>
           <p>Rede de prestadores cadastrados · <strong>{prestadores.length}</strong> total · <strong>{ativos}</strong> ativos</p>
         </div>
+        <Button onClick={() => setShowCadastro(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" /> Cadastrar Prestador
+        </Button>
       </div>
 
       <Card><CardContent className="p-3"><div className="flex gap-2 flex-wrap">
