@@ -33,7 +33,10 @@ export default function AdminChecklists() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
+  const [viewItem, setViewItem] = useState<ChecklistModelo | null>(null);
+  const [editItem, setEditItem] = useState<ChecklistModelo | null>(null);
   const [form, setForm] = useState({ nome: '', tipoServico: '', obrigatorio: false });
+  const [editForm, setEditForm] = useState({ nome: '', tipoServico: '', obrigatorio: false, status: '' as string });
 
   const filtered = useMemo(() => modelos.filter(m =>
     (!search || m.nome.toLowerCase().includes(search.toLowerCase())) &&
@@ -46,6 +49,18 @@ export default function AdminChecklists() {
     setModalOpen(false);
     setForm({ nome: '', tipoServico: '', obrigatorio: false });
     toast.success('Modelo de checklist criado.');
+  };
+
+  const openEdit = (m: ChecklistModelo) => {
+    setEditItem(m);
+    setEditForm({ nome: m.nome, tipoServico: m.tipoServico, obrigatorio: m.obrigatorio, status: m.status });
+  };
+
+  const handleEditSave = () => {
+    if (!editItem || !editForm.nome) { toast.error('Informe o nome do checklist.'); return; }
+    setModelos(prev => prev.map(m => m.id === editItem.id ? { ...m, nome: editForm.nome, tipoServico: editForm.tipoServico, obrigatorio: editForm.obrigatorio, status: editForm.status as ChecklistModelo['status'] } : m));
+    setEditItem(null);
+    toast.success('Checklist atualizado com sucesso.');
   };
 
   return (
@@ -98,8 +113,8 @@ export default function AdminChecklists() {
                 <TableCell className="text-center text-[13px] font-medium tabular-nums">{m.qtdItens}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-0.5">
-                    <Button variant="ghost" size="icon" className="h-8 w-8"><Eye className="h-3.5 w-3.5" /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8"><Pencil className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Visualizar" onClick={() => setViewItem(m)}><Eye className="h-3.5 w-3.5" /></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar" onClick={() => openEdit(m)}><Pencil className="h-3.5 w-3.5" /></Button>
                   </div>
                 </TableCell>
               </TableRow>
@@ -108,6 +123,7 @@ export default function AdminChecklists() {
         </Table>
       </CardContent></Card>
 
+      {/* Modal Novo */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Novo Modelo de Checklist</DialogTitle></DialogHeader>
@@ -117,6 +133,50 @@ export default function AdminChecklists() {
             <div className="flex items-center gap-2"><Switch checked={form.obrigatorio} onCheckedChange={v => setForm(p => ({ ...p, obrigatorio: v }))} /><Label className="text-xs">Obrigatório para conclusão do atendimento</Label></div>
           </div>
           <DialogFooter className="gap-2"><Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button><Button onClick={handleSave}>Criar Checklist</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Visualizar */}
+      <Dialog open={!!viewItem} onOpenChange={open => { if (!open) setViewItem(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Detalhes do Checklist</DialogTitle></DialogHeader>
+          {viewItem && (
+            <div className="grid gap-4 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div><p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Nome</p><p className="font-semibold text-[14px]">{viewItem.nome}</p></div>
+                <div><p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Status</p><Badge variant={viewItem.status === 'Ativo' ? 'success' : viewItem.status === 'Rascunho' ? 'warning' : 'secondary'} className="font-semibold">{viewItem.status}</Badge></div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div><p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Tipo de Serviço</p><p className="text-[13px]">{viewItem.tipoServico}</p></div>
+                <div><p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Obrigatório</p><Badge variant={viewItem.obrigatorio ? 'default' : 'secondary'} className="font-semibold">{viewItem.obrigatorio ? 'Sim' : 'Não'}</Badge></div>
+              </div>
+              <div><p className="text-[11px] text-muted-foreground uppercase tracking-wider mb-1">Quantidade de Itens</p><p className="text-[13px] font-semibold">{viewItem.qtdItens}</p></div>
+            </div>
+          )}
+          <DialogFooter><Button variant="outline" onClick={() => setViewItem(null)}>Fechar</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Editar */}
+      <Dialog open={!!editItem} onOpenChange={open => { if (!open) setEditItem(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar Checklist</DialogTitle></DialogHeader>
+          <div className="grid gap-4 py-2">
+            <div className="space-y-1.5"><Label className="text-xs font-medium">Nome *</Label><Input value={editForm.nome} onChange={e => setEditForm(p => ({ ...p, nome: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label className="text-xs font-medium">Tipo de Serviço</Label><Input value={editForm.tipoServico} onChange={e => setEditForm(p => ({ ...p, tipoServico: e.target.value }))} /></div>
+            <div className="flex items-center gap-2"><Switch checked={editForm.obrigatorio} onCheckedChange={v => setEditForm(p => ({ ...p, obrigatorio: v }))} /><Label className="text-xs">Obrigatório para conclusão</Label></div>
+            <div className="space-y-1.5"><Label className="text-xs font-medium">Status</Label>
+              <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Ativo">Ativo</SelectItem>
+                  <SelectItem value="Rascunho">Rascunho</SelectItem>
+                  <SelectItem value="Inativo">Inativo</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter className="gap-2"><Button variant="outline" onClick={() => setEditItem(null)}>Cancelar</Button><Button onClick={handleEditSave}>Salvar Alterações</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
