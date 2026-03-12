@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { playProviderSiren } from '@/lib/sirenSound';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -684,7 +684,10 @@ function Row({ icon: Icon, label, value }: { icon: typeof Truck; label: string; 
 
 // ====== MAIN PORTAL PAGE ======
 export default function PortalPrestador() {
-  const { tipo, id } = useParams<{ tipo: string; id: string }>();
+  const { tipo: paramTipo, id } = useParams<{ tipo: string; id: string }>();
+  const location = useLocation();
+  // Derive tipo from URL path if not in params (e.g. /prestador/oferta/:id)
+  const tipo = paramTipo || (location.pathname.includes('/oferta/') ? 'oferta' : location.pathname.includes('/os/') ? 'os' : undefined);
 
   const despachos = useMemo(() => getDespachos(), []);
   const atendimentos = useMemo(() => getAtendimentos(), []);

@@ -6,7 +6,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send,
-  Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones,
+  Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones, Smartphone,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ const menuGroups = [
       { title: 'Teste de Acionamento', url: '/app/operacao/teste-acionamento', icon: Radio, module: 'operacao' },
       { title: 'Acompanhamento', url: '/app/operacao/acompanhamento', icon: Activity, module: 'operacao' },
       { title: 'Checklists', url: '/app/operacao/checklists', icon: CheckSquare, module: 'operacao' },
+      { title: 'Simulador WhatsApp', url: '/app/operacao/whatsapp-simulador', icon: Smartphone, module: 'operacao' },
     ],
   },
   {

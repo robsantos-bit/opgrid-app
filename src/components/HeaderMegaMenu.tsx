@@ -3,7 +3,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   LayoutDashboard, BarChart3, AlertTriangle, Gauge, Activity, Map,
-  ClipboardList, Send, Headphones, MapPin, Zap, Users as UsersIcon, CheckSquare,
+  ClipboardList, Send, Headphones, MapPin, Zap, Users as UsersIcon, CheckSquare, Smartphone,
   Users, Globe, Radio, Shield, TrendingUp, MessageCircle, Megaphone,
   DollarSign, FileSearch, AlertCircle, XCircle, Tag, TableProperties, FileText,
   Mail, Settings, ListChecks, History, Lock, HelpCircle,
@@ -45,6 +45,7 @@ const menuGroups: MenuGroup[] = [
       { label: 'Teste de Acionamento', path: '/app/operacao/teste-acionamento', icon: Radio, description: 'Simular acionamentos' },
       { label: 'Acompanhamento do Cliente', path: '/app/operacao/acompanhamento', icon: Activity, description: 'Links de tracking' },
       { label: 'Checklists Executados', path: '/app/operacao/checklists', icon: CheckSquare, description: 'Checklists em campo' },
+      { label: 'Simulador WhatsApp', path: '/app/operacao/whatsapp-simulador', icon: Smartphone, description: 'Jornada do cliente via WhatsApp' },
     ],
   },
   {
