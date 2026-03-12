@@ -6,8 +6,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { usePrestadores } from '@/hooks/useSupabaseData';
-import { Search, X, Eye, Loader2, Users, MapPin } from 'lucide-react';
+import { useCnpjLookup } from '@/hooks/useCnpjLookup';
+import { Search, X, Eye, Loader2, Users, MapPin, UserPlus, Building2, Phone, Mail, Truck, UsersRound, CheckCircle2, Info } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 
