@@ -76,6 +76,11 @@ function AppRoutes() {
       {/* Backoffice — /app/* */}
       <Route path="/app" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
       <Route path="/app/painel" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
+      <Route path="/app/painel/indicadores" element={<ProtectedRoute><PainelIndicadores /></ProtectedRoute>} />
+      <Route path="/app/painel/alertas" element={<ProtectedRoute><PainelAlertas /></ProtectedRoute>} />
+      <Route path="/app/painel/sla" element={<ProtectedRoute><PainelSLA /></ProtectedRoute>} />
+      <Route path="/app/painel/saude" element={<ProtectedRoute><PainelSaudeOperacao /></ProtectedRoute>} />
+      <Route path="/app/painel/mapa-executivo" element={<ProtectedRoute><PainelMapaExecutivo /></ProtectedRoute>} />
 
       {/* Operação */}
       <Route path="/app/operacao/solicitacoes" element={<ProtectedRoute requiredModules={['operacao', 'solicitacoes']}><OperacaoSolicitacoes /></ProtectedRoute>} />
