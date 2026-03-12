@@ -128,15 +128,25 @@ function AppRoutes() {
       <Route path="/app/admin/configuracoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><Configuracoes /></ProtectedRoute>} />
       <Route path="/app/admin/suporte" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminSuporte /></ProtectedRoute>} />
 
+      {/* WhatsApp & Simulação */}
+      <Route path="/app/operacao/whatsapp-simulador" element={<ProtectedRoute requiredModules={['operacao']}><WhatsAppSimulador /></ProtectedRoute>} />
+      <Route path="/app/operacao/sandbox-whatsapp" element={<ProtectedRoute requiredModules={['operacao']}><SandboxWhatsApp /></ProtectedRoute>} />
+      <Route path="/app/operacao/automacao-whatsapp" element={<ProtectedRoute requiredModules={['operacao']}><AutomacaoWhatsApp /></ProtectedRoute>} />
+
       {/* Legacy redirects */}
       <Route path="/app/faturamento" element={<Navigate to="/app/financeiro/faturamento" replace />} />
       <Route path="/app/configuracoes" element={<Navigate to="/app/admin/configuracoes" replace />} />
 
-      {/* Portal do Prestador */}
+      {/* Portal do Prestador — autenticado */}
       <Route path="/prestador" element={<PrestadorRoute><PrestadorInicio /></PrestadorRoute>} />
       <Route path="/prestador/inicio" element={<PrestadorRoute><PrestadorInicio /></PrestadorRoute>} />
       <Route path="/prestador/atendimentos" element={<PrestadorRoute><PrestadorAtendimentos /></PrestadorRoute>} />
       <Route path="/prestador/perfil" element={<PrestadorRoute><PrestadorPerfil /></PrestadorRoute>} />
+
+      {/* Portal do Prestador — público (oferta e OS por link) */}
+      <Route path="/prestador/oferta/:id" element={<PortalPrestador />} />
+      <Route path="/prestador/os/:id" element={<PortalPrestador />} />
+      <Route path="/prestador/:tipo/:id" element={<PortalPrestador />} />
 
       {/* Portal do Cliente */}
       <Route path="/acompanhar/:id" element={<AcompanhamentoCliente />} />
