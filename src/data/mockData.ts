@@ -282,7 +282,7 @@ export const mockDespachos: Despacho[] = [
     observacoes: '',
   },
   {
-    id: 'd4', solicitacaoId: 's5', rodadaAtual: 2, status: 'Aguardando',
+    id: 'd4', solicitacaoId: 's5', atendimentoId: 'a10', rodadaAtual: 2, status: 'Aguardando',
     criadoEm: '2026-03-09T06:00:00', atualizadoEm: '2026-03-09T06:15:00',
     ofertas: [
       { id: 'of6', despachoId: 'd4', prestadorId: 'p1', rodada: 1, status: 'Expirada', enviadaEm: '2026-03-09T06:01:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 8, tempoEstimadoMinutos: 20, valorServico: 307.50, linkOferta: '/prestador/oferta/of6' },
