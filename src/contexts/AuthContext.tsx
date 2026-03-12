@@ -44,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('profiles')
         .select('id, nome, email, provider_id')
         .eq('id', supaUser.id)
-        .single();
+        .maybeSingle();
 
       // Fetch role
       const { data: roleData } = await supabase
