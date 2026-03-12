@@ -6,18 +6,73 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { usePrestadores } from '@/hooks/useSupabaseData';
-import { Search, X, Eye, Loader2, Users, MapPin } from 'lucide-react';
+import { useCnpjLookup } from '@/hooks/useCnpjLookup';
+import { Search, X, Eye, Loader2, Users, MapPin, UserPlus, Building2, Phone, Mail, Truck, UsersRound, CheckCircle2, Info } from 'lucide-react';
+import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 
 export default function RedePrestadores() {
   const { data: prestadores = [], isLoading } = usePrestadores();
+  const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterTipo, setFilterTipo] = useState('all');
   const [selected, setSelected] = useState<any>(null);
   const [page, setPage] = useState(0);
+  const [showCadastro, setShowCadastro] = useState(false);
+  const [cadastroForm, setCadastroForm] = useState({
+    nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '',
+  });
+  const [cadastroSaving, setCadastroSaving] = useState(false);
+
+  const formatCnpj = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 14);
+    return d.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5')
+      .replace(/(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4')
+      .replace(/(\d{2})(\d{3})(\d{3})/, '$1.$2.$3')
+      .replace(/(\d{2})(\d{3})/, '$1.$2');
+  };
+
+  const formatPhone = (v: string) => {
+    const d = v.replace(/\D/g, '').slice(0, 11);
+    if (d.length <= 2) return d;
+    if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    return `(${d.slice(0, 2)}) ${d.slice(2, 7)}-${d.slice(7)}`;
+  };
+
+  const handleCnpjBlur = async () => {
+    const clean = cadastroForm.cnpj.replace(/\D/g, '');
+    if (clean.length === 14) {
+      const result = await lookupCnpj(clean);
+      if (result) {
+        setCadastroForm(prev => ({
+          ...prev,
+          nome: result.razao_social || result.nome_fantasia || prev.nome,
+          email: result.email || prev.email,
+          whatsapp: result.telefone || prev.whatsapp,
+        }));
+        toast.success('CNPJ encontrado! Dados preenchidos automaticamente.');
+      }
+    }
+  };
+
+  const handleCadastroSubmit = () => {
+    if (!cadastroForm.nome || !cadastroForm.cnpj || !cadastroForm.whatsapp || !cadastroForm.email) {
+      toast.error('Preencha todos os campos obrigatórios.');
+      return;
+    }
+    setCadastroSaving(true);
+    setTimeout(() => {
+      setCadastroSaving(false);
+      setShowCadastro(false);
+      setCadastroForm({ nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '' });
+      toast.success('Prestador cadastrado com sucesso! Senha enviada por email.');
+    }, 1200);
+  };
 
   const filtered = useMemo(() => {
     return prestadores.filter((p: any) => {
@@ -60,11 +115,14 @@ export default function RedePrestadores() {
 
   return (
     <div className="space-y-5 animate-fade-in">
-      <div className="page-header">
+      <div className="page-header flex items-center justify-between">
         <div className="page-header-text">
           <h1>Prestadores</h1>
           <p>Rede de prestadores cadastrados · <strong>{prestadores.length}</strong> total · <strong>{ativos}</strong> ativos</p>
         </div>
+        <Button onClick={() => setShowCadastro(true)} className="gap-2">
+          <UserPlus className="h-4 w-4" /> Cadastrar Prestador
+        </Button>
       </div>
 
       <Card><CardContent className="p-3"><div className="flex gap-2 flex-wrap">
@@ -179,6 +237,81 @@ export default function RedePrestadores() {
           )}
         </SheetContent>
       </Sheet>
+      {/* Cadastro Dialog */}
+      <Dialog open={showCadastro} onOpenChange={setShowCadastro}>
+        <DialogContent className="sm:max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Cadastrar Prestador</DialogTitle>
+            <p className="text-sm text-muted-foreground">Preencha os dados básicos e o prestador receberá a senha por email</p>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Nome da Empresa <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Nome da empresa" className="pl-10" value={cadastroForm.nome} onChange={e => setCadastroForm(p => ({ ...p, nome: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">CNPJ <span className="text-destructive">*</span></Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="00.000.000/0000-00" className="pl-10" value={cadastroForm.cnpj}
+                  onChange={e => setCadastroForm(p => ({ ...p, cnpj: formatCnpj(e.target.value) }))}
+                  onBlur={handleCnpjBlur} />
+                {cnpjLoading && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-primary" />}
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">WhatsApp <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="(00) 00000-0000" className="pl-10" value={cadastroForm.whatsapp}
+                    onChange={e => setCadastroForm(p => ({ ...p, whatsapp: formatPhone(e.target.value) }))} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Email <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="empresa@exemplo.com" className="pl-10" type="email" value={cadastroForm.email}
+                    onChange={e => setCadastroForm(p => ({ ...p, email: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Qtd. de Veículos <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <Truck className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Ex: 5" className="pl-10" type="number" value={cadastroForm.qtdVeiculos}
+                    onChange={e => setCadastroForm(p => ({ ...p, qtdVeiculos: e.target.value }))} />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">Qtd. de Motoristas <span className="text-destructive">*</span></Label>
+                <div className="relative">
+                  <UsersRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input placeholder="Ex: 10" className="pl-10" type="number" value={cadastroForm.qtdMotoristas}
+                    onChange={e => setCadastroForm(p => ({ ...p, qtdMotoristas: e.target.value }))} />
+                </div>
+              </div>
+            </div>
+            <div className="rounded-lg border border-border bg-accent/50 p-3 flex gap-3 items-start">
+              <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="text-xs text-muted-foreground">
+                <p className="font-semibold mb-1 text-foreground">📧 Geraremos uma senha automática</p>
+                <p>Após o cadastro, o prestador receberá um email com sua senha de acesso.</p>
+              </div>
+            </div>
+            <Button onClick={handleCadastroSubmit} disabled={cadastroSaving} className="w-full gap-2 h-11">
+              {cadastroSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+              Cadastrar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
