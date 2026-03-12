@@ -298,10 +298,10 @@ export default function RedePrestadores() {
                 </div>
               </div>
             </div>
-            <div className="rounded-lg border border-blue-200 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-800 p-3 flex gap-3 items-start">
-              <Info className="h-4 w-4 text-blue-500 mt-0.5 shrink-0" />
-              <div className="text-xs text-blue-700 dark:text-blue-300">
-                <p className="font-semibold mb-1">📧 Geraremos uma senha automática</p>
+            <div className="rounded-lg border border-border bg-accent/50 p-3 flex gap-3 items-start">
+              <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="text-xs text-muted-foreground">
+                <p className="font-semibold mb-1 text-foreground">📧 Geraremos uma senha automática</p>
                 <p>Após o cadastro, o prestador receberá um email com sua senha de acesso.</p>
               </div>
             </div>
