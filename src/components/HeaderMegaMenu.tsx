@@ -28,6 +28,11 @@ const menuGroups: MenuGroup[] = [
     label: 'Painel',
     items: [
       { label: 'Visão Geral', path: '/app', icon: LayoutDashboard, description: 'Dashboard principal' },
+      { label: 'Indicadores', path: '/app/painel/indicadores', icon: BarChart3, description: 'Métricas-chave' },
+      { label: 'Alertas', path: '/app/painel/alertas', icon: AlertTriangle, description: 'Central de alertas' },
+      { label: 'SLA e Performance', path: '/app/painel/sla', icon: Gauge, description: 'Acordos de nível de serviço' },
+      { label: 'Saúde da Operação', path: '/app/painel/saude', icon: Activity, description: 'Estado operacional' },
+      { label: 'Mapa Executivo', path: '/app/painel/mapa-executivo', icon: Map, description: 'Visão estratégica por região' },
     ],
   },
   {

@@ -7,6 +7,11 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import AppLayout from "@/components/AppLayout";
 import Login from "@/pages/Login";
 import PainelDashboard from "@/pages/PainelDashboard";
+import PainelIndicadores from "@/pages/PainelIndicadores";
+import PainelAlertas from "@/pages/PainelAlertas";
+import PainelSLA from "@/pages/PainelSLA";
+import PainelSaudeOperacao from "@/pages/PainelSaudeOperacao";
+import PainelMapaExecutivo from "@/pages/PainelMapaExecutivo";
 import OperacaoSolicitacoes from "@/pages/OperacaoSolicitacoes";
 import OperacaoAtendimentos from "@/pages/OperacaoAtendimentos";
 import Despacho from "@/pages/Despacho";
@@ -76,6 +81,11 @@ function AppRoutes() {
       {/* Backoffice — /app/* */}
       <Route path="/app" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
       <Route path="/app/painel" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
+      <Route path="/app/painel/indicadores" element={<ProtectedRoute><PainelIndicadores /></ProtectedRoute>} />
+      <Route path="/app/painel/alertas" element={<ProtectedRoute><PainelAlertas /></ProtectedRoute>} />
+      <Route path="/app/painel/sla" element={<ProtectedRoute><PainelSLA /></ProtectedRoute>} />
+      <Route path="/app/painel/saude" element={<ProtectedRoute><PainelSaudeOperacao /></ProtectedRoute>} />
+      <Route path="/app/painel/mapa-executivo" element={<ProtectedRoute><PainelMapaExecutivo /></ProtectedRoute>} />
 
       {/* Operação */}
       <Route path="/app/operacao/solicitacoes" element={<ProtectedRoute requiredModules={['operacao', 'solicitacoes']}><OperacaoSolicitacoes /></ProtectedRoute>} />
