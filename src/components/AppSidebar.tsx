@@ -30,6 +30,7 @@ const menuGroups = [
       { title: 'Teste de Acionamento', url: '/app/operacao/teste-acionamento', icon: Radio, module: 'operacao' },
       { title: 'Acompanhamento', url: '/app/operacao/acompanhamento', icon: Activity, module: 'operacao' },
       { title: 'Checklists', url: '/app/operacao/checklists', icon: CheckSquare, module: 'operacao' },
+      { title: 'Simulador WhatsApp', url: '/app/operacao/whatsapp-simulador', icon: Smartphone, module: 'operacao' },
     ],
   },
   {
