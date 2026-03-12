@@ -287,8 +287,8 @@ export const mockDespachos: Despacho[] = [
     ofertas: [
       { id: 'of6', despachoId: 'd4', prestadorId: 'p1', rodada: 1, status: 'Expirada', enviadaEm: '2026-03-09T06:01:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 8, tempoEstimadoMinutos: 20, valorServico: 307.50, linkOferta: '/prestador/oferta/of6' },
       { id: 'of7', despachoId: 'd4', prestadorId: 'p8', rodada: 1, status: 'Recusada', enviadaEm: '2026-03-09T06:01:00', respondidaEm: '2026-03-09T06:04:00', motivoRecusa: 'Muito longe', tempoLimiteMinutos: 5, distanciaEstimadaKm: 400, tempoEstimadoMinutos: 320, valorServico: 307.50, linkOferta: '/prestador/oferta/of7' },
-      { id: 'of8', despachoId: 'd4', prestadorId: 'p5', rodada: 2, status: 'Pendente', enviadaEm: '2026-03-09T06:10:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 2800, tempoEstimadoMinutos: 999, valorServico: 307.50, linkOferta: '/prestador/oferta/of8' },
-      { id: 'of9', despachoId: 'd4', prestadorId: 'p6', rodada: 2, status: 'Pendente', enviadaEm: '2026-03-09T06:10:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 950, tempoEstimadoMinutos: 600, valorServico: 307.50, linkOferta: '/prestador/oferta/of9' },
+      { id: 'of8', despachoId: 'd4', prestadorId: 'p5', rodada: 2, status: 'Pendente', enviadaEm: new Date(Date.now() - 60000).toISOString(), tempoLimiteMinutos: 10, distanciaEstimadaKm: 12.5, tempoEstimadoMinutos: 25, valorServico: 307.50, linkOferta: '/prestador/oferta/of8' },
+      { id: 'of9', despachoId: 'd4', prestadorId: 'p6', rodada: 2, status: 'Pendente', enviadaEm: new Date(Date.now() - 30000).toISOString(), tempoLimiteMinutos: 10, distanciaEstimadaKm: 8.2, tempoEstimadoMinutos: 18, valorServico: 307.50, linkOferta: '/prestador/oferta/of9' },
     ],
     observacoes: 'Rodada 1 sem aceite. Rodada 2 em andamento.',
   },
