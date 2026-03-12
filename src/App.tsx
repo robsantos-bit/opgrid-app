@@ -44,6 +44,10 @@ import PrestadorInicio from "@/pages/PrestadorInicio";
 import PrestadorAtendimentos from "@/pages/PrestadorAtendimentos";
 import PrestadorPerfil from "@/pages/PrestadorPerfil";
 import AcompanhamentoCliente from "@/pages/AcompanhamentoCliente";
+import PortalPrestador from "@/pages/PortalPrestador";
+import WhatsAppSimulador from "@/pages/WhatsAppSimulador";
+import SandboxWhatsApp from "@/pages/SandboxWhatsApp";
+import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
