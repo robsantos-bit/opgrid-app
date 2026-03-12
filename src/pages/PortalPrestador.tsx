@@ -390,8 +390,11 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
   const [plateConfirmed, setPlateConfirmed] = useState(false);
   const [plateError, setPlateError] = useState('');
   const [etaInput, setEtaInput] = useState('');
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [showChecklist, setShowChecklist] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const acceptedAt = useRef(new Date().toISOString());
 
   const statusFlow: StatusOsPrestador[] = ['Aceito', 'A caminho', 'Cheguei ao local', 'Em remoção', 'Concluído'];
