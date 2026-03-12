@@ -133,6 +133,7 @@ function AppRoutes() {
       <Route path="/app/operacao/whatsapp-simulador" element={<ProtectedRoute requiredModules={['operacao']}><WhatsAppSimulador /></ProtectedRoute>} />
       <Route path="/app/operacao/sandbox-whatsapp" element={<ProtectedRoute requiredModules={['operacao']}><SandboxWhatsApp /></ProtectedRoute>} />
       <Route path="/app/operacao/automacao-whatsapp" element={<ProtectedRoute requiredModules={['operacao']}><AutomacaoWhatsApp /></ProtectedRoute>} />
+      <Route path="/app/operacao/conversas" element={<ProtectedRoute requiredModules={['operacao']}><AdminConversas /></ProtectedRoute>} />
 
       {/* Legacy redirects */}
       <Route path="/app/faturamento" element={<Navigate to="/app/financeiro/faturamento" replace />} />
