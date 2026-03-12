@@ -31,6 +31,7 @@ const menuGroups = [
       { title: 'Acompanhamento', url: '/app/operacao/acompanhamento', icon: Activity, module: 'operacao' },
       { title: 'Checklists', url: '/app/operacao/checklists', icon: CheckSquare, module: 'operacao' },
       { title: 'Simulador WhatsApp', url: '/app/operacao/whatsapp-simulador', icon: Smartphone, module: 'operacao' },
+      { title: 'Conversas WhatsApp', url: '/app/operacao/conversas', icon: MessageCircle, module: 'operacao' },
     ],
   },
   {
