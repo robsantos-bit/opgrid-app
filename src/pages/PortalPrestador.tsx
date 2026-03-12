@@ -618,29 +618,47 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
         <div>
           <SectionHeader title="Checklist Veicular" />
           {(currentStatus === 'Cheguei ao local' || currentStatus === 'Em remoção' || currentStatus === 'Concluído') ? (
-            <Card>
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-xs text-muted-foreground">Itens verificados</span>
-                  <Badge variant="outline" className="text-[10px]">
-                    {checklist.filter(c => c.checked).length}/{checklist.length}
-                  </Badge>
-                </div>
-                {checklist.map((item, i) => (
-                  <label key={item.id} className="flex items-center gap-3 py-1.5 cursor-pointer">
-                    <Checkbox
-                      checked={item.checked}
-                      onCheckedChange={(checked) => {
-                        const updated = [...checklist];
-                        updated[i] = { ...updated[i], checked: !!checked };
-                        setChecklist(updated);
-                      }}
-                    />
-                    <span className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.label}</span>
-                  </label>
-                ))}
-              </CardContent>
-            </Card>
+            showChecklist ? (
+              <ChecklistExecucao
+                tipo="coleta"
+                protocolo={atendimento.protocolo}
+                placa={atendimento.placa}
+                prestador={prestador?.nomeFantasia || 'Prestador'}
+                onVoltar={() => setShowChecklist(false)}
+              />
+            ) : (
+              <div className="space-y-2">
+                <Card>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-muted-foreground">Itens verificados</span>
+                      <Badge variant="outline" className="text-[10px]">
+                        {checklist.filter(c => c.checked).length}/{checklist.length}
+                      </Badge>
+                    </div>
+                    {checklist.map((item, i) => (
+                      <label key={item.id} className="flex items-center gap-3 py-1.5 cursor-pointer">
+                        <Checkbox
+                          checked={item.checked}
+                          onCheckedChange={(checked) => {
+                            const updated = [...checklist];
+                            updated[i] = { ...updated[i], checked: !!checked };
+                            setChecklist(updated);
+                          }}
+                        />
+                        <span className={`text-sm ${item.checked ? 'line-through text-muted-foreground' : ''}`}>{item.label}</span>
+                      </label>
+                    ))}
+                  </CardContent>
+                </Card>
+                <Button
+                  className="w-full h-12 text-sm font-bold bg-[hsl(24,85%,55%)] hover:bg-[hsl(24,85%,48%)] text-white"
+                  onClick={() => setShowChecklist(true)}
+                >
+                  <FileText className="h-4 w-4 mr-2" />Abrir Vistoria Completa (Avarias + Assinatura)
+                </Button>
+              </div>
+            )
           ) : (
             <div className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-3 text-center">
               <p className="text-sm font-medium text-warning flex items-center justify-center gap-2">
@@ -654,17 +672,83 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
         {/* ===== ANEXOS DO ATENDIMENTO ===== */}
         <div>
           <SectionHeader title="Anexos do Atendimento" />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = e.target.files;
+              if (!files) return;
+              Array.from(files).forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                  if (typeof reader.result === 'string') setFotos(prev => [...prev, reader.result as string]);
+                };
+                reader.readAsDataURL(file);
+              });
+              e.target.value = '';
+            }}
+          />
           <div className="flex gap-2 mb-2">
-            <Button className="flex-1 h-11 text-sm font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]">
+            <Button
+              className="flex-1 h-11 text-sm font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]"
+              onClick={() => fileInputRef.current?.click()}
+            >
               <Camera className="h-4 w-4 mr-1.5" />Tirar Foto
             </Button>
-            <Button variant="outline" className="flex-1 h-11 text-sm font-bold border-[hsl(160,60%,38%)] text-[hsl(160,60%,38%)]">
+            <Button
+              variant="outline"
+              className="flex-1 h-11 text-sm font-bold border-[hsl(160,60%,38%)] text-[hsl(160,60%,38%)]"
+              onClick={() => {
+                const input = document.createElement('input');
+                input.type = 'file';
+                input.accept = 'image/*,application/pdf';
+                input.multiple = true;
+                input.onchange = (ev) => {
+                  const files = (ev.target as HTMLInputElement).files;
+                  if (!files) return;
+                  Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                      if (typeof reader.result === 'string') setFotos(prev => [...prev, reader.result as string]);
+                    };
+                    reader.readAsDataURL(file);
+                  });
+                };
+                input.click();
+              }}
+            >
               <Upload className="h-4 w-4 mr-1.5" />Anexar Arquivo
             </Button>
           </div>
-          <div className="bg-warning/10 border border-warning/30 rounded-lg px-4 py-2.5 text-center">
-            <p className="text-sm text-warning font-medium">Nenhum anexo adicionado</p>
-          </div>
+          {fotos.length === 0 ? (
+            <div className="bg-muted/30 border border-dashed border-border rounded-lg px-4 py-6 text-center">
+              <Camera className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-xs text-muted-foreground">Nenhum anexo adicionado</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="grid grid-cols-3 gap-2">
+                {fotos.map((foto, idx) => (
+                  <div key={idx} className="relative group">
+                    <img src={foto} alt={`Foto ${idx + 1}`} className="w-full h-24 object-cover rounded-lg border border-border" />
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={() => setFotos(prev => prev.filter((_, i) => i !== idx))}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center">{fotos.length} anexo(s) adicionado(s)</p>
+            </div>
+          )}
         </div>
 
         {/* ===== COMPLEMENTO ===== */}
