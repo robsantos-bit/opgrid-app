@@ -1,19 +1,21 @@
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { getAtendimentos, getPrestadores } from '@/data/store';
+import { useAtendimentos, usePrestadores } from '@/hooks/useSupabaseData';
 import { toast } from 'sonner';
-import { BarChart3, FileDown, DollarSign, TrendingUp, Users, Calendar } from 'lucide-react';
+import { BarChart3, FileDown, DollarSign, TrendingUp, Users, Calendar, Loader2 } from 'lucide-react';
+
+const fmt = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}`;
 
 export default function FinanceiroRelatorios() {
-  const atendimentos = useMemo(() => getAtendimentos(), []);
-  const prestadores = useMemo(() => getPrestadores(), []);
+  const { data: rawAtendimentos = [], isLoading: loadA } = useAtendimentos();
+  const { data: rawPrestadores = [], isLoading: loadP } = usePrestadores();
 
-  const totalReceita = atendimentos.reduce((s, a) => s + a.valorTotal, 0);
-  const ticketMedio = atendimentos.length > 0 ? totalReceita / atendimentos.length : 0;
-  const faturados = atendimentos.filter(a => a.status === 'Faturado');
-  const prestadoresAtivos = prestadores.filter(p => p.status === 'Ativo').length;
+  const totalReceita = rawAtendimentos.reduce((s: number, a: any) => s + (a.valor_total || 0), 0);
+  const ticketMedio = rawAtendimentos.length > 0 ? totalReceita / rawAtendimentos.length : 0;
+  const faturados = rawAtendimentos.filter((a: any) => a.status === 'faturado' || a.status === 'Faturado');
+  const prestadoresAtivos = rawPrestadores.filter((p: any) => p.status === 'ativo' || p.status === 'Ativo').length;
 
   const relatorios = [
     { nome: 'Faturamento Mensal', desc: 'Resumo de faturamento por período com detalhamento por prestador', icon: DollarSign, tipo: 'Financeiro' },
@@ -22,6 +24,9 @@ export default function FinanceiroRelatorios() {
     { nome: 'Relatório Diário', desc: 'Resumo das operações do dia: solicitações, despachos e conclusões', icon: Calendar, tipo: 'Operacional' },
     { nome: 'Divergências e Glosas', desc: 'Análise de divergências de KM, tempo e valores com impacto financeiro', icon: BarChart3, tipo: 'Financeiro' },
   ];
+
+  const isLoading = loadA || loadP;
+  if (isLoading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -33,8 +38,8 @@ export default function FinanceiroRelatorios() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-        <div className="kpi-card"><div className="kpi-icon bg-success/10 text-success"><DollarSign className="h-4.5 w-4.5" /></div><div><p className="kpi-label">Receita total</p><p className="kpi-value tabular-nums">R$ {totalReceita.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</p></div></div>
-        <div className="kpi-card"><div className="kpi-icon bg-primary/10 text-primary"><TrendingUp className="h-4.5 w-4.5" /></div><div><p className="kpi-label">Ticket médio</p><p className="kpi-value tabular-nums">R$ {ticketMedio.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}</p></div></div>
+        <div className="kpi-card"><div className="kpi-icon bg-success/10 text-success"><DollarSign className="h-4.5 w-4.5" /></div><div><p className="kpi-label">Receita total</p><p className="kpi-value tabular-nums">{fmt(totalReceita)}</p></div></div>
+        <div className="kpi-card"><div className="kpi-icon bg-primary/10 text-primary"><TrendingUp className="h-4.5 w-4.5" /></div><div><p className="kpi-label">Ticket médio</p><p className="kpi-value tabular-nums">{fmt(ticketMedio)}</p></div></div>
         <div className="kpi-card"><div className="kpi-icon bg-info/10 text-info"><BarChart3 className="h-4.5 w-4.5" /></div><div><p className="kpi-label">Faturados</p><p className="kpi-value">{faturados.length}</p></div></div>
         <div className="kpi-card"><div className="kpi-icon bg-warning/10 text-warning"><Users className="h-4.5 w-4.5" /></div><div><p className="kpi-label">Prestadores ativos</p><p className="kpi-value">{prestadoresAtivos}</p></div></div>
       </div>

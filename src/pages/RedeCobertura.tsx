@@ -1,27 +1,30 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getPrestadores } from '@/data/store';
-import { Globe, MapPin, Users, AlertTriangle } from 'lucide-react';
+import { usePrestadores } from '@/hooks/useSupabaseData';
+import { Globe, MapPin, Users, AlertTriangle, Loader2 } from 'lucide-react';
 
 export default function RedeCobertura() {
-  const prestadores = useMemo(() => getPrestadores(), []);
+  const { data: prestadores = [], isLoading } = usePrestadores();
 
   const byUf = useMemo(() => {
     const map = new Map<string, { count: number; ativos: number; cidades: Set<string> }>();
-    prestadores.forEach(p => {
-      const e = map.get(p.uf) || { count: 0, ativos: 0, cidades: new Set<string>() };
+    prestadores.forEach((p: any) => {
+      const uf = p.uf || 'N/D';
+      const e = map.get(uf) || { count: 0, ativos: 0, cidades: new Set<string>() };
       e.count++;
-      if (p.status === 'Ativo') e.ativos++;
-      e.cidades.add(p.cidade);
-      map.set(p.uf, e);
+      if (p.status === 'ativo' || p.status === 'Ativo') e.ativos++;
+      if (p.cidade) e.cidades.add(p.cidade);
+      map.set(uf, e);
     });
     return Array.from(map.entries()).sort((a, b) => b[1].count - a[1].count);
   }, [prestadores]);
 
   const totalUfs = byUf.length;
-  const totalCidades = new Set(prestadores.map(p => p.cidade)).size;
+  const totalCidades = new Set(prestadores.map((p: any) => p.cidade).filter(Boolean)).size;
   const semCobertura = byUf.filter(([, v]) => v.ativos === 0).length;
+
+  if (isLoading) return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
 
   return (
     <div className="space-y-5 animate-fade-in">
