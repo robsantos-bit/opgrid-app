@@ -545,7 +545,7 @@ function OsView({ atendimento, solicitacao, prestador }: { atendimento: Atendime
         <div>
           <SectionHeader title="Endereços" />
           <Card className="overflow-hidden">
-            <NumberedRow num={1} color="bg-[hsl(160,60%,38%)]" label="Partida do Prestador" value={prestador?.cidade ? `${prestador.cidade}, ${prestador.estado}` : 'Localização atual'} />
+            <NumberedRow num={1} color="bg-[hsl(160,60%,38%)]" label="Partida do Prestador" value={prestador?.cidade ? `${prestador.cidade}, ${prestador.uf}` : 'Localização atual'} />
             <NumberedRow num={2} color="bg-[hsl(24,85%,55%)]" label="Origem do Atendimento" value={atendimento.origem || 'N/D'} />
             <NumberedRow num={3} color="bg-destructive" label="Destino do Atendimento" value={atendimento.destino || 'N/D'} />
             <NumberedRow num={4} color="bg-muted-foreground" label="Retorno do Prestador" value="A definir" />
