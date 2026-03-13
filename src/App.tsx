@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import { ProtectedRoute, PrestadorRoute } from "@/components/RouteGuards";
+import { ProtectedRoute, PrestadorRoute, PublicOnlyRoute } from "@/components/RouteGuards";
 import Login from "@/pages/Login";
 import PainelDashboard from "@/pages/PainelDashboard";
 import PainelIndicadores from "@/pages/PainelIndicadores";
@@ -64,7 +64,8 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Auth */}
-      <Route path="/login" element={user ? (user.role === 'prestador' ? <Navigate to="/prestador/inicio" replace /> : <Navigate to="/app" replace />) : <Login />} />
+      <Route path="/conecte-se" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+      <Route path="/login" element={<Navigate to="/conecte-se" replace />} />
 
       {/* Backoffice — /app/* */}
       <Route path="/app" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
