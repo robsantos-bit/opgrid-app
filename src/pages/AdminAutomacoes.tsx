@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -10,90 +10,75 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Plus, Search, Zap, Play, Pause, Clock, Pencil, Loader2, Trash2 } from 'lucide-react';
-import { fetchAutomations, fetchTemplates, upsertAutomation, toggleAutomation, deleteAutomation } from '@/services/automationEngine';
-import { TRIGGER_EVENTS, type Automation, type MessageTemplate, type AutomationChannel } from '@/types/automation';
+import { useAutomations, useTemplates, useUpsertAutomation, useToggleAutomation, useDeleteAutomation } from '@/hooks/useMessagingData';
+import { TRIGGER_EVENTS, type Automation, type AutomationChannel, type AutomationAudience } from '@/types/automation';
 
 const CHANNELS: AutomationChannel[] = ['whatsapp', 'email', 'sms', 'push', 'internal'];
+const AUDIENCES: AutomationAudience[] = ['cliente', 'prestador', 'interno'];
+
+function formatDate(d?: string) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
 
 export default function AdminAutomacoes() {
-  const [automacoes, setAutomacoes] = useState<Automation[]>([]);
-  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: automacoes = [], isLoading } = useAutomations();
+  const { data: templates = [] } = useTemplates();
+  const upsertMut = useUpsertAutomation();
+  const toggleMut = useToggleAutomation();
+  const deleteMut = useDeleteAutomation();
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterChannel, setFilterChannel] = useState('all');
+  const [filterAudience, setFilterAudience] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Automation | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp' as AutomationChannel, template_key: '', delay_seconds: 0 });
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const [auts, tmps] = await Promise.all([fetchAutomations(), fetchTemplates()]);
-      setAutomacoes(auts);
-      setTemplates(tmps);
-    } catch (err: any) {
-      toast.error('Erro ao carregar: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadData(); }, []);
+  const [form, setForm] = useState({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp' as AutomationChannel, audience: 'cliente' as AutomationAudience, template_key: '', delay_seconds: 0 });
 
   const filtered = useMemo(() => automacoes.filter(a =>
-    (!search || a.name.toLowerCase().includes(search.toLowerCase())) &&
-    (filterStatus === 'all' || (filterStatus === 'ativa' ? a.is_active : !a.is_active))
-  ), [automacoes, search, filterStatus]);
+    (!search || a.name.toLowerCase().includes(search.toLowerCase()) || a.trigger_event.toLowerCase().includes(search.toLowerCase())) &&
+    (filterStatus === 'all' || (filterStatus === 'ativa' ? a.is_active : !a.is_active)) &&
+    (filterChannel === 'all' || a.channel === filterChannel) &&
+    (filterAudience === 'all' || (a as any).audience === filterAudience)
+  ), [automacoes, search, filterStatus, filterChannel, filterAudience]);
 
   const openEdit = (a: Automation) => {
     setEditing(a);
-    setForm({ name: a.name, trigger_event: a.trigger_event, channel: a.channel, template_key: a.template_key || '', delay_seconds: a.delay_seconds });
+    setForm({ name: a.name, trigger_event: a.trigger_event, channel: a.channel, audience: (a as any).audience || 'cliente', template_key: a.template_key || '', delay_seconds: a.delay_seconds });
     setModalOpen(true);
   };
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp', template_key: '', delay_seconds: 0 });
+    setForm({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp', audience: 'cliente', template_key: '', delay_seconds: 0 });
     setModalOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.name) { toast.error('Informe o nome da automação.'); return; }
     try {
-      setSaving(true);
       const payload: any = { ...form, template_key: form.template_key || null };
       if (editing) payload.id = editing.id;
-      await upsertAutomation(payload);
+      await upsertMut.mutateAsync(payload);
       toast.success(editing ? 'Automação atualizada.' : 'Automação criada.');
       setModalOpen(false);
-      await loadData();
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
-    } finally {
-      setSaving(false);
-    }
+    } catch (err: any) { toast.error('Erro: ' + err.message); }
   };
 
   const handleToggle = async (a: Automation) => {
     try {
-      await toggleAutomation(a.id, !a.is_active);
-      setAutomacoes(prev => prev.map(x => x.id === a.id ? { ...x, is_active: !x.is_active } : x));
+      await toggleMut.mutateAsync({ id: a.id, is_active: !a.is_active });
       toast.success('Status atualizado.');
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
-    }
+    } catch (err: any) { toast.error('Erro: ' + err.message); }
   };
 
   const handleDelete = async (a: Automation) => {
     if (!confirm(`Excluir automação "${a.name}"?`)) return;
     try {
-      await deleteAutomation(a.id);
-      setAutomacoes(prev => prev.filter(x => x.id !== a.id));
+      await deleteMut.mutateAsync(a.id);
       toast.success('Automação excluída.');
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
-    }
+    } catch (err: any) { toast.error('Erro: ' + err.message); }
   };
 
   const ativas = automacoes.filter(a => a.is_active).length;
@@ -128,15 +113,14 @@ export default function AdminAutomacoes() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input placeholder="Buscar automação..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="ativa">Ativas</SelectItem><SelectItem value="inativa">Pausadas</SelectItem></SelectContent>
-          </Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}><SelectTrigger className="w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="ativa">Ativas</SelectItem><SelectItem value="inativa">Pausadas</SelectItem></SelectContent></Select>
+          <Select value={filterChannel} onValueChange={setFilterChannel}><SelectTrigger className="w-[120px]"><SelectValue placeholder="Canal" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem>{CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+          <Select value={filterAudience} onValueChange={setFilterAudience}><SelectTrigger className="w-[120px]"><SelectValue placeholder="Audiência" /></SelectTrigger><SelectContent><SelectItem value="all">Todas</SelectItem>{AUDIENCES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select>
         </div>
       </CardContent></Card>
 
       <Card><CardContent className="p-0">
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         ) : (
           <Table>
@@ -144,15 +128,17 @@ export default function AdminAutomacoes() {
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Automação</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Gatilho</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Canal</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Audiência</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Template</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Delay</TableHead>
-              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center hidden sm:table-cell">Execuções</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Atualizado</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center hidden sm:table-cell">Exec.</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right">Ações</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={8} className="text-center py-16">
+                <TableRow><TableCell colSpan={10} className="text-center py-16">
                   <div className="empty-state"><div className="empty-state-icon"><Zap className="h-5 w-5 text-muted-foreground" /></div><p className="empty-state-title">Nenhuma automação configurada</p><p className="empty-state-description">Crie automações para agilizar processos operacionais</p></div>
                 </TableCell></TableRow>
               ) : filtered.map(a => (
@@ -160,9 +146,11 @@ export default function AdminAutomacoes() {
                   <TableCell><span className="font-semibold text-[13px]">{a.name}</span></TableCell>
                   <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">{TRIGGER_EVENTS[a.trigger_event as keyof typeof TRIGGER_EVENTS] || a.trigger_event}</TableCell>
                   <TableCell><Badge variant="outline" className="font-semibold text-[11px]">{a.channel}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell"><Badge variant="secondary" className="font-semibold text-[11px]">{(a as any).audience || '—'}</Badge></TableCell>
                   <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">{a.template_key ? (templatesByKey[a.template_key] || a.template_key) : '—'}</TableCell>
                   <TableCell><Badge variant={a.is_active ? 'success' : 'secondary'} className="font-semibold">{a.is_active ? 'Ativa' : 'Pausada'}</Badge></TableCell>
                   <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground tabular-nums">{a.delay_seconds > 0 ? `${a.delay_seconds}s` : 'Imediato'}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-[12px] text-muted-foreground tabular-nums">{formatDate(a.updated_at)}</TableCell>
                   <TableCell className="text-center hidden sm:table-cell text-[13px] font-medium tabular-nums">{a.executions || 0}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-0.5">
@@ -192,21 +180,24 @@ export default function AdminAutomacoes() {
               </div>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label className="text-xs font-medium">Template</Label>
-                <Select value={form.template_key} onValueChange={v => setForm(p => ({ ...p, template_key: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="">Nenhum</SelectItem>
-                    {templates.map(t => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Audiência</Label>
+                <Select value={form.audience} onValueChange={v => setForm(p => ({ ...p, audience: v as AutomationAudience }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{AUDIENCES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select>
               </div>
               <div className="space-y-1.5"><Label className="text-xs font-medium">Delay (segundos)</Label><Input type="number" min={0} value={form.delay_seconds} onChange={e => setForm(p => ({ ...p, delay_seconds: parseInt(e.target.value) || 0 }))} /></div>
+            </div>
+            <div className="space-y-1.5"><Label className="text-xs font-medium">Template</Label>
+              <Select value={form.template_key} onValueChange={v => setForm(p => ({ ...p, template_key: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecionar template..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Nenhum</SelectItem>
+                  {templates.map(t => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}{editing ? 'Salvar' : 'Criar Automação'}</Button>
+            <Button onClick={handleSave} disabled={upsertMut.isPending}>{upsertMut.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}{editing ? 'Salvar' : 'Criar Automação'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
