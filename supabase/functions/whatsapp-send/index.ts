@@ -1,6 +1,8 @@
 // Edge Function: Send WhatsApp messages via Cloud API
 // Proxies send requests to Meta Graph API, keeping token server-side
 
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -29,7 +31,8 @@ Deno.serve(async (req: Request) => {
 
   try {
     const messagePayload = await req.json();
-    console.log('[SEND] Sending to:', messagePayload.to, 'type:', messagePayload.type);
+    const to = messagePayload.to;
+    console.log('[SEND] Sending to:', to, 'type:', messagePayload.type);
 
     const metaUrl = `https://graph.facebook.com/${API_VERSION}/${PHONE_NUMBER_ID}/messages`;
 
@@ -45,6 +48,21 @@ Deno.serve(async (req: Request) => {
     const metaBody = await metaRes.text();
     console.log('[SEND] Meta response:', metaRes.status, metaBody.slice(0, 300));
 
+    // Log to message_logs
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const metaData = metaRes.ok ? JSON.parse(metaBody) : null;
+
+    await supabase.from('message_logs').insert({
+      provider_message_id: metaData?.messages?.[0]?.id || null,
+      direction: 'outbound',
+      status: metaRes.ok ? 'sent' : 'failed',
+      response_json: metaRes.ok ? metaData : { error: metaBody.slice(0, 500) },
+    });
+
     if (!metaRes.ok) {
       return new Response(
         JSON.stringify({ error: 'Meta API error', status: metaRes.status, details: metaBody }),
@@ -52,7 +70,6 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const metaData = JSON.parse(metaBody);
     return new Response(JSON.stringify(metaData), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
