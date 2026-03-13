@@ -118,6 +118,7 @@ export default function OperacaoSolicitacoes() {
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Placa</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Origem → Destino</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Modo</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Prioridade</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right hidden lg:table-cell">Valor</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Data</TableHead>
