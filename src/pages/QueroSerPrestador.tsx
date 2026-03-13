@@ -270,7 +270,8 @@ export default function QueroSerPrestador() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>CEP</Label>
-                  <Input {...register('cep')} placeholder="00000-000" />
+                  <Input {...register('cep')} placeholder="00000-000" onBlur={handleCepBlur} />
+                  {cepLoading && <p className="text-xs text-muted-foreground mt-1">Buscando endereço...</p>}
                 </div>
                 <div className="md:col-span-2">
                   <Label>Endereço</Label>
