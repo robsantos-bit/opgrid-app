@@ -252,10 +252,14 @@ export default function AdminLeadsPrestadores() {
                   <Button size="sm" className="bg-accent hover:bg-accent/90" disabled={updating} onClick={() => updateStatus(selected.id, 'aprovado')}>
                     <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
                   </Button>
-                  <Button size="sm" variant="destructive" disabled={updating} onClick={() => updateStatus(selected.id, 'reprovado')}>
-                    <XCircle className="h-3.5 w-3.5 mr-1" /> Reprovar
-                  </Button>
-                </div>
+                   <Button size="sm" variant="destructive" disabled={updating} onClick={() => updateStatus(selected.id, 'reprovado')}>
+                     <XCircle className="h-3.5 w-3.5 mr-1" /> Reprovar
+                   </Button>
+                   {selected.status_lead !== 'convertido_em_prestador' && selected.status_lead === 'aprovado' && (
+                     <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={updating} onClick={() => convertToProvider(selected.id)}>
+                       <ArrowRightLeft className="h-3.5 w-3.5 mr-1" /> Converter em prestador
+                     </Button>
+                   )}
 
                 <Separator />
 
