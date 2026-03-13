@@ -20,6 +20,7 @@ const modoVariants: Record<ModoDespacho, 'warning' | 'info' | 'success'> = { man
 
 export default function OperacaoAtendimentos() {
   const { data: atendimentos = [], isLoading } = useAtendimentos();
+  const despachos = useMemo(() => getDespachos(), []);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState<any>(null);
