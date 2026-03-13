@@ -198,7 +198,7 @@ export default function CentralDespacho() {
       ofertas: [...d.ofertas, ...newOfertas],
     };
     updateDespacho(updated);
-    toast.success(`Disparo automático: ${sugeridos.length} prestadores notificados`);
+    toast.success(`Disparo automático: ${top.length} prestadores notificados (por score)`);
   }, [despachos, prestadores, solicitacoes]);
 
   const handleUsarSugestao = useCallback((despachoId: string) => {
