@@ -253,7 +253,7 @@ export const mockSolicitacoes: Solicitacao[] = [
 
 export const mockDespachos: Despacho[] = [
   {
-    id: 'd1', solicitacaoId: 's1', atendimentoId: 'a1', rodadaAtual: 1, status: 'Aceito',
+    id: 'd1', solicitacaoId: 's1', atendimentoId: 'a1', rodadaAtual: 1, modoDespacho: 'automatico', status: 'Aceito',
     criadoEm: '2026-03-01T08:19:00', atualizadoEm: '2026-03-01T08:25:00',
     prestadorAceitoId: 'p1', tempoMedioAceiteMinutos: 3,
     ofertas: [
@@ -263,7 +263,7 @@ export const mockDespachos: Despacho[] = [
     observacoes: '',
   },
   {
-    id: 'd2', solicitacaoId: 's3', atendimentoId: 'a3', rodadaAtual: 1, status: 'Aceito',
+    id: 'd2', solicitacaoId: 's3', atendimentoId: 'a3', rodadaAtual: 1, modoDespacho: 'assistido', status: 'Aceito',
     criadoEm: '2026-03-05T09:55:00', atualizadoEm: '2026-03-05T10:02:00',
     prestadorAceitoId: 'p2', tempoMedioAceiteMinutos: 5,
     ofertas: [
@@ -272,7 +272,7 @@ export const mockDespachos: Despacho[] = [
     observacoes: '',
   },
   {
-    id: 'd3', solicitacaoId: 's4', atendimentoId: 'a13', rodadaAtual: 1, status: 'Aceito',
+    id: 'd3', solicitacaoId: 's4', atendimentoId: 'a13', rodadaAtual: 1, modoDespacho: 'manual', status: 'Aceito',
     criadoEm: '2026-03-09T08:25:00', atualizadoEm: '2026-03-09T08:30:00',
     prestadorAceitoId: 'p9', tempoMedioAceiteMinutos: 4,
     ofertas: [
@@ -282,7 +282,7 @@ export const mockDespachos: Despacho[] = [
     observacoes: '',
   },
   {
-    id: 'd4', solicitacaoId: 's5', atendimentoId: 'a10', rodadaAtual: 2, status: 'Aguardando',
+    id: 'd4', solicitacaoId: 's5', atendimentoId: 'a10', rodadaAtual: 2, modoDespacho: 'assistido', status: 'Aguardando',
     criadoEm: '2026-03-09T06:00:00', atualizadoEm: '2026-03-09T06:15:00',
     ofertas: [
       { id: 'of6', despachoId: 'd4', prestadorId: 'p1', rodada: 1, status: 'Expirada', enviadaEm: '2026-03-09T06:01:00', tempoLimiteMinutos: 5, distanciaEstimadaKm: 8, tempoEstimadoMinutos: 20, valorServico: 307.50, linkOferta: '/prestador/oferta/of6' },

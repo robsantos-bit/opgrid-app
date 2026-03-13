@@ -93,6 +93,8 @@ export interface CotacaoItem {
 
 // ===== NOVOS TIPOS: Despacho Automático =====
 
+export type ModoDespacho = 'manual' | 'automatico' | 'assistido';
+
 export type StatusDespacho = 'Aguardando' | 'Ofertas enviadas' | 'Aceito' | 'Sem prestador' | 'Expirado' | 'Cancelado';
 
 export type MotivoRecusaOferta =
@@ -127,6 +129,7 @@ export interface Despacho {
   solicitacaoId: string;
   atendimentoId?: string;
   rodadaAtual: number;
+  modoDespacho: ModoDespacho;
   status: StatusDespacho;
   criadoEm: string;
   atualizadoEm: string;

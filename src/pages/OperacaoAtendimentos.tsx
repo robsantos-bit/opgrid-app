@@ -7,13 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAtendimentos } from '@/hooks/useSupabaseData';
-import { Search, X, Eye, Loader2, Headphones } from 'lucide-react';
+import { getDespachos } from '@/data/store';
+import { ModoDespacho } from '@/types';
+import { Search, X, Eye, Loader2, Headphones, Hand, Bot, Sparkles } from 'lucide-react';
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR');
 
+const modoIcons: Record<ModoDespacho, typeof Hand> = { manual: Hand, automatico: Bot, assistido: Sparkles };
+const modoLabels: Record<ModoDespacho, string> = { manual: 'Manual', automatico: 'Automático', assistido: 'Assistido' };
+const modoVariants: Record<ModoDespacho, 'warning' | 'info' | 'success'> = { manual: 'warning', automatico: 'info', assistido: 'success' };
+
 export default function OperacaoAtendimentos() {
   const { data: atendimentos = [], isLoading } = useAtendimentos();
+  const despachos = useMemo(() => getDespachos(), []);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selected, setSelected] = useState<any>(null);
@@ -85,6 +92,7 @@ export default function OperacaoAtendimentos() {
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Cliente</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Placa</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Modo</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Notas</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Criado</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Finalizado</TableHead>
@@ -92,7 +100,7 @@ export default function OperacaoAtendimentos() {
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-16">
+              <TableRow><TableCell colSpan={9} className="text-center py-16">
                 <div className="flex flex-col items-center gap-2"><Headphones className="h-5 w-5 text-muted-foreground" /><p className="text-sm text-muted-foreground">Nenhum atendimento encontrado</p></div>
               </TableCell></TableRow>
             ) : filtered.map((a: any) => (
@@ -101,6 +109,15 @@ export default function OperacaoAtendimentos() {
                 <TableCell className="hidden md:table-cell text-[13px]">{a.solicitacoes?.cliente_nome || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{a.solicitacoes?.placa || '—'}</TableCell>
                 <TableCell><Badge variant={statusVariant(a.status)} className="text-[10px]">{statusLabel(a.status)}</Badge></TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {(() => {
+                    const desp = despachos.find((d: any) => d.atendimentoId === a.id);
+                    if (!desp) return <span className="text-[10px] text-muted-foreground">—</span>;
+                    const modo = desp.modoDespacho as ModoDespacho;
+                    const MIcon = modoIcons[modo];
+                    return <Badge variant={modoVariants[modo]} className="text-[10px] gap-1"><MIcon className="h-2.5 w-2.5" />{modoLabels[modo]}</Badge>;
+                  })()}
+                </TableCell>
                 <TableCell className="hidden lg:table-cell text-[12px] text-muted-foreground max-w-[180px] truncate">{a.notas || '—'}</TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{a.created_at ? fmtDate(a.created_at) : '—'}</TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">

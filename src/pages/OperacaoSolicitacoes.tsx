@@ -7,14 +7,20 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useSolicitacoes } from '@/hooks/useSupabaseData';
-import { Search, X, Eye, Loader2, ClipboardList, ArrowRight } from 'lucide-react';
+import { getDespachos } from '@/data/store';
+import { ModoDespacho } from '@/types';
+import { Search, X, Eye, Loader2, ClipboardList, ArrowRight, Hand, Bot, Sparkles } from 'lucide-react';
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR');
+const modoIcons: Record<ModoDespacho, typeof Hand> = { manual: Hand, automatico: Bot, assistido: Sparkles };
+const modoLabels: Record<ModoDespacho, string> = { manual: 'Manual', automatico: 'Automático', assistido: 'Assistido' };
+const modoVariants: Record<ModoDespacho, 'warning' | 'info' | 'success'> = { manual: 'warning', automatico: 'info', assistido: 'success' };
 const PAGE_SIZE = 20;
 
 export default function OperacaoSolicitacoes() {
+  const despachos = useMemo(() => getDespachos(), []);
   const { data: solicitacoes = [], isLoading } = useSolicitacoes();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -112,6 +118,7 @@ export default function OperacaoSolicitacoes() {
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Placa</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Origem → Destino</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Modo</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Prioridade</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right hidden lg:table-cell">Valor</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Data</TableHead>
@@ -119,7 +126,7 @@ export default function OperacaoSolicitacoes() {
           </TableRow></TableHeader>
           <TableBody>
             {paged.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-16">
+              <TableRow><TableCell colSpan={9} className="text-center py-16">
                 <div className="flex flex-col items-center gap-2"><ClipboardList className="h-5 w-5 text-muted-foreground" /><p className="text-sm text-muted-foreground">Nenhuma solicitação encontrada</p></div>
               </TableCell></TableRow>
             ) : paged.map((s: any) => (
@@ -139,6 +146,15 @@ export default function OperacaoSolicitacoes() {
                   </div>
                 </TableCell>
                 <TableCell><Badge variant={statusVariant(s.status)} className="text-[10px]">{statusLabel(s.status)}</Badge></TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {(() => {
+                    const desp = despachos.find((d: any) => d.solicitacaoId === s.id);
+                    if (!desp) return <span className="text-[10px] text-muted-foreground">—</span>;
+                    const modo = desp.modoDespacho as ModoDespacho;
+                    const MIcon = modoIcons[modo];
+                    return <Badge variant={modoVariants[modo]} className="text-[10px] gap-1"><MIcon className="h-2.5 w-2.5" />{modoLabels[modo]}</Badge>;
+                  })()}
+                </TableCell>
                 <TableCell className="hidden md:table-cell">
                   <Badge variant={prioridadeBadge(s.prioridade)} className="text-[10px] capitalize">{s.prioridade || '—'}</Badge>
                 </TableCell>

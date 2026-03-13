@@ -245,7 +245,7 @@ export default function SandboxWhatsApp() {
 
       const despacho: Despacho = {
         id: despId, solicitacaoId: solId, atendimentoId: atId,
-        rodadaAtual: 1, status: 'Ofertas enviadas', criadoEm: now, atualizadoEm: now,
+        rodadaAtual: 1, modoDespacho: 'automatico', status: 'Ofertas enviadas', criadoEm: now, atualizadoEm: now,
         ofertas, observacoes: 'Despacho automático via Sandbox',
       };
       addDespacho(despacho);
