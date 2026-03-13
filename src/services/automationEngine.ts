@@ -91,8 +91,8 @@ export async function enqueueMessage(params: {
 }) {
   // Find active automations for this trigger
   const { data: automations, error: autoErr } = await supabase
-    .from('automations')
-    .select('*, message_templates!automations_template_key_fkey(*)')
+    .from('message_automations')
+    .select('*, message_templates(*)')
     .eq('trigger_event', params.trigger_event)
     .eq('is_active', true);
 
