@@ -92,6 +92,37 @@ export default function QueroSerPrestador() {
   const servicos = watch('servicos');
   const tipos_veiculo = watch('tipos_veiculo');
 
+  const handleDocumentoBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const doc = e.target.value.replace(/\D/g, '');
+    if (doc.length === 14) {
+      const result = await lookupCnpj(e.target.value);
+      if (result) {
+        if (result.razao_social) setValue('razao_social', result.razao_social);
+        if (result.nome_fantasia) setValue('nome_fantasia', result.nome_fantasia);
+        if (result.telefone) setValue('telefone', result.telefone);
+        if (result.email) setValue('email', result.email);
+        if (result.cep) setValue('cep', result.cep);
+        if (result.logradouro) setValue('endereco', result.logradouro);
+        if (result.numero) setValue('numero', result.numero);
+        if (result.bairro) setValue('bairro', result.bairro);
+        if (result.municipio) setValue('cidade', result.municipio);
+        if (result.uf) setValue('estado', result.uf, { shouldValidate: true });
+        toast.success('Dados do CNPJ preenchidos automaticamente');
+      }
+    }
+  };
+
+  const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const result = await lookupCep(e.target.value);
+    if (result) {
+      if (result.logradouro) setValue('endereco', result.logradouro);
+      if (result.bairro) setValue('bairro', result.bairro);
+      if (result.localidade) setValue('cidade', result.localidade);
+      if (result.uf) setValue('estado', result.uf, { shouldValidate: true });
+      toast.success('Endereço preenchido automaticamente');
+    }
+  };
+
   const toggleArray = (field: 'servicos' | 'tipos_veiculo', value: string) => {
     const current = field === 'servicos' ? servicos : tipos_veiculo;
     const next = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
