@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
-import AppLayout from "@/components/AppLayout";
+import { ProtectedRoute, PrestadorRoute } from "@/components/RouteGuards";
 import Login from "@/pages/Login";
 import PainelDashboard from "@/pages/PainelDashboard";
 import PainelIndicadores from "@/pages/PainelIndicadores";
@@ -53,23 +53,6 @@ import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
-
-function ProtectedRoute({ children, requiredModules }: { children: React.ReactNode; requiredModules?: string[] }) {
-  const { user, loading, hasAccess } = useAuth();
-  if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role === 'prestador') return <Navigate to="/prestador/inicio" replace />;
-  if (requiredModules && !hasAccess(requiredModules)) return <Navigate to="/app" replace />;
-  return <AppLayout>{children}</AppLayout>;
-}
-
-function PrestadorRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
-  if (loading) return <div className="flex items-center justify-center min-h-screen"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.role !== 'prestador') return <Navigate to="/app" replace />;
-  return <>{children}</>;
-}
 
 function AppRoutes() {
   const { user, loading } = useAuth();
