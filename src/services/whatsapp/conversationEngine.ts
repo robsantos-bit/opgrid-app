@@ -445,7 +445,7 @@ async function createOsAndDispatch(session: ConversationSession, from: string) {
     fireAutomation('new_dispatch_offer', phone, {
       protocolo,
       prestadorId: p.id,
-      prestadorNome: p.nome,
+      prestadorNome: p.nomeFantasia,
       valor: session.data.valorEstimado,
     });
   }
