@@ -55,7 +55,7 @@ export async function fetchAutomations() {
 
 export async function upsertAutomation(automation: Partial<Automation> & { name: string; trigger_event: string }) {
   const { data, error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .upsert(automation)
     .select()
     .single();
