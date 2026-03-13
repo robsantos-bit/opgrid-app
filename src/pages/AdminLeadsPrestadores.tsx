@@ -96,6 +96,22 @@ export default function AdminLeadsPrestadores() {
     setUpdating(false);
   };
 
+  const convertToProvider = async (id: string) => {
+    setUpdating(true);
+    try {
+      const { data, error } = await supabase.rpc('converter_lead_em_prestador', { p_lead_id: id });
+      if (error) throw error;
+      toast.success('Lead convertido em prestador com sucesso!');
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, status_lead: 'convertido_em_prestador' } : l));
+      if (selected?.id === id) setSelected(prev => prev ? { ...prev, status_lead: 'convertido_em_prestador' } : null);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao converter lead em prestador');
+      console.error(err);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
   const filtered = leads.filter(l => {
     const matchSearch = !search || [l.razao_social, l.documento, l.responsavel, l.cidade, l.email]
       .some(v => v?.toLowerCase().includes(search.toLowerCase()));
