@@ -157,6 +157,7 @@ async function processStep(
         session.data.localizacao = text.trim();
       }
       session.currentStep = 'collect_motivo';
+      fireAutomation('origem_recebida', from, { localizacao: session.data.localizacao });
       await sendInteractiveButtons(from,
         '🔧 Qual o *motivo do atendimento*?',
         [
