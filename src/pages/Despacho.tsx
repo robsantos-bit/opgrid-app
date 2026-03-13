@@ -8,15 +8,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Progress } from '@/components/ui/progress';
 import { getDespachos, getSolicitacoes, getPrestadores, getAtendimentos, addDespacho, updateDespacho } from '@/data/store';
 import { Despacho as DespachoType, StatusDespacho, OfertaPrestador, ModoDespacho, Prestador, Solicitacao } from '@/types';
+import { calcularScorePrestadores, getTopPrestadores, PrestadorScored, SCORE_WEIGHTS } from '@/lib/prestadorScoring';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from 'sonner';
 import {
   Radar, Clock, CheckCircle2, XCircle, AlertTriangle, Send, Timer, Target,
   MapPin, Phone, Truck, Radio, Eye, ChevronRight, RotateCcw, Ban, Zap, Bell,
-  MessageCircle, Link2, Hand, Bot, Sparkles, UserCheck, Users, ArrowRight
+  MessageCircle, Link2, Hand, Bot, Sparkles, UserCheck, Users, ArrowRight,
+  Info, ShieldCheck, TrendingUp, BarChart3
 } from 'lucide-react';
 
 const statusVariant: Record<StatusDespacho, 'default' | 'warning' | 'info' | 'success' | 'destructive' | 'secondary'> = {
