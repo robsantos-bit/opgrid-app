@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Search, Eye, CheckCircle, XCircle, Clock, UserPlus, RefreshCw, Loader2 } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Clock, UserPlus, RefreshCw, Loader2, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Lead {
