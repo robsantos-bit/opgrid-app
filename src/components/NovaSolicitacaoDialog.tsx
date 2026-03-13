@@ -184,6 +184,7 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
       id: despachoId,
       solicitacaoId: id,
       rodadaAtual: 1,
+      modoDespacho: 'assistido',
       status: 'Ofertas enviadas',
       criadoEm: now,
       atualizadoEm: now,

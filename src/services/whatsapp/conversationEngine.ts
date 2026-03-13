@@ -395,6 +395,7 @@ async function createOsAndDispatch(session: ConversationSession, from: string) {
     solicitacaoId: solicitacao.id,
     atendimentoId: atendimento.id,
     rodadaAtual: 1,
+    modoDespacho: 'automatico',
     status: 'Ofertas enviadas',
     criadoEm: now,
     atualizadoEm: now,
