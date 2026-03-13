@@ -92,6 +92,7 @@ export default function OperacaoAtendimentos() {
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Cliente</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Placa</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Modo</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Notas</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Criado</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Finalizado</TableHead>
