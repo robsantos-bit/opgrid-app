@@ -138,7 +138,7 @@ export async function enqueueMessage(params: {
       direction: 'outbound' as const,
       status: 'queued',
     }));
-    await supabase.from('message_send_logs').insert(logs);
+    await supabase.from('message_logs').insert(logs);
   }
 
   return data;
