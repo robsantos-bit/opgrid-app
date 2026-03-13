@@ -46,7 +46,7 @@ export async function deleteTemplate(id: string) {
 
 export async function fetchAutomations() {
   const { data, error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
@@ -55,7 +55,7 @@ export async function fetchAutomations() {
 
 export async function upsertAutomation(automation: Partial<Automation> & { name: string; trigger_event: string }) {
   const { data, error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .upsert(automation)
     .select()
     .single();
@@ -65,7 +65,7 @@ export async function upsertAutomation(automation: Partial<Automation> & { name:
 
 export async function toggleAutomation(id: string, is_active: boolean) {
   const { error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .update({ is_active })
     .eq('id', id);
   if (error) throw error;
@@ -73,7 +73,7 @@ export async function toggleAutomation(id: string, is_active: boolean) {
 
 export async function deleteAutomation(id: string) {
   const { error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .delete()
     .eq('id', id);
   if (error) throw error;
@@ -91,8 +91,8 @@ export async function enqueueMessage(params: {
 }) {
   // Find active automations for this trigger
   const { data: automations, error: autoErr } = await supabase
-    .from('automations')
-    .select('*, message_templates!automations_template_key_fkey(*)')
+    .from('message_automations')
+    .select('*, message_templates(*)')
     .eq('trigger_event', params.trigger_event)
     .eq('is_active', true);
 
@@ -122,7 +122,7 @@ export async function enqueueMessage(params: {
   // Increment execution counters
   for (const auto of automations) {
     await supabase
-      .from('automations')
+      .from('message_automations')
       .update({
         executions: (auto.executions || 0) + 1,
         last_executed_at: new Date().toISOString(),
@@ -138,7 +138,7 @@ export async function enqueueMessage(params: {
       direction: 'outbound' as const,
       status: 'queued',
     }));
-    await supabase.from('message_send_logs').insert(logs);
+    await supabase.from('message_logs').insert(logs);
   }
 
   return data;
@@ -160,7 +160,7 @@ export async function fetchQueue(limit = 50) {
 
 export async function fetchSendLogs(limit = 100) {
   const { data, error } = await supabase
-    .from('message_send_logs')
+    .from('message_logs')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit);
