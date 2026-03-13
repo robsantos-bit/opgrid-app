@@ -60,7 +60,9 @@ export function ProtectedRoute({
   requiredModules?: string[];
 }) {
   const { user, loading } = useAuth();
-  const { isPrestador, roles, isLoading: roleLoading } = useRoleGuards();
+  const { data: authData, isLoading: roleLoading } = useAuthProfile();
+  const isPrestador = authData?.isPrestador ?? false;
+  const roles = authData?.roles ?? [];
 
   if (loading || roleLoading) return <Loading />;
   if (!user) return <Navigate to="/login" replace />;
