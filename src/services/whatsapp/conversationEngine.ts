@@ -118,6 +118,7 @@ async function processStep(
       }
       session.data.nome = text.trim();
       session.currentStep = 'collect_placa';
+      fireAutomation('nome_recebido', from, { nome: session.data.nome });
       await sendText(from,
         `Obrigado, *${session.data.nome.split(' ')[0]}*! ✅\n\n` +
         `Agora informe a *placa do veículo*:\n` +
