@@ -147,6 +147,15 @@ export default function OperacaoSolicitacoes() {
                 </TableCell>
                 <TableCell><Badge variant={statusVariant(s.status)} className="text-[10px]">{statusLabel(s.status)}</Badge></TableCell>
                 <TableCell className="hidden md:table-cell">
+                  {(() => {
+                    const desp = despachos.find((d: any) => d.solicitacaoId === s.id);
+                    if (!desp) return <span className="text-[10px] text-muted-foreground">—</span>;
+                    const modo = desp.modoDespacho as ModoDespacho;
+                    const MIcon = modoIcons[modo];
+                    return <Badge variant={modoVariants[modo]} className="text-[10px] gap-1"><MIcon className="h-2.5 w-2.5" />{modoLabels[modo]}</Badge>;
+                  })()}
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
                   <Badge variant={prioridadeBadge(s.prioridade)} className="text-[10px] capitalize">{s.prioridade || '—'}</Badge>
                 </TableCell>
                 <TableCell className="text-right hidden lg:table-cell tabular-nums text-[13px] font-medium">
