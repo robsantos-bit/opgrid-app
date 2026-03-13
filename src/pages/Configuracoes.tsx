@@ -160,6 +160,8 @@ function WebhookConfigPanel() {
               </p>
             </CardContent>
           </Card>
+
+          <WapiTestCard />
         </>
       )}
 
