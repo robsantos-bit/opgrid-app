@@ -129,6 +129,7 @@ export interface Despacho {
   solicitacaoId: string;
   atendimentoId?: string;
   rodadaAtual: number;
+  modoDespacho: ModoDespacho;
   status: StatusDespacho;
   criadoEm: string;
   atualizadoEm: string;
