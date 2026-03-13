@@ -133,8 +133,9 @@ async function processStep(
         break;
       }
       session.data.placa = placaClean;
-      session.data.modelo = 'Veículo'; // Will be enriched by API lookup
+      session.data.modelo = 'Veículo';
       session.currentStep = 'collect_localizacao';
+      fireAutomation('veiculo_recebido', from, { placa: placaClean });
       await sendText(from,
         `🚗 Placa registrada: *${placaClean}*\n\n` +
         `Agora envie sua *localização atual* 📍\n\n` +
