@@ -308,6 +308,7 @@ async function generateAndSendQuote(session: ConversationSession, from: string) 
 
   session.currentStep = 'aguardando_aceite';
   upsertSession(session);
+  fireAutomation('quote_generated', from, { valor: valorTotal, distancia: distanciaKm });
 
   // Send accept/reject buttons
   await sendInteractiveButtons(from,
