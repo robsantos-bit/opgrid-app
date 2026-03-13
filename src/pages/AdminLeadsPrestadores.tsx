@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { Search, Eye, CheckCircle, XCircle, Clock, UserPlus, RefreshCw, Loader2 } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Clock, UserPlus, RefreshCw, Loader2, ArrowRightLeft } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Lead {
@@ -94,6 +94,22 @@ export default function AdminLeadsPrestadores() {
       if (selected?.id === id) setSelected(prev => prev ? { ...prev, status_lead: status } : null);
     }
     setUpdating(false);
+  };
+
+  const convertToProvider = async (id: string) => {
+    setUpdating(true);
+    try {
+      const { data, error } = await supabase.rpc('converter_lead_em_prestador', { p_lead_id: id });
+      if (error) throw error;
+      toast.success('Lead convertido em prestador com sucesso!');
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, status_lead: 'convertido_em_prestador' } : l));
+      if (selected?.id === id) setSelected(prev => prev ? { ...prev, status_lead: 'convertido_em_prestador' } : null);
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao converter lead em prestador');
+      console.error(err);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   const filtered = leads.filter(l => {
@@ -236,10 +252,15 @@ export default function AdminLeadsPrestadores() {
                   <Button size="sm" className="bg-accent hover:bg-accent/90" disabled={updating} onClick={() => updateStatus(selected.id, 'aprovado')}>
                     <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
                   </Button>
-                  <Button size="sm" variant="destructive" disabled={updating} onClick={() => updateStatus(selected.id, 'reprovado')}>
-                    <XCircle className="h-3.5 w-3.5 mr-1" /> Reprovar
-                  </Button>
-                </div>
+                   <Button size="sm" variant="destructive" disabled={updating} onClick={() => updateStatus(selected.id, 'reprovado')}>
+                     <XCircle className="h-3.5 w-3.5 mr-1" /> Reprovar
+                   </Button>
+                   {selected.status_lead !== 'convertido_em_prestador' && selected.status_lead === 'aprovado' && (
+                     <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={updating} onClick={() => convertToProvider(selected.id)}>
+                       <ArrowRightLeft className="h-3.5 w-3.5 mr-1" /> Converter em prestador
+                     </Button>
+                   )}
+                 </div>
 
                 <Separator />
 
