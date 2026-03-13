@@ -65,7 +65,7 @@ export async function upsertAutomation(automation: Partial<Automation> & { name:
 
 export async function toggleAutomation(id: string, is_active: boolean) {
   const { error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .update({ is_active })
     .eq('id', id);
   if (error) throw error;
