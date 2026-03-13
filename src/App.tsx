@@ -139,6 +139,12 @@ function AppRoutes() {
       {/* Portal do Cliente */}
       <Route path="/acompanhar/:id" element={<AcompanhamentoCliente />} />
 
+      {/* Página pública de pré-cadastro */}
+      <Route path="/quero-ser-prestador" element={<QueroSerPrestador />} />
+
+      {/* Admin — Leads de prestadores */}
+      <Route path="/app/rede/leads" element={<ProtectedRoute requiredModules={['rede']}><AdminLeadsPrestadores /></ProtectedRoute>} />
+
       {/* Root redirect */}
       <Route path="/" element={<Navigate to="/app" replace />} />
       <Route path="*" element={<NotFound />} />

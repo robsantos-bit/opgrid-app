@@ -44,6 +44,7 @@ const menuGroups = [
     requiredModules: ['rede'],
     items: [
       { title: 'Prestadores', url: '/app/rede/prestadores', icon: Users, modules: ['rede', 'prestadores'] },
+      { title: 'Leads Prestadores', url: '/app/rede/leads', icon: UserPlus, modules: ['rede'] },
       { title: 'Cobertura', url: '/app/rede/cobertura', icon: Globe, modules: ['rede'] },
       { title: 'Disponibilidade', url: '/app/rede/disponibilidade', icon: Radio, modules: ['rede'] },
       { title: 'Homologação', url: '/app/rede/homologacao', icon: Shield, modules: ['rede'] },
