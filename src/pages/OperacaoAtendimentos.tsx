@@ -14,6 +14,10 @@ import { Search, X, Eye, Loader2, Headphones, Hand, Bot, Sparkles } from 'lucide
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR');
 
+const modoIcons: Record<ModoDespacho, typeof Hand> = { manual: Hand, automatico: Bot, assistido: Sparkles };
+const modoLabels: Record<ModoDespacho, string> = { manual: 'Manual', automatico: 'Automático', assistido: 'Assistido' };
+const modoVariants: Record<ModoDespacho, 'warning' | 'info' | 'success'> = { manual: 'warning', automatico: 'info', assistido: 'success' };
+
 export default function OperacaoAtendimentos() {
   const { data: atendimentos = [], isLoading } = useAtendimentos();
   const [search, setSearch] = useState('');
