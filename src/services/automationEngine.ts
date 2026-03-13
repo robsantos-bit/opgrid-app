@@ -160,7 +160,7 @@ export async function fetchQueue(limit = 50) {
 
 export async function fetchSendLogs(limit = 100) {
   const { data, error } = await supabase
-    .from('message_send_logs')
+    .from('message_logs')
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit);
