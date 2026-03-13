@@ -8,7 +8,8 @@ import { toast } from 'sonner';
 import { getConfig, saveConfig, resetAllData } from '@/data/store';
 import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, RotateCcw, Loader2 } from 'lucide-react';
+import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
