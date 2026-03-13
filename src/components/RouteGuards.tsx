@@ -89,3 +89,4 @@ export function PrestadorRoute({ children }: { children: ReactNode }) {
 }
 
 export { hasModuleAccess, roleModuleAccess };
+export type { AppRole };
