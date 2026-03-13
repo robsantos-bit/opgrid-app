@@ -237,7 +237,8 @@ export default function QueroSerPrestador() {
                 </div>
                 <div>
                   <Label>CNPJ / CPF *</Label>
-                  <Input {...register('documento')} placeholder="00.000.000/0000-00" />
+                  <Input {...register('documento')} placeholder="00.000.000/0000-00" onBlur={handleDocumentoBlur} />
+                  {cnpjLoading && <p className="text-xs text-muted-foreground mt-1">Buscando dados do CNPJ...</p>}
                   <FieldError msg={errors.documento?.message} />
                 </div>
                 <div>
