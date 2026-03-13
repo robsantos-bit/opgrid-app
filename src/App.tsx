@@ -35,6 +35,8 @@ import FinanceiroRelatorios from "@/pages/FinanceiroRelatorios";
 import AdminUsuarios from "@/pages/AdminUsuarios";
 import AdminTemplates from "@/pages/AdminTemplates";
 import AdminAutomacoes from "@/pages/AdminAutomacoes";
+import AdminFilaMensagens from "@/pages/AdminFilaMensagens";
+import AdminLogsMensagens from "@/pages/AdminLogsMensagens";
 import AdminChecklists from "@/pages/AdminChecklists";
 import AdminAuditoria from "@/pages/AdminAuditoria";
 import AdminPermissoes from "@/pages/AdminPermissoes";
