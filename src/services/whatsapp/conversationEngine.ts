@@ -435,6 +435,21 @@ async function createOsAndDispatch(session: ConversationSession, from: string) {
   addAtendimento(atendimento);
   addDespacho(despacho);
 
+  // Fire automations for OS creation and dispatch
+  fireAutomation('order_created', from, { protocolo, solicitacaoId: solicitacao.id, atendimentoId: atendimento.id });
+  fireAutomation('new_request', from, { protocolo });
+
+  // Fire dispatch offer events for each provider
+  for (const p of prestadores) {
+    const phone = p.telefone.replace(/\D/g, '');
+    fireAutomation('new_dispatch_offer', phone, {
+      protocolo,
+      prestadorId: p.id,
+      prestadorNome: p.nome,
+      valor: session.data.valorEstimado,
+    });
+  }
+
   // Update session
   session.solicitacaoId = solicitacao.id;
   session.atendimentoId = atendimento.id;
