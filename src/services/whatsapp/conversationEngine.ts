@@ -219,6 +219,7 @@ async function processStep(
         session.data.observacoes = text.trim();
       }
       session.currentStep = 'orcamento';
+      fireAutomation('observacoes_recebidas', from, { observacoes: session.data.observacoes });
       await generateAndSendQuote(session, from);
       break;
     }
