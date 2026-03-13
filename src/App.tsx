@@ -49,6 +49,8 @@ import WhatsAppSimulador from "@/pages/WhatsAppSimulador";
 import SandboxWhatsApp from "@/pages/SandboxWhatsApp";
 import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
 import AdminConversas from "@/pages/AdminConversas";
+import QueroSerPrestador from "@/pages/QueroSerPrestador";
+import AdminLeadsPrestadores from "@/pages/AdminLeadsPrestadores";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -136,6 +138,12 @@ function AppRoutes() {
 
       {/* Portal do Cliente */}
       <Route path="/acompanhar/:id" element={<AcompanhamentoCliente />} />
+
+      {/* Página pública de pré-cadastro */}
+      <Route path="/quero-ser-prestador" element={<QueroSerPrestador />} />
+
+      {/* Admin — Leads de prestadores */}
+      <Route path="/app/rede/leads" element={<ProtectedRoute requiredModules={['rede']}><AdminLeadsPrestadores /></ProtectedRoute>} />
 
       {/* Root redirect */}
       <Route path="/" element={<Navigate to="/app" replace />} />

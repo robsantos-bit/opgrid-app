@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/sidebar';
 import {
   LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send,
-  Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones, Smartphone,
+  Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones, Smartphone, UserPlus,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,7 @@ const menuGroups = [
     requiredModules: ['rede'],
     items: [
       { title: 'Prestadores', url: '/app/rede/prestadores', icon: Users, modules: ['rede', 'prestadores'] },
+      { title: 'Leads Prestadores', url: '/app/rede/leads', icon: UserPlus, modules: ['rede'] },
       { title: 'Cobertura', url: '/app/rede/cobertura', icon: Globe, modules: ['rede'] },
       { title: 'Disponibilidade', url: '/app/rede/disponibilidade', icon: Radio, modules: ['rede'] },
       { title: 'Homologação', url: '/app/rede/homologacao', icon: Shield, modules: ['rede'] },
