@@ -78,6 +78,8 @@ const menuGroups: MenuGroup[] = [
     items: [
       { label: 'Templates', path: '/app/admin/templates', icon: FileText, description: 'Templates de mensagem' },
       { label: 'Automações', path: '/app/admin/automacoes', icon: Zap, description: 'Fluxos automáticos' },
+      { label: 'Fila de Mensagens', path: '/app/admin/fila-mensagens', icon: Mail, description: 'Fila de envio' },
+      { label: 'Logs de Mensagens', path: '/app/admin/logs-mensagens', icon: History, description: 'Registros de envio' },
       { label: 'Checklists Digitais', path: '/app/admin/checklists', icon: ListChecks, description: 'Modelos de checklist' },
       { label: 'Auditoria', path: '/app/admin/auditoria', icon: History, description: 'Logs do sistema' },
       { label: 'Permissões', path: '/app/admin/permissoes', icon: Lock, description: 'Perfis de acesso' },

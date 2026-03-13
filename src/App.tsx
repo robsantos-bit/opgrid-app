@@ -35,6 +35,8 @@ import FinanceiroRelatorios from "@/pages/FinanceiroRelatorios";
 import AdminUsuarios from "@/pages/AdminUsuarios";
 import AdminTemplates from "@/pages/AdminTemplates";
 import AdminAutomacoes from "@/pages/AdminAutomacoes";
+import AdminFilaMensagens from "@/pages/AdminFilaMensagens";
+import AdminLogsMensagens from "@/pages/AdminLogsMensagens";
 import AdminChecklists from "@/pages/AdminChecklists";
 import AdminAuditoria from "@/pages/AdminAuditoria";
 import AdminPermissoes from "@/pages/AdminPermissoes";
@@ -109,6 +111,8 @@ function AppRoutes() {
       <Route path="/app/admin/usuarios" element={<ProtectedRoute requiredModules={['admin', 'usuarios']}><AdminUsuarios /></ProtectedRoute>} />
       <Route path="/app/admin/templates" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminTemplates /></ProtectedRoute>} />
       <Route path="/app/admin/automacoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminAutomacoes /></ProtectedRoute>} />
+      <Route path="/app/admin/fila-mensagens" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminFilaMensagens /></ProtectedRoute>} />
+      <Route path="/app/admin/logs-mensagens" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminLogsMensagens /></ProtectedRoute>} />
       <Route path="/app/admin/checklists" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminChecklists /></ProtectedRoute>} />
       <Route path="/app/admin/auditoria" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminAuditoria /></ProtectedRoute>} />
       <Route path="/app/admin/permissoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminPermissoes /></ProtectedRoute>} />

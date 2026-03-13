@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { Plus, Search, FileText, Eye, Pencil, MessageCircle, Loader2, Trash2 } from 'lucide-react';
-import { fetchTemplates, upsertTemplate, toggleTemplate, deleteTemplate } from '@/services/automationEngine';
+import { useTemplates, useUpsertTemplate, useToggleTemplate, useDeleteTemplate } from '@/hooks/useMessagingData';
 import { TRIGGER_EVENTS, type MessageTemplate, type AutomationChannel, type AutomationAudience } from '@/types/automation';
 
 const CHANNELS: AutomationChannel[] = ['whatsapp', 'email', 'sms', 'push', 'internal'];
@@ -21,37 +21,32 @@ const audienceBadge = (a: string) => {
   switch (a) { case 'cliente': return 'default'; case 'prestador': return 'info'; case 'interno': return 'warning'; default: return 'secondary'; }
 };
 
+function formatDate(d?: string) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
 export default function AdminTemplates() {
-  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: templates = [], isLoading } = useTemplates();
+  const upsertMut = useUpsertTemplate();
+  const toggleMut = useToggleTemplate();
+  const deleteMut = useDeleteTemplate();
+
   const [search, setSearch] = useState('');
   const [filterChannel, setFilterChannel] = useState('all');
   const [filterAudience, setFilterAudience] = useState('all');
+  const [filterStatus, setFilterStatus] = useState('all');
   const [previewTemplate, setPreviewTemplate] = useState<MessageTemplate | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<MessageTemplate | null>(null);
-  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ key: '', name: '', channel: 'whatsapp' as AutomationChannel, audience: 'cliente' as AutomationAudience, trigger_event: 'novo_contato', content: '' });
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchTemplates();
-      setTemplates(data);
-    } catch (err: any) {
-      toast.error('Erro ao carregar templates: ' + err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => { loadData(); }, []);
 
   const filtered = useMemo(() => templates.filter(t =>
     (!search || t.name.toLowerCase().includes(search.toLowerCase()) || t.key.toLowerCase().includes(search.toLowerCase())) &&
     (filterChannel === 'all' || t.channel === filterChannel) &&
-    (filterAudience === 'all' || t.audience === filterAudience)
-  ), [templates, search, filterChannel, filterAudience]);
+    (filterAudience === 'all' || t.audience === filterAudience) &&
+    (filterStatus === 'all' || (filterStatus === 'ativo' ? t.is_active : !t.is_active))
+  ), [templates, search, filterChannel, filterAudience, filterStatus]);
 
   const openEdit = (t: MessageTemplate) => {
     setEditing(t);
@@ -66,42 +61,31 @@ export default function AdminTemplates() {
   };
 
   const handleSave = async () => {
-    if (!form.name || !form.key) { toast.error('Preencha nome e chave.'); return; }
-    if (!form.content) { toast.error('Preencha o conteúdo.'); return; }
+    if (!form.name || !form.key || !form.content) { toast.error('Preencha todos os campos obrigatórios.'); return; }
     try {
-      setSaving(true);
       const payload: any = { ...form };
       if (editing) payload.id = editing.id;
-      await upsertTemplate(payload);
+      await upsertMut.mutateAsync(payload);
       toast.success(editing ? 'Template atualizado.' : 'Template criado.');
       setModalOpen(false);
-      await loadData();
     } catch (err: any) {
       toast.error('Erro: ' + err.message);
-    } finally {
-      setSaving(false);
     }
   };
 
   const handleToggle = async (t: MessageTemplate) => {
     try {
-      await toggleTemplate(t.id, !t.is_active);
-      setTemplates(prev => prev.map(x => x.id === t.id ? { ...x, is_active: !x.is_active } : x));
+      await toggleMut.mutateAsync({ id: t.id, is_active: !t.is_active });
       toast.success('Status atualizado.');
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
-    }
+    } catch (err: any) { toast.error('Erro: ' + err.message); }
   };
 
   const handleDelete = async (t: MessageTemplate) => {
     if (!confirm(`Excluir template "${t.name}"?`)) return;
     try {
-      await deleteTemplate(t.id);
-      setTemplates(prev => prev.filter(x => x.id !== t.id));
+      await deleteMut.mutateAsync(t.id);
       toast.success('Template excluído.');
-    } catch (err: any) {
-      toast.error('Erro: ' + err.message);
-    }
+    } catch (err: any) { toast.error('Erro: ' + err.message); }
   };
 
   const activeCount = templates.filter(t => t.is_active).length;
@@ -117,6 +101,7 @@ export default function AdminTemplates() {
         <Button onClick={openNew}><Plus className="h-4 w-4 mr-1.5" />Novo Template</Button>
       </div>
 
+      {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {[
           { label: 'Ativos', value: activeCount, color: 'text-success' },
@@ -131,19 +116,22 @@ export default function AdminTemplates() {
         ))}
       </div>
 
+      {/* Filters */}
       <Card><CardContent className="p-3.5">
         <div className="filter-bar">
           <div className="relative flex-1 min-w-[160px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Buscar template..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
+            <Input placeholder="Buscar por nome ou chave..." className="pl-10" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <Select value={filterChannel} onValueChange={setFilterChannel}><SelectTrigger className="w-[130px]"><SelectValue placeholder="Canal" /></SelectTrigger><SelectContent><SelectItem value="all">Todos canais</SelectItem>{CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
           <Select value={filterAudience} onValueChange={setFilterAudience}><SelectTrigger className="w-[130px]"><SelectValue placeholder="Audiência" /></SelectTrigger><SelectContent><SelectItem value="all">Todas</SelectItem>{AUDIENCES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select>
+          <Select value={filterStatus} onValueChange={setFilterStatus}><SelectTrigger className="w-[120px]"><SelectValue placeholder="Status" /></SelectTrigger><SelectContent><SelectItem value="all">Todos</SelectItem><SelectItem value="ativo">Ativos</SelectItem><SelectItem value="inativo">Inativos</SelectItem></SelectContent></Select>
         </div>
       </CardContent></Card>
 
+      {/* Table */}
       <Card><CardContent className="p-0">
-        {loading ? (
+        {isLoading ? (
           <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
         ) : (
           <Table>
@@ -154,11 +142,12 @@ export default function AdminTemplates() {
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Audiência</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Gatilho</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden lg:table-cell">Atualizado</TableHead>
               <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right">Ações</TableHead>
             </TableRow></TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={7} className="text-center py-16">
+                <TableRow><TableCell colSpan={8} className="text-center py-16">
                   <div className="empty-state"><div className="empty-state-icon"><FileText className="h-5 w-5 text-muted-foreground" /></div><p className="empty-state-title">Nenhum template encontrado</p><p className="empty-state-description">Crie templates para padronizar comunicações</p></div>
                 </TableCell></TableRow>
               ) : filtered.map(t => (
@@ -173,13 +162,13 @@ export default function AdminTemplates() {
                   <TableCell><Badge variant="outline" className="font-semibold text-[11px]">{t.channel}</Badge></TableCell>
                   <TableCell><Badge variant={audienceBadge(t.audience) as any} className="font-semibold text-[11px]">{t.audience}</Badge></TableCell>
                   <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">{TRIGGER_EVENTS[t.trigger_event as keyof typeof TRIGGER_EVENTS] || t.trigger_event}</TableCell>
-                  <TableCell>
-                    <Switch checked={t.is_active} onCheckedChange={() => handleToggle(t)} />
-                  </TableCell>
+                  <TableCell><Badge variant={t.is_active ? 'success' : 'secondary'} className="font-semibold">{t.is_active ? 'Ativo' : 'Inativo'}</Badge></TableCell>
+                  <TableCell className="hidden lg:table-cell text-[12px] text-muted-foreground tabular-nums">{formatDate(t.updated_at)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-0.5">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setPreviewTemplate(t)}><Eye className="h-3.5 w-3.5" /></Button>
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(t)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Switch checked={t.is_active} onCheckedChange={() => handleToggle(t)} />
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(t)}><Trash2 className="h-3.5 w-3.5" /></Button>
                     </div>
                   </TableCell>
@@ -198,10 +187,10 @@ export default function AdminTemplates() {
             <div className="flex gap-2 flex-wrap">
               <Badge variant="outline">{previewTemplate?.channel}</Badge>
               <Badge variant={audienceBadge(previewTemplate?.audience || '') as any}>{previewTemplate?.audience}</Badge>
-              <Badge variant="secondary">{previewTemplate?.trigger_event}</Badge>
+              <Badge variant="secondary">{TRIGGER_EVENTS[previewTemplate?.trigger_event as keyof typeof TRIGGER_EVENTS] || previewTemplate?.trigger_event}</Badge>
             </div>
             <div className="p-4 rounded-lg bg-muted/50 border text-[13px] leading-relaxed whitespace-pre-wrap font-mono">{previewTemplate?.content}</div>
-            <p className="text-[11px] text-muted-foreground">Chave: <code>{previewTemplate?.key}</code></p>
+            <p className="text-[11px] text-muted-foreground">Chave: <code>{previewTemplate?.key}</code> · Atualizado: {formatDate(previewTemplate?.updated_at)}</p>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setPreviewTemplate(null)}>Fechar</Button></DialogFooter>
         </DialogContent>
@@ -231,7 +220,7 @@ export default function AdminTemplates() {
           </div>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
-            <Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}{editing ? 'Salvar' : 'Criar Template'}</Button>
+            <Button onClick={handleSave} disabled={upsertMut.isPending}>{upsertMut.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}{editing ? 'Salvar' : 'Criar Template'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
