@@ -64,12 +64,12 @@ function estimateDistance(p: Prestador, sol: Solicitacao | undefined): number {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function getSuggestedPrestadores(prestadores: Prestador[], sol: Solicitacao | undefined) {
-  const eligible = prestadores.filter(p => p.status === 'Ativo' && p.homologacao === 'Homologado');
-  return eligible
-    .map(p => ({ ...p, distKm: estimateDistance(p, sol), tempoMin: Math.round(estimateDistance(p, sol) * 2.5) }))
-    .sort((a, b) => a.distKm - b.distKm);
-}
+const confiancaVariant: Record<string, 'success' | 'warning' | 'destructive'> = {
+  alta: 'success', media: 'warning', baixa: 'destructive',
+};
+const confiancaLabel: Record<string, string> = {
+  alta: 'Alta confiança', media: 'Média confiança', baixa: 'Baixa confiança',
+};
 
 export default function CentralDespacho() {
   const despachos = useMemo(() => getDespachos(), []);
