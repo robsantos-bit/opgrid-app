@@ -122,7 +122,7 @@ export async function enqueueMessage(params: {
   // Increment execution counters
   for (const auto of automations) {
     await supabase
-      .from('automations')
+      .from('message_automations')
       .update({
         executions: (auto.executions || 0) + 1,
         last_executed_at: new Date().toISOString(),
