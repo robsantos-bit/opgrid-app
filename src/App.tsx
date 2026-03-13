@@ -64,7 +64,8 @@ function AppRoutes() {
   return (
     <Routes>
       {/* Auth */}
-      <Route path="/login" element={user ? (user.role === 'prestador' ? <Navigate to="/prestador/inicio" replace /> : <Navigate to="/app" replace />) : <Login />} />
+      <Route path="/conecte-se" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
+      <Route path="/login" element={<Navigate to="/conecte-se" replace />} />
 
       {/* Backoffice — /app/* */}
       <Route path="/app" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
