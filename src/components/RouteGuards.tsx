@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useRoleGuards, useAuthProfile, type AppRole } from '@/hooks/useAuthProfile';
-import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/AppLayout';
 import { Loader2 } from 'lucide-react';
 
@@ -13,7 +12,6 @@ const Loading = () => (
 
 /**
  * Módulos acessíveis por cada role.
- * Usa `some()` — basta ter acesso a UM dos módulos listados na rota.
  */
 const roleModuleAccess: Record<AppRole, string[]> = {
   admin: [
@@ -49,8 +47,57 @@ function hasModuleAccess(roles: AppRole[], modules: string[]): boolean {
 }
 
 /**
- * Protege rotas do backoffice /app/*.
- * Usa useRoleGuards (React Query) como camada complementar ao AuthContext.
+ * AppRouteGuard — protege /app/*
+ * Permite: admin, operador, financeiro, comercial
+ * Bloqueia: prestador → /prestador/inicio
+ * Não autenticado → /conecte-se
+ */
+export function AppRouteGuard({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const { isLoading, isAuthenticated, canAccessApp, isPrestador } = useRoleGuards();
+
+  if (isLoading) return <Loading />;
+  if (!isAuthenticated) return <Navigate to="/conecte-se" replace state={{ from: location }} />;
+  if (isPrestador || !canAccessApp) return <Navigate to="/prestador/inicio" replace />;
+
+  return <>{children}</>;
+}
+
+/**
+ * PrestadorRouteGuard — protege /prestador/*
+ * Permite: role prestador com providerId válido
+ * Corporativo → /app/painel
+ * Não autenticado → /conecte-se
+ */
+export function PrestadorRouteGuard({ children }: { children: ReactNode }) {
+  const location = useLocation();
+  const { isLoading, isAuthenticated, canAccessPrestador, canAccessApp, providerId } = useRoleGuards();
+
+  if (isLoading) return <Loading />;
+  if (!isAuthenticated) return <Navigate to="/conecte-se" replace state={{ from: location }} />;
+  if (canAccessApp && !canAccessPrestador) return <Navigate to="/app/painel" replace />;
+  if (!canAccessPrestador || !providerId) return <Navigate to="/conecte-se" replace />;
+
+  return <>{children}</>;
+}
+
+/**
+ * PublicOnlyRoute — para /conecte-se
+ * Se já autenticado: redireciona conforme perfil
+ */
+export function PublicOnlyRoute({ children }: { children: ReactNode }) {
+  const { isLoading, isAuthenticated, canAccessApp, isPrestador } = useRoleGuards();
+
+  if (isLoading) return <Loading />;
+  if (isAuthenticated && canAccessApp) return <Navigate to="/app/painel" replace />;
+  if (isAuthenticated && isPrestador) return <Navigate to="/prestador/inicio" replace />;
+
+  return <>{children}</>;
+}
+
+/**
+ * ProtectedRoute — protege rotas individuais do backoffice com checagem de módulos.
+ * Usa AppRouteGuard internamente + filtro por módulo.
  */
 export function ProtectedRoute({
   children,
@@ -59,31 +106,32 @@ export function ProtectedRoute({
   children: ReactNode;
   requiredModules?: string[];
 }) {
-  const { user, loading } = useAuth();
-  const { data: authData, isLoading: roleLoading } = useAuthProfile();
-  const isPrestador = authData?.isPrestador ?? false;
+  const { data: authData, isLoading } = useAuthProfile();
+  const { isAuthenticated, isPrestador, canAccessApp } = useRoleGuards();
   const roles = authData?.roles ?? [];
+  const location = useLocation();
 
-  if (loading || roleLoading) return <Loading />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (isPrestador && roles.length === 1) return <Navigate to="/prestador/inicio" replace />;
-  if (requiredModules && !hasModuleAccess(roles.length > 0 ? roles : [user.role as AppRole], requiredModules)) {
-    return <Navigate to="/app" replace />;
+  if (isLoading) return <Loading />;
+  if (!isAuthenticated) return <Navigate to="/conecte-se" replace state={{ from: location }} />;
+  if (isPrestador || !canAccessApp) return <Navigate to="/prestador/inicio" replace />;
+  if (requiredModules && roles.length > 0 && !hasModuleAccess(roles, requiredModules)) {
+    return <Navigate to="/app/painel" replace />;
   }
 
   return <AppLayout>{children}</AppLayout>;
 }
 
 /**
- * Protege rotas do portal do prestador /prestador/*.
+ * PrestadorRoute — protege rotas do portal do prestador com AppLayout opcional.
  */
 export function PrestadorRoute({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
-  const { canAccessPrestador, isLoading: roleLoading } = useRoleGuards();
+  const location = useLocation();
+  const { isLoading, isAuthenticated, canAccessPrestador, canAccessApp, providerId } = useRoleGuards();
 
-  if (loading || roleLoading) return <Loading />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!canAccessPrestador) return <Navigate to="/app" replace />;
+  if (isLoading) return <Loading />;
+  if (!isAuthenticated) return <Navigate to="/conecte-se" replace state={{ from: location }} />;
+  if (canAccessApp && !canAccessPrestador) return <Navigate to="/app/painel" replace />;
+  if (!canAccessPrestador || !providerId) return <Navigate to="/conecte-se" replace />;
 
   return <>{children}</>;
 }
