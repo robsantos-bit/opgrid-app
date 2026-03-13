@@ -15,6 +15,17 @@ import {
 } from './cloudApi';
 import { addSolicitacao, addAtendimento, addDespacho, getPrestadores } from '@/data/store';
 import { Solicitacao, Atendimento, Despacho, OfertaPrestador, MotivoSolicitacao } from '@/types';
+import { enqueueMessage } from '@/services/automationEngine';
+import type { TriggerEvent } from '@/types/automation';
+
+// Helper to fire automation events without blocking the conversation flow
+function fireAutomation(trigger: TriggerEvent, phone: string, payload?: Record<string, unknown>) {
+  enqueueMessage({
+    trigger_event: trigger,
+    recipient_phone: phone,
+    payload: { phone, ...payload },
+  }).catch((err) => console.warn('[Automation] enqueue failed for', trigger, err));
+}
 
 const MOTIVOS_VALIDOS: MotivoSolicitacao[] = [
   'Pane elétrica', 'Pane mecânica', 'Pneu furado', 'Bateria descarregada',
