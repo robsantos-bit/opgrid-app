@@ -95,6 +95,10 @@ export default function Configuracoes() {
           </CardContent></Card>
         </TabsContent>
 
+        {isAdmin && <TabsContent value="webhooks" className="mt-4">
+          <WebhookConfigPanel />
+        </TabsContent>}
+
         {isAdmin && <TabsContent value="permissoes" className="mt-4">
           <Card className="max-w-xl"><CardHeader className="pb-2"><CardTitle className="text-sm">Permissões por Perfil</CardTitle></CardHeader><CardContent>
             <div className="space-y-4 text-[13px]">
