@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { getConfig, saveConfig, resetAllData } from '@/data/store';
+import { supabase } from '@/integrations/supabase/client';
 import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
 import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2, Send, Zap } from 'lucide-react';
