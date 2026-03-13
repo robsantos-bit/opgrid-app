@@ -44,10 +44,21 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[SEND] Provider: ${provider} | To: ${to} | Type: ${body.type || 'text'}`);
 
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('[SEND] Missing internal Supabase env vars', {
+        hasSupabaseUrl: !!supabaseUrl,
+        hasServiceRoleKey: !!supabaseServiceKey,
+      });
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     if (provider === 'wapi') {
       // ── W-API Send ──
