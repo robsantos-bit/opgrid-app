@@ -205,8 +205,9 @@ export default function CentralDespacho() {
     setShowSugeridos(despachoId);
     const d = despachos.find(x => x.id === despachoId);
     const sol = d ? getSolicitacao(d.solicitacaoId) : undefined;
-    const sugeridos = getSuggestedPrestadores(prestadores, sol).slice(0, 3);
-    setSelectedPrestadorIds(sugeridos.map(p => p.id));
+    const scored = calcularScorePrestadores(prestadores, sol, atendimentos);
+    const top = getTopPrestadores(scored, 3);
+    setSelectedPrestadorIds(top.map(s => s.prestador.id));
   }, [despachos, prestadores, solicitacoes]);
 
   // Map init
