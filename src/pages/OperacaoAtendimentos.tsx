@@ -100,7 +100,7 @@ export default function OperacaoAtendimentos() {
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-16">
+              <TableRow><TableCell colSpan={9} className="text-center py-16">
                 <div className="flex flex-col items-center gap-2"><Headphones className="h-5 w-5 text-muted-foreground" /><p className="text-sm text-muted-foreground">Nenhum atendimento encontrado</p></div>
               </TableCell></TableRow>
             ) : filtered.map((a: any) => (
