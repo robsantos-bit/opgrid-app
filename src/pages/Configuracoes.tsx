@@ -45,8 +45,104 @@ export default function Configuracoes() {
     }
   };
 
+const PROJECT_ID = 'dnzsmogsqctscfqulffr';
+const WEBHOOK_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/whatsapp-webhook`;
+const SEND_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/whatsapp-send`;
+const STATUS_URL = `https://${PROJECT_ID}.supabase.co/functions/v1/whatsapp-status`;
 
-  
+function CopyField({ label, value, description }: { label: string; value: string; description?: string }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value);
+    setCopied(true);
+    toast.success(`${label} copiado!`);
+    setTimeout(() => setCopied(false), 2000);
+  };
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      {description && <p className="text-[11px] text-muted-foreground">{description}</p>}
+      <div className="flex gap-2">
+        <Input value={value} readOnly className="bg-muted font-mono text-xs" />
+        <Button variant="outline" size="icon" className="shrink-0" onClick={handleCopy}>
+          {copied ? <CheckCircle2 className="h-3.5 w-3.5 text-green-500" /> : <Copy className="h-3.5 w-3.5" />}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function WebhookConfigPanel() {
+  return (
+    <div className="space-y-4 max-w-xl">
+      <Card>
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <Webhook className="h-4 w-4 text-primary" />
+            <CardTitle className="text-sm">WhatsApp Webhook (Meta)</CardTitle>
+          </div>
+          <p className="text-[11px] text-muted-foreground">Configure estas URLs no painel do Meta Developers → WhatsApp → Configuration</p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <CopyField
+            label="Callback URL (Webhook)"
+            value={WEBHOOK_URL}
+            description="Cole em 'Callback URL' no Meta Developers para receber mensagens"
+          />
+          <CopyField
+            label="Verify Token"
+            value="(definido no secret WHATSAPP_WEBHOOK_VERIFY_TOKEN)"
+            description="Use o mesmo token configurado nos secrets do projeto"
+          />
+          <div className="rounded-md bg-muted/50 border border-border p-3 space-y-2">
+            <p className="text-xs font-medium">Campos obrigatórios no Meta:</p>
+            <div className="flex flex-wrap gap-1.5">
+              {['messages', 'message_deliveries', 'message_reads', 'messaging_postbacks'].map(f => (
+                <Badge key={f} variant="secondary" className="text-[10px] font-mono">{f}</Badge>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Edge Functions</CardTitle>
+          <p className="text-[11px] text-muted-foreground">URLs das funções serverless para integração</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <CopyField label="Enviar Mensagem" value={SEND_URL} description="POST — envia mensagens via Cloud API" />
+          <CopyField label="Status Callback" value={STATUS_URL} description="POST — recebe atualizações de status (delivered, read, failed)" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Secrets Necessários</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 text-[13px]">
+            {[
+              { name: 'WHATSAPP_ACCESS_TOKEN', desc: 'Token permanente da API do WhatsApp Business' },
+              { name: 'WHATSAPP_PHONE_NUMBER_ID', desc: 'ID do número de telefone no Meta' },
+              { name: 'WHATSAPP_WEBHOOK_VERIFY_TOKEN', desc: 'Token de verificação do webhook' },
+            ].map(s => (
+              <div key={s.name} className="flex items-start justify-between py-1.5 border-b border-dashed border-border/60">
+                <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{s.name}</code>
+                <span className="text-muted-foreground text-xs text-right ml-3">{s.desc}</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground mt-3">
+            Gerencie os secrets na aba Cloud → Secrets do Lovable.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+
 
   return (
     <div className="space-y-5 animate-fade-in">
