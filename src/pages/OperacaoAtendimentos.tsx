@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAtendimentos } from '@/hooks/useSupabaseData';
-import { Search, X, Eye, Loader2, Headphones } from 'lucide-react';
+import { getDespachos } from '@/data/store';
+import { ModoDespacho } from '@/types';
+import { Search, X, Eye, Loader2, Headphones, Hand, Bot, Sparkles } from 'lucide-react';
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR');
