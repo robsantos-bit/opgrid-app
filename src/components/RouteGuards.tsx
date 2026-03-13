@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useRoleGuards, type AppRole } from '@/hooks/useAuthProfile';
+import { useRoleGuards, useAuthProfile, type AppRole } from '@/hooks/useAuthProfile';
 import { useAuth } from '@/contexts/AuthContext';
 import AppLayout from '@/components/AppLayout';
 import { Loader2 } from 'lucide-react';
