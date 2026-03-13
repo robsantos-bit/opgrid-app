@@ -195,6 +195,7 @@ async function processStep(
       }
       session.data.destino = text.trim();
       session.currentStep = 'collect_observacoes';
+      fireAutomation('destino_recebido', from, { destino: session.data.destino });
       await sendInteractiveButtons(from,
         '📝 Deseja adicionar alguma *observação*?\n_(Ex: veículo rebaixado, rua estreita, etc.)_',
         [
