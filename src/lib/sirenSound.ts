@@ -15,51 +15,51 @@ function getAudioContext(): AudioContext {
  * Central siren — plays when a new WhatsApp request arrives.
  * Two-tone ascending alert, professional and urgent.
  */
-export function playCentralSiren(duration = 2.5): void {
+export function playCentralSiren(duration = 2): void {
   try {
     const ctx = getAudioContext();
     const now = ctx.currentTime;
 
-    const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(0.18, now);
-    masterGain.gain.linearRampToValueAtTime(0, now + duration);
-    masterGain.connect(ctx.destination);
+    // Soft chime: three ascending tones
+    const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+    const noteLen = 0.25;
+    const gap = 0.08;
 
-    // Two-tone siren oscillating between frequencies
-    const osc1 = ctx.createOscillator();
-    osc1.type = 'sine';
-    const cycles = 4;
-    for (let i = 0; i < cycles; i++) {
-      const t = now + (i * duration) / cycles;
-      const half = duration / cycles / 2;
-      osc1.frequency.setValueAtTime(880, t);
-      osc1.frequency.linearRampToValueAtTime(1320, t + half);
-      osc1.frequency.linearRampToValueAtTime(880, t + half * 2);
-    }
+    notes.forEach((freq, i) => {
+      const t = now + i * (noteLen + gap);
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
 
-    // Harmonic layer for richness
-    const osc2 = ctx.createOscillator();
-    osc2.type = 'triangle';
-    for (let i = 0; i < cycles; i++) {
-      const t = now + (i * duration) / cycles;
-      const half = duration / cycles / 2;
-      osc2.frequency.setValueAtTime(440, t);
-      osc2.frequency.linearRampToValueAtTime(660, t + half);
-      osc2.frequency.linearRampToValueAtTime(440, t + half * 2);
-    }
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.15, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + noteLen);
 
-    const gain2 = ctx.createGain();
-    gain2.gain.setValueAtTime(0.08, now);
-    gain2.gain.linearRampToValueAtTime(0, now + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + noteLen);
+    });
 
-    osc1.connect(masterGain);
-    osc2.connect(gain2);
-    gain2.connect(ctx.destination);
+    // Repeat the chord once after a short pause
+    const repeatStart = now + notes.length * (noteLen + gap) + 0.3;
+    notes.forEach((freq, i) => {
+      const t = repeatStart + i * (noteLen + gap);
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
 
-    osc1.start(now);
-    osc1.stop(now + duration);
-    osc2.start(now);
-    osc2.stop(now + duration);
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.12, t + 0.04);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + noteLen);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + noteLen);
+    });
   } catch (e) {
     console.warn('Siren audio not available:', e);
   }
