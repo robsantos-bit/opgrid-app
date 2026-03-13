@@ -1,5 +1,8 @@
 import { NavLink } from '@/components/NavLink';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAuthProfile } from '@/hooks/useAuthProfile';
+import { useSignOut } from '@/hooks/useSignOut';
+import { hasModuleAccess, type AppRole } from '@/components/RouteGuards';
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
@@ -16,74 +19,90 @@ import { Badge } from '@/components/ui/badge';
 const menuGroups = [
   {
     label: 'Visão Geral',
+    requiredModules: ['painel', 'dashboard'],
     items: [
-      { title: 'Dashboard', url: '/app/painel', icon: LayoutDashboard, module: 'dashboard' },
+      { title: 'Dashboard', url: '/app/painel', icon: LayoutDashboard, modules: ['dashboard', 'painel'] },
     ],
   },
   {
     label: 'Operação',
+    requiredModules: ['operacao'],
     items: [
-      { title: 'Solicitações', url: '/app/operacao/solicitacoes', icon: ClipboardList, module: 'solicitacoes' },
-      { title: 'Despacho', url: '/app/operacao/despacho', icon: Send, module: 'despacho' },
-      { title: 'Atendimentos', url: '/app/operacao/atendimentos', icon: Headphones, module: 'atendimentos' },
-      { title: 'Mapa Operacional', url: '/app/operacao/mapa', icon: Map, module: 'mapa' },
-      { title: 'Teste de Acionamento', url: '/app/operacao/teste-acionamento', icon: Radio, module: 'operacao' },
-      { title: 'Acompanhamento', url: '/app/operacao/acompanhamento', icon: Activity, module: 'operacao' },
-      { title: 'Checklists', url: '/app/operacao/checklists', icon: CheckSquare, module: 'operacao' },
-      { title: 'Simulador WhatsApp', url: '/app/operacao/whatsapp-simulador', icon: Smartphone, module: 'operacao' },
-      { title: 'Conversas WhatsApp', url: '/app/operacao/conversas', icon: MessageCircle, module: 'operacao' },
+      { title: 'Solicitações', url: '/app/operacao/solicitacoes', icon: ClipboardList, modules: ['operacao', 'solicitacoes'] },
+      { title: 'Despacho', url: '/app/operacao/despacho', icon: Send, modules: ['operacao', 'despacho'] },
+      { title: 'Atendimentos', url: '/app/operacao/atendimentos', icon: Headphones, modules: ['operacao', 'atendimentos'] },
+      { title: 'Mapa Operacional', url: '/app/operacao/mapa', icon: Map, modules: ['operacao', 'mapa'] },
+      { title: 'Teste de Acionamento', url: '/app/operacao/teste-acionamento', icon: Radio, modules: ['operacao'] },
+      { title: 'Acompanhamento', url: '/app/operacao/acompanhamento', icon: Activity, modules: ['operacao'] },
+      { title: 'Checklists', url: '/app/operacao/checklists', icon: CheckSquare, modules: ['operacao'] },
+      { title: 'Simulador WhatsApp', url: '/app/operacao/whatsapp-simulador', icon: Smartphone, modules: ['operacao'] },
+      { title: 'Conversas WhatsApp', url: '/app/operacao/conversas', icon: MessageCircle, modules: ['operacao'] },
     ],
   },
   {
     label: 'Rede',
+    requiredModules: ['rede'],
     items: [
-      { title: 'Prestadores', url: '/app/rede/prestadores', icon: Users, module: 'prestadores' },
-      { title: 'Cobertura', url: '/app/rede/cobertura', icon: Globe, module: 'rede' },
-      { title: 'Disponibilidade', url: '/app/rede/disponibilidade', icon: Radio, module: 'rede' },
-      { title: 'Homologação', url: '/app/rede/homologacao', icon: Shield, module: 'rede' },
-      { title: 'Performance', url: '/app/rede/performance', icon: TrendingUp, module: 'rede' },
-      { title: 'Comunicação', url: '/app/rede/comunicacao', icon: MessageCircle, module: 'rede' },
-      { title: 'Disparo em Massa', url: '/app/rede/disparo-massa', icon: Megaphone, module: 'rede' },
+      { title: 'Prestadores', url: '/app/rede/prestadores', icon: Users, modules: ['rede', 'prestadores'] },
+      { title: 'Cobertura', url: '/app/rede/cobertura', icon: Globe, modules: ['rede'] },
+      { title: 'Disponibilidade', url: '/app/rede/disponibilidade', icon: Radio, modules: ['rede'] },
+      { title: 'Homologação', url: '/app/rede/homologacao', icon: Shield, modules: ['rede'] },
+      { title: 'Performance', url: '/app/rede/performance', icon: TrendingUp, modules: ['rede'] },
+      { title: 'Comunicação', url: '/app/rede/comunicacao', icon: MessageCircle, modules: ['rede'] },
+      { title: 'Disparo em Massa', url: '/app/rede/disparo-massa', icon: Megaphone, modules: ['rede'] },
     ],
   },
   {
     label: 'Financeiro',
+    requiredModules: ['financeiro'],
     items: [
-      { title: 'Faturamento', url: '/app/financeiro/faturamento', icon: DollarSign, module: 'faturamento' },
-      { title: 'Conferência', url: '/app/financeiro/conferencia', icon: FileSearch, module: 'financeiro' },
-      { title: 'Divergências', url: '/app/financeiro/divergencias', icon: AlertCircle, module: 'financeiro' },
-      { title: 'Glosas', url: '/app/financeiro/glosas', icon: XCircle, module: 'financeiro' },
-      { title: 'Tarifas', url: '/app/financeiro/tarifas', icon: Tag, module: 'tarifas' },
-      { title: 'Tabelas Comerciais', url: '/app/financeiro/tabelas', icon: TableProperties, module: 'tabela-precos' },
-      { title: 'Relatórios', url: '/app/financeiro/relatorios', icon: BarChart3, module: 'financeiro' },
+      { title: 'Faturamento', url: '/app/financeiro/faturamento', icon: DollarSign, modules: ['financeiro', 'faturamento'] },
+      { title: 'Conferência', url: '/app/financeiro/conferencia', icon: FileSearch, modules: ['financeiro'] },
+      { title: 'Divergências', url: '/app/financeiro/divergencias', icon: AlertCircle, modules: ['financeiro'] },
+      { title: 'Glosas', url: '/app/financeiro/glosas', icon: XCircle, modules: ['financeiro'] },
+      { title: 'Tarifas', url: '/app/financeiro/tarifas', icon: Tag, modules: ['financeiro', 'tarifas'] },
+      { title: 'Tabelas Comerciais', url: '/app/financeiro/tabelas', icon: TableProperties, modules: ['financeiro', 'tabela-precos'] },
+      { title: 'Relatórios', url: '/app/financeiro/relatorios', icon: BarChart3, modules: ['financeiro'] },
     ],
   },
   {
     label: 'Admin',
+    requiredModules: ['admin'],
     items: [
-      { title: 'Usuários', url: '/app/admin/usuarios', icon: Users, module: 'usuarios' },
-      { title: 'Templates', url: '/app/admin/templates', icon: FileText, module: 'configuracoes' },
-      { title: 'Automações', url: '/app/admin/automacoes', icon: Zap, module: 'configuracoes' },
-      { title: 'Checklists Digitais', url: '/app/admin/checklists', icon: ListChecks, module: 'configuracoes' },
-      { title: 'Auditoria', url: '/app/admin/auditoria', icon: History, module: 'configuracoes' },
-      { title: 'Permissões', url: '/app/admin/permissoes', icon: Lock, module: 'configuracoes' },
-      { title: 'Configurações', url: '/app/admin/configuracoes', icon: Settings, module: 'configuracoes' },
-      { title: 'Suporte', url: '/app/admin/suporte', icon: HelpCircle, module: 'configuracoes' },
+      { title: 'Usuários', url: '/app/admin/usuarios', icon: Users, modules: ['admin', 'usuarios'] },
+      { title: 'Templates', url: '/app/admin/templates', icon: FileText, modules: ['admin', 'configuracoes'] },
+      { title: 'Automações', url: '/app/admin/automacoes', icon: Zap, modules: ['admin', 'configuracoes'] },
+      { title: 'Checklists Digitais', url: '/app/admin/checklists', icon: ListChecks, modules: ['admin', 'configuracoes'] },
+      { title: 'Auditoria', url: '/app/admin/auditoria', icon: History, modules: ['admin', 'configuracoes'] },
+      { title: 'Permissões', url: '/app/admin/permissoes', icon: Lock, modules: ['admin', 'configuracoes'] },
+      { title: 'Configurações', url: '/app/admin/configuracoes', icon: Settings, modules: ['admin', 'configuracoes'] },
+      { title: 'Suporte', url: '/app/admin/suporte', icon: HelpCircle, modules: ['admin', 'configuracoes'] },
     ],
   },
 ];
 
-const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', prestador: 'Prestador' };
-const roleColors: Record<string, string> = { admin: 'bg-primary/20 text-primary', operador: 'bg-accent/20 text-accent', financeiro: 'bg-warning/20 text-warning', prestador: 'bg-info/20 text-info' };
+const roleLabels: Record<string, string> = { admin: 'Admin Master', operador: 'Operações', financeiro: 'Financeiro', comercial: 'Comercial', prestador: 'Prestador' };
+const roleColors: Record<string, string> = { admin: 'bg-primary/20 text-primary', operador: 'bg-accent/20 text-accent', financeiro: 'bg-warning/20 text-warning', comercial: 'bg-info/20 text-info', prestador: 'bg-info/20 text-info' };
 
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, logout, hasAccess } = useAuth();
+  const { user } = useAuth();
+  const { data: authData } = useAuthProfile();
+  const signOut = useSignOut();
 
-  const handleLogout = () => { logout(); navigate('/login'); };
+  const roles: AppRole[] = authData?.roles?.length ? authData.roles : user ? [user.role as AppRole] : [];
+  const displayRole = authData?.primaryRole || user?.role || '';
+  const displayName = authData?.profile?.nome || user?.nome || '';
+  const displayEmail = authData?.profile?.email || user?.email || '';
+
+  const handleLogout = () => {
+    signOut.mutate(undefined, {
+      onSettled: () => navigate('/login'),
+    });
+  };
 
   return (
     <Sidebar collapsible="icon" className="sidebar-gradient border-r-0">
@@ -110,7 +129,7 @@ export function AppSidebar() {
         <Separator className="bg-sidebar-border/40 mb-1.5" />
 
         {menuGroups.map(group => {
-          const visibleItems = group.items.filter(item => hasAccess([item.module]));
+          const visibleItems = group.items.filter(item => hasModuleAccess(roles, item.modules));
           if (visibleItems.length === 0) return null;
           return (
             <SidebarGroup key={group.label} className="py-0.5">
@@ -146,10 +165,10 @@ export function AppSidebar() {
       <SidebarFooter className="p-2.5 border-t border-sidebar-border/40">
         {!collapsed && user && (
           <div className="px-1.5 py-1.5 mb-1">
-            <p className="font-semibold text-sidebar-foreground text-[13px] truncate">{user.nome}</p>
-            <p className="text-[11px] text-sidebar-muted truncate mt-0.5">{user.email}</p>
-            <Badge className={`mt-1.5 text-[9px] font-bold px-1.5 py-0 border-0 ${roleColors[user.role] || 'bg-sidebar-accent text-sidebar-accent-foreground'}`}>
-              {roleLabels[user.role] || user.role}
+            <p className="font-semibold text-sidebar-foreground text-[13px] truncate">{displayName}</p>
+            <p className="text-[11px] text-sidebar-muted truncate mt-0.5">{displayEmail}</p>
+            <Badge className={`mt-1.5 text-[9px] font-bold px-1.5 py-0 border-0 ${roleColors[displayRole] || 'bg-sidebar-accent text-sidebar-accent-foreground'}`}>
+              {roleLabels[displayRole] || displayRole}
             </Badge>
           </div>
         )}
