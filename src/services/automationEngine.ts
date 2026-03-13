@@ -46,7 +46,7 @@ export async function deleteTemplate(id: string) {
 
 export async function fetchAutomations() {
   const { data, error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .select('*')
     .order('created_at', { ascending: false });
   if (error) throw error;
