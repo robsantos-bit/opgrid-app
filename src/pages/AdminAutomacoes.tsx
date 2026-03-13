@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -9,54 +9,101 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Plus, Search, Zap, Play, Pause, Clock, CheckCircle2, XCircle, Pencil } from 'lucide-react';
+import { Plus, Search, Zap, Play, Pause, Clock, Pencil, Loader2, Trash2 } from 'lucide-react';
+import { fetchAutomations, fetchTemplates, upsertAutomation, toggleAutomation, deleteAutomation } from '@/services/automationEngine';
+import { TRIGGER_EVENTS, type Automation, type MessageTemplate, type AutomationChannel } from '@/types/automation';
 
-interface Automacao {
-  id: string;
-  nome: string;
-  gatilho: string;
-  canal: string;
-  ativa: boolean;
-  ultimaExecucao: string | null;
-  execucoes: number;
-}
-
-const MOCK: Automacao[] = [
-  { id: '1', nome: 'Notificar prestador - Nova OS', gatilho: 'Solicitação criada', canal: 'WhatsApp', ativa: true, ultimaExecucao: '2025-03-10T14:30:00', execucoes: 342 },
-  { id: '2', nome: 'Alerta SLA crítico', gatilho: 'SLA > 80%', canal: 'WhatsApp + E-mail', ativa: true, ultimaExecucao: '2025-03-10T12:15:00', execucoes: 87 },
-  { id: '3', nome: 'Lembrete aceite pendente', gatilho: 'Oferta sem resposta 5min', canal: 'WhatsApp', ativa: true, ultimaExecucao: '2025-03-10T11:00:00', execucoes: 156 },
-  { id: '4', nome: 'Confirmar chegada ao local', gatilho: 'Status → A caminho', canal: 'Push', ativa: false, ultimaExecucao: '2025-02-28T09:00:00', execucoes: 45 },
-  { id: '5', nome: 'Pesquisa satisfação cliente', gatilho: 'Atendimento concluído', canal: 'WhatsApp', ativa: true, ultimaExecucao: '2025-03-10T16:45:00', execucoes: 210 },
-  { id: '6', nome: 'Relatório diário operação', gatilho: 'Cron 18:00', canal: 'E-mail', ativa: false, ultimaExecucao: null, execucoes: 0 },
-];
+const CHANNELS: AutomationChannel[] = ['whatsapp', 'email', 'sms', 'push', 'internal'];
 
 export default function AdminAutomacoes() {
-  const [automacoes, setAutomacoes] = useState(MOCK);
+  const [automacoes, setAutomacoes] = useState<Automation[]>([]);
+  const [templates, setTemplates] = useState<MessageTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
-  const [form, setForm] = useState({ nome: '', gatilho: '', canal: 'WhatsApp' });
+  const [editing, setEditing] = useState<Automation | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp' as AutomationChannel, template_key: '', delay_seconds: 0 });
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const [auts, tmps] = await Promise.all([fetchAutomations(), fetchTemplates()]);
+      setAutomacoes(auts);
+      setTemplates(tmps);
+    } catch (err: any) {
+      toast.error('Erro ao carregar: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { loadData(); }, []);
 
   const filtered = useMemo(() => automacoes.filter(a =>
-    (!search || a.nome.toLowerCase().includes(search.toLowerCase())) &&
-    (filterStatus === 'all' || (filterStatus === 'ativa' ? a.ativa : !a.ativa))
+    (!search || a.name.toLowerCase().includes(search.toLowerCase())) &&
+    (filterStatus === 'all' || (filterStatus === 'ativa' ? a.is_active : !a.is_active))
   ), [automacoes, search, filterStatus]);
 
-  const handleToggle = (id: string) => {
-    setAutomacoes(prev => prev.map(a => a.id === id ? { ...a, ativa: !a.ativa } : a));
-    toast.success('Status atualizado.');
+  const openEdit = (a: Automation) => {
+    setEditing(a);
+    setForm({ name: a.name, trigger_event: a.trigger_event, channel: a.channel, template_key: a.template_key || '', delay_seconds: a.delay_seconds });
+    setModalOpen(true);
   };
 
-  const handleSave = () => {
-    if (!form.nome) { toast.error('Informe o nome da automação.'); return; }
-    setAutomacoes(prev => [...prev, { id: `a${Date.now()}`, nome: form.nome, gatilho: form.gatilho || '—', canal: form.canal, ativa: false, ultimaExecucao: null, execucoes: 0 }]);
-    setModalOpen(false);
-    setForm({ nome: '', gatilho: '', canal: 'WhatsApp' });
-    toast.success('Automação criada.');
+  const openNew = () => {
+    setEditing(null);
+    setForm({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp', template_key: '', delay_seconds: 0 });
+    setModalOpen(true);
   };
 
-  const ativas = automacoes.filter(a => a.ativa).length;
-  const totalExec = automacoes.reduce((s, a) => s + a.execucoes, 0);
+  const handleSave = async () => {
+    if (!form.name) { toast.error('Informe o nome da automação.'); return; }
+    try {
+      setSaving(true);
+      const payload: any = { ...form, template_key: form.template_key || null };
+      if (editing) payload.id = editing.id;
+      await upsertAutomation(payload);
+      toast.success(editing ? 'Automação atualizada.' : 'Automação criada.');
+      setModalOpen(false);
+      await loadData();
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggle = async (a: Automation) => {
+    try {
+      await toggleAutomation(a.id, !a.is_active);
+      setAutomacoes(prev => prev.map(x => x.id === a.id ? { ...x, is_active: !x.is_active } : x));
+      toast.success('Status atualizado.');
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    }
+  };
+
+  const handleDelete = async (a: Automation) => {
+    if (!confirm(`Excluir automação "${a.name}"?`)) return;
+    try {
+      await deleteAutomation(a.id);
+      setAutomacoes(prev => prev.filter(x => x.id !== a.id));
+      toast.success('Automação excluída.');
+    } catch (err: any) {
+      toast.error('Erro: ' + err.message);
+    }
+  };
+
+  const ativas = automacoes.filter(a => a.is_active).length;
+  const totalExec = automacoes.reduce((s, a) => s + (a.executions || 0), 0);
+
+  const templatesByKey = useMemo(() => {
+    const map: Record<string, string> = {};
+    templates.forEach(t => { map[t.key] = t.name; });
+    return map;
+  }, [templates]);
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -65,7 +112,7 @@ export default function AdminAutomacoes() {
           <h1>Automações</h1>
           <p>Configure fluxos automáticos de notificação, alertas e ações do sistema</p>
         </div>
-        <Button onClick={() => setModalOpen(true)}><Plus className="h-4 w-4 mr-1.5" />Nova Automação</Button>
+        <Button onClick={openNew}><Plus className="h-4 w-4 mr-1.5" />Nova Automação</Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
@@ -89,55 +136,78 @@ export default function AdminAutomacoes() {
       </CardContent></Card>
 
       <Card><CardContent className="p-0">
-        <Table>
-          <TableHeader><TableRow className="hover:bg-transparent">
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Automação</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Gatilho</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Canal</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Última execução</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center hidden sm:table-cell">Execuções</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right">Ações</TableHead>
-          </TableRow></TableHeader>
-          <TableBody>
-            {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={7} className="text-center py-16">
-                <div className="empty-state"><div className="empty-state-icon"><Zap className="h-5 w-5 text-muted-foreground" /></div><p className="empty-state-title">Nenhuma automação configurada</p><p className="empty-state-description">Crie automações para agilizar processos operacionais</p></div>
-              </TableCell></TableRow>
-            ) : filtered.map(a => (
-              <TableRow key={a.id} className="table-row-hover">
-                <TableCell><span className="font-semibold text-[13px]">{a.nome}</span></TableCell>
-                <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">{a.gatilho}</TableCell>
-                <TableCell><Badge variant="outline" className="font-semibold text-[11px]">{a.canal}</Badge></TableCell>
-                <TableCell><Badge variant={a.ativa ? 'success' : 'secondary'} className="font-semibold">{a.ativa ? 'Ativa' : 'Pausada'}</Badge></TableCell>
-                <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">{a.ultimaExecucao ? new Date(a.ultimaExecucao).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'}</TableCell>
-                <TableCell className="text-center hidden sm:table-cell text-[13px] font-medium tabular-nums">{a.execucoes}</TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end gap-1">
-                    <Switch checked={a.ativa} onCheckedChange={() => handleToggle(a.id)} />
-                    <Button variant="ghost" size="icon" className="h-8 w-8"><Pencil className="h-3.5 w-3.5" /></Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+        {loading ? (
+          <div className="flex items-center justify-center py-16"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
+        ) : (
+          <Table>
+            <TableHeader><TableRow className="hover:bg-transparent">
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Automação</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Gatilho</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Canal</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Template</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Delay</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center hidden sm:table-cell">Execuções</TableHead>
+              <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right">Ações</TableHead>
+            </TableRow></TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center py-16">
+                  <div className="empty-state"><div className="empty-state-icon"><Zap className="h-5 w-5 text-muted-foreground" /></div><p className="empty-state-title">Nenhuma automação configurada</p><p className="empty-state-description">Crie automações para agilizar processos operacionais</p></div>
+                </TableCell></TableRow>
+              ) : filtered.map(a => (
+                <TableRow key={a.id} className="table-row-hover">
+                  <TableCell><span className="font-semibold text-[13px]">{a.name}</span></TableCell>
+                  <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">{TRIGGER_EVENTS[a.trigger_event as keyof typeof TRIGGER_EVENTS] || a.trigger_event}</TableCell>
+                  <TableCell><Badge variant="outline" className="font-semibold text-[11px]">{a.channel}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">{a.template_key ? (templatesByKey[a.template_key] || a.template_key) : '—'}</TableCell>
+                  <TableCell><Badge variant={a.is_active ? 'success' : 'secondary'} className="font-semibold">{a.is_active ? 'Ativa' : 'Pausada'}</Badge></TableCell>
+                  <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground tabular-nums">{a.delay_seconds > 0 ? `${a.delay_seconds}s` : 'Imediato'}</TableCell>
+                  <TableCell className="text-center hidden sm:table-cell text-[13px] font-medium tabular-nums">{a.executions || 0}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-0.5">
+                      <Switch checked={a.is_active} onCheckedChange={() => handleToggle(a)} />
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(a)}><Pencil className="h-3.5 w-3.5" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(a)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
       </CardContent></Card>
 
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Nova Automação</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>{editing ? 'Editar Automação' : 'Nova Automação'}</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="space-y-1.5"><Label className="text-xs font-medium">Nome *</Label><Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Notificar prestador" /></div>
-            <div className="space-y-1.5"><Label className="text-xs font-medium">Gatilho</Label><Input value={form.gatilho} onChange={e => setForm(p => ({ ...p, gatilho: e.target.value }))} placeholder="Ex: Solicitação criada" /></div>
-            <div className="space-y-1.5"><Label className="text-xs font-medium">Canal</Label>
-              <Select value={form.canal} onValueChange={v => setForm(p => ({ ...p, canal: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="WhatsApp">WhatsApp</SelectItem><SelectItem value="E-mail">E-mail</SelectItem><SelectItem value="Push">Push</SelectItem><SelectItem value="WhatsApp + E-mail">WhatsApp + E-mail</SelectItem></SelectContent>
-              </Select>
+            <div className="space-y-1.5"><Label className="text-xs font-medium">Nome *</Label><Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Notificar prestador" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Gatilho</Label>
+                <Select value={form.trigger_event} onValueChange={v => setForm(p => ({ ...p, trigger_event: v }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(TRIGGER_EVENTS).map(([k, label]) => <SelectItem key={k} value={k}>{label}</SelectItem>)}</SelectContent></Select>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Canal</Label>
+                <Select value={form.channel} onValueChange={v => setForm(p => ({ ...p, channel: v as AutomationChannel }))}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CHANNELS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Template</Label>
+                <Select value={form.template_key} onValueChange={v => setForm(p => ({ ...p, template_key: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecionar..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Nenhum</SelectItem>
+                    {templates.map(t => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Delay (segundos)</Label><Input type="number" min={0} value={form.delay_seconds} onChange={e => setForm(p => ({ ...p, delay_seconds: parseInt(e.target.value) || 0 }))} /></div>
             </div>
           </div>
-          <DialogFooter className="gap-2"><Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button><Button onClick={handleSave}>Criar Automação</Button></DialogFooter>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}{editing ? 'Salvar' : 'Criar Automação'}</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
