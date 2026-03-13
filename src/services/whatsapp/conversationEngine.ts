@@ -179,6 +179,7 @@ async function processStep(
       const motivo = buttonId ? motivoMap[buttonId] : (MOTIVOS_VALIDOS.find(m => text.toLowerCase().includes(m.toLowerCase())) || 'Outro');
       session.data.motivo = motivo;
       session.currentStep = 'collect_destino';
+      fireAutomation('motivo_recebido', from, { motivo });
       await sendText(from,
         `✅ Motivo: *${motivo}*\n\n` +
         `Agora informe o *endereço de destino*:\n` +
