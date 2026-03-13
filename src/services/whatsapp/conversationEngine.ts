@@ -15,6 +15,17 @@ import {
 } from './cloudApi';
 import { addSolicitacao, addAtendimento, addDespacho, getPrestadores } from '@/data/store';
 import { Solicitacao, Atendimento, Despacho, OfertaPrestador, MotivoSolicitacao } from '@/types';
+import { enqueueMessage } from '@/services/automationEngine';
+import type { TriggerEvent } from '@/types/automation';
+
+// Helper to fire automation events without blocking the conversation flow
+function fireAutomation(trigger: TriggerEvent, phone: string, payload?: Record<string, unknown>) {
+  enqueueMessage({
+    trigger_event: trigger,
+    recipient_phone: phone,
+    payload: { phone, ...payload },
+  }).catch((err) => console.warn('[Automation] enqueue failed for', trigger, err));
+}
 
 const MOTIVOS_VALIDOS: MotivoSolicitacao[] = [
   'Pane elétrica', 'Pane mecânica', 'Pneu furado', 'Bateria descarregada',
@@ -37,6 +48,8 @@ export async function handleIncomingMessage(
 
   if (!session) {
     session = createSession(from, contactName);
+    fireAutomation('novo_contato', from, { nome: contactName });
+    fireAutomation('new_conversation', from, { nome: contactName });
   }
 
   // Check window — if client sends message, window resets
@@ -105,6 +118,7 @@ async function processStep(
       }
       session.data.nome = text.trim();
       session.currentStep = 'collect_placa';
+      fireAutomation('nome_recebido', from, { nome: session.data.nome });
       await sendText(from,
         `Obrigado, *${session.data.nome.split(' ')[0]}*! ✅\n\n` +
         `Agora informe a *placa do veículo*:\n` +
@@ -119,8 +133,9 @@ async function processStep(
         break;
       }
       session.data.placa = placaClean;
-      session.data.modelo = 'Veículo'; // Will be enriched by API lookup
+      session.data.modelo = 'Veículo';
       session.currentStep = 'collect_localizacao';
+      fireAutomation('veiculo_recebido', from, { placa: placaClean });
       await sendText(from,
         `🚗 Placa registrada: *${placaClean}*\n\n` +
         `Agora envie sua *localização atual* 📍\n\n` +
@@ -142,6 +157,7 @@ async function processStep(
         session.data.localizacao = text.trim();
       }
       session.currentStep = 'collect_motivo';
+      fireAutomation('origem_recebida', from, { localizacao: session.data.localizacao });
       await sendInteractiveButtons(from,
         '🔧 Qual o *motivo do atendimento*?',
         [
@@ -163,6 +179,7 @@ async function processStep(
       const motivo = buttonId ? motivoMap[buttonId] : (MOTIVOS_VALIDOS.find(m => text.toLowerCase().includes(m.toLowerCase())) || 'Outro');
       session.data.motivo = motivo;
       session.currentStep = 'collect_destino';
+      fireAutomation('motivo_recebido', from, { motivo });
       await sendText(from,
         `✅ Motivo: *${motivo}*\n\n` +
         `Agora informe o *endereço de destino*:\n` +
@@ -178,6 +195,7 @@ async function processStep(
       }
       session.data.destino = text.trim();
       session.currentStep = 'collect_observacoes';
+      fireAutomation('destino_recebido', from, { destino: session.data.destino });
       await sendInteractiveButtons(from,
         '📝 Deseja adicionar alguma *observação*?\n_(Ex: veículo rebaixado, rua estreita, etc.)_',
         [
@@ -201,6 +219,7 @@ async function processStep(
         session.data.observacoes = text.trim();
       }
       session.currentStep = 'orcamento';
+      fireAutomation('observacoes_recebidas', from, { observacoes: session.data.observacoes });
       await generateAndSendQuote(session, from);
       break;
     }
@@ -213,6 +232,7 @@ async function processStep(
       if (aceite) {
         session.currentStep = 'aceite_confirmado';
         upsertSession(session);
+        fireAutomation('quote_accepted', from, { valor: session.data.valorEstimado });
         await sendText(from, '✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...');
         addAutomationEvent({ sessionId: session.id, step: 'aceite_confirmado', action: 'client_accepted', success: true });
         await createOsAndDispatch(session, from);
@@ -289,6 +309,7 @@ async function generateAndSendQuote(session: ConversationSession, from: string) 
 
   session.currentStep = 'aguardando_aceite';
   upsertSession(session);
+  fireAutomation('quote_generated', from, { valor: valorTotal, distancia: distanciaKm });
 
   // Send accept/reject buttons
   await sendInteractiveButtons(from,
@@ -413,6 +434,21 @@ async function createOsAndDispatch(session: ConversationSession, from: string) {
   addSolicitacao(solicitacao);
   addAtendimento(atendimento);
   addDespacho(despacho);
+
+  // Fire automations for OS creation and dispatch
+  fireAutomation('order_created', from, { protocolo, solicitacaoId: solicitacao.id, atendimentoId: atendimento.id });
+  fireAutomation('new_request', from, { protocolo });
+
+  // Fire dispatch offer events for each provider
+  for (const p of prestadores) {
+    const phone = p.telefone.replace(/\D/g, '');
+    fireAutomation('new_dispatch_offer', phone, {
+      protocolo,
+      prestadorId: p.id,
+      prestadorNome: p.nomeFantasia,
+      valor: session.data.valorEstimado,
+    });
+  }
 
   // Update session
   session.solicitacaoId = solicitacao.id;
