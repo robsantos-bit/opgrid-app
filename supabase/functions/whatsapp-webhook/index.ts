@@ -1,5 +1,5 @@
-// Edge Function: WhatsApp Cloud API Webhook Handler
-// Handles GET (verify) and POST (incoming messages/statuses)
+// Edge Function: WhatsApp Webhook Handler
+// Supports both Meta Cloud API and W-API payload formats
 // Writes to conversations, messages tables and triggers automation queue
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -15,6 +15,193 @@ function getSupabase() {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
   );
 }
+
+// ── Detect provider from payload shape ──
+type Provider = 'meta' | 'wapi';
+
+interface NormalizedMessage {
+  id: string;
+  from: string;
+  contactName: string;
+  type: string;
+  content: string;
+  raw: any;
+  isStatus?: boolean;
+  statusValue?: string;
+  interactive?: { button_reply?: { id: string; title: string }; list_reply?: { title: string } };
+  location?: { latitude: number; longitude: number; address?: string };
+}
+
+function detectProvider(body: any): Provider {
+  // W-API sends events like { event: "onMessage", ... } or { instanceId: "...", ... }
+  if (body.event || body.instanceId || body.data?.key) return 'wapi';
+  // Meta sends { object: "whatsapp_business_account", entry: [...] }
+  if (body.object === 'whatsapp_business_account' || body.entry) return 'meta';
+  // Default to wapi if has data.message
+  if (body.data?.message) return 'wapi';
+  return 'meta';
+}
+
+function normalizeWapiPayload(body: any): NormalizedMessage[] {
+  const messages: NormalizedMessage[] = [];
+  const event = body.event || '';
+  const data = body.data || body;
+
+  // Status events
+  if (event === 'onMessageStatus' || event === 'message_status') {
+    const key = data.key || data;
+    const status = data.status || data.ack;
+    const statusMap: Record<number, string> = { 0: 'pending', 1: 'sent', 2: 'delivered', 3: 'read' };
+    const statusStr = typeof status === 'number' ? (statusMap[status] || 'unknown') : String(status);
+    messages.push({
+      id: key.id || data.id || '',
+      from: (key.remoteJid || '').replace('@s.whatsapp.net', '').replace('@c.us', ''),
+      contactName: '',
+      type: 'status',
+      content: '',
+      raw: body,
+      isStatus: true,
+      statusValue: statusStr,
+    });
+    return messages;
+  }
+
+  // Message events
+  if (event === 'onMessage' || event === 'messages.upsert' || !event) {
+    const key = data.key || {};
+    const phone = (key.remoteJid || data.from || '').replace('@s.whatsapp.net', '').replace('@c.us', '');
+    const msgId = key.id || data.id || `wapi_${Date.now()}`;
+    const pushName = data.pushName || data.senderName || phone;
+    const msg = data.message || {};
+
+    // Determine type and content
+    let type = 'text';
+    let content = '';
+    let interactive: any = undefined;
+    let location: any = undefined;
+
+    if (msg.conversation) {
+      content = msg.conversation;
+    } else if (msg.extendedTextMessage?.text) {
+      content = msg.extendedTextMessage.text;
+    } else if (msg.imageMessage) {
+      type = 'image';
+      content = msg.imageMessage.caption || '[Imagem]';
+    } else if (msg.videoMessage) {
+      type = 'video';
+      content = msg.videoMessage.caption || '[Vídeo]';
+    } else if (msg.audioMessage) {
+      type = 'audio';
+      content = '[Áudio]';
+    } else if (msg.documentMessage) {
+      type = 'document';
+      content = msg.documentMessage.fileName || '[Documento]';
+    } else if (msg.locationMessage) {
+      type = 'location';
+      location = {
+        latitude: msg.locationMessage.degreesLatitude,
+        longitude: msg.locationMessage.degreesLongitude,
+        address: msg.locationMessage.address,
+      };
+      content = `${location.latitude},${location.longitude}`;
+    } else if (msg.buttonsResponseMessage) {
+      type = 'interactive';
+      interactive = {
+        button_reply: {
+          id: msg.buttonsResponseMessage.selectedButtonId,
+          title: msg.buttonsResponseMessage.selectedDisplayText,
+        },
+      };
+      content = msg.buttonsResponseMessage.selectedDisplayText || '';
+    } else if (msg.listResponseMessage) {
+      type = 'interactive';
+      interactive = {
+        list_reply: { title: msg.listResponseMessage.title },
+      };
+      content = msg.listResponseMessage.title || '';
+    } else if (data.body || data.text) {
+      content = data.body || data.text || '';
+    }
+
+    // Skip outgoing messages from ourselves
+    if (key.fromMe) return messages;
+
+    messages.push({
+      id: msgId,
+      from: phone,
+      contactName: pushName,
+      type,
+      content,
+      raw: body,
+      interactive,
+      location,
+    });
+  }
+
+  return messages;
+}
+
+function normalizeMetaPayload(body: any): NormalizedMessage[] {
+  const messages: NormalizedMessage[] = [];
+  const entry = body.entry?.[0];
+  if (!entry) return messages;
+  const changes = entry.changes?.[0]?.value;
+  if (!changes) return messages;
+
+  // Process incoming messages
+  if (changes.messages?.length) {
+    for (const msg of changes.messages) {
+      const contact = changes.contacts?.find((c: any) => c.wa_id === msg.from);
+      messages.push({
+        id: msg.id,
+        from: msg.from,
+        contactName: contact?.profile?.name || msg.from,
+        type: msg.type,
+        content: extractContentMeta(msg),
+        raw: msg,
+        interactive: msg.interactive,
+        location: msg.location,
+      });
+    }
+  }
+
+  // Process status updates
+  if (changes.statuses?.length) {
+    for (const status of changes.statuses) {
+      messages.push({
+        id: status.id,
+        from: status.recipient_id || '',
+        contactName: '',
+        type: 'status',
+        content: '',
+        raw: status,
+        isStatus: true,
+        statusValue: status.status,
+      });
+    }
+  }
+
+  // Process errors
+  if (changes.errors?.length) {
+    for (const error of changes.errors) {
+      console.error(`[WEBHOOK] Meta error: ${error.code} - ${error.title}`);
+    }
+  }
+
+  return messages;
+}
+
+function extractContentMeta(msg: any): string {
+  if (msg.type === 'text') return msg.text?.body || '';
+  if (msg.type === 'interactive') {
+    return msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || '';
+  }
+  if (msg.type === 'button') return msg.button?.text || '';
+  if (msg.type === 'location') return `${msg.location?.latitude},${msg.location?.longitude}`;
+  return '';
+}
+
+// ── Main handler ──
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -44,140 +231,124 @@ Deno.serve(async (req: Request) => {
 
     try {
       const body = await req.json();
-      console.log('[WEBHOOK] Received:', JSON.stringify(body).slice(0, 500));
+      const provider = detectProvider(body);
+      console.log(`[WEBHOOK] Provider: ${provider} | Payload: ${JSON.stringify(body).slice(0, 500)}`);
 
-      const entry = body.entry?.[0];
-      if (!entry) {
-        return jsonResponse({ status: 'no_entry' });
+      const normalized = provider === 'wapi'
+        ? normalizeWapiPayload(body)
+        : normalizeMetaPayload(body);
+
+      if (!normalized.length) {
+        return jsonResponse({ status: 'no_messages', provider });
       }
 
-      const changes = entry.changes?.[0]?.value;
-      if (!changes) {
-        return jsonResponse({ status: 'no_changes' });
-      }
+      for (const nm of normalized) {
+        // ── Handle status updates ──
+        if (nm.isStatus) {
+          console.log(`[WEBHOOK] Status: ${nm.id} → ${nm.statusValue}`);
+          await supabase.from('messages')
+            .update({ status: nm.statusValue })
+            .eq('wa_message_id', nm.id);
+          await supabase.from('message_logs').insert({
+            provider_message_id: nm.id,
+            direction: 'outbound',
+            status: nm.statusValue,
+            response_json: nm.raw,
+          });
+          continue;
+        }
 
-      // ── Process incoming messages ──
-      if (changes.messages?.length) {
-        for (const msg of changes.messages) {
-          const contact = changes.contacts?.find((c: any) => c.wa_id === msg.from);
-          const contactName = contact?.profile?.name || msg.from;
-          const contactPhone = msg.from;
+        // ── Handle incoming messages ──
+        const contactPhone = nm.from;
+        const contactName = nm.contactName;
+        console.log(`[WEBHOOK] Message from ${contactName} (${contactPhone}): type=${nm.type}`);
 
-          console.log(`[WEBHOOK] Message from ${contactName} (${contactPhone}): type=${msg.type}`);
+        // 1. Upsert conversation
+        const { data: conv } = await supabase
+          .from('conversations')
+          .select('*')
+          .eq('contact_phone', contactPhone)
+          .not('state', 'in', '("cancelado","concluido")')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-          // 1. Upsert conversation
-          const { data: conv } = await supabase
+        let conversationId: string;
+        let currentState: string;
+
+        if (conv) {
+          conversationId = conv.id;
+          currentState = conv.state;
+          const now = new Date();
+          await supabase.from('conversations').update({
+            window_opened_at: now.toISOString(),
+            window_expires_at: new Date(now.getTime() + 24 * 3600 * 1000).toISOString(),
+            updated_at: now.toISOString(),
+          }).eq('id', conversationId);
+        } else {
+          const now = new Date();
+          const { data: newConv, error: convErr } = await supabase
             .from('conversations')
-            .select('*')
-            .eq('contact_phone', contactPhone)
-            .not('state', 'in', '("cancelado","concluido")')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          let conversationId: string;
-          let currentState: string;
-
-          if (conv) {
-            conversationId = conv.id;
-            currentState = conv.state;
-            // Refresh 24h window
-            const now = new Date();
-            await supabase.from('conversations').update({
+            .insert({
+              wa_contact_id: contactPhone,
+              contact_name: contactName,
+              contact_phone: contactPhone,
+              state: 'novo_contato',
+              data: { nome: contactName, telefone: contactPhone },
               window_opened_at: now.toISOString(),
               window_expires_at: new Date(now.getTime() + 24 * 3600 * 1000).toISOString(),
-              updated_at: now.toISOString(),
-            }).eq('id', conversationId);
-          } else {
-            // New conversation
-            const now = new Date();
-            const { data: newConv, error: convErr } = await supabase
-              .from('conversations')
-              .insert({
-                wa_contact_id: contactPhone,
-                contact_name: contactName,
-                contact_phone: contactPhone,
-                state: 'novo_contato',
-                data: { nome: contactName, telefone: contactPhone },
-                window_opened_at: now.toISOString(),
-                window_expires_at: new Date(now.getTime() + 24 * 3600 * 1000).toISOString(),
-              })
-              .select()
-              .single();
+            })
+            .select()
+            .single();
 
-            if (convErr) {
-              console.error('[WEBHOOK] Error creating conversation:', convErr);
-              return jsonResponse({ status: 'error', error: convErr.message });
-            }
-            conversationId = newConv.id;
-            currentState = 'novo_contato';
-
-            // Fire automation for new contact
-            await enqueueAutomation(supabase, 'novo_contato', contactPhone, conversationId, { nome: contactName });
+          if (convErr) {
+            console.error('[WEBHOOK] Error creating conversation:', convErr);
+            return jsonResponse({ status: 'error', error: convErr.message });
           }
-
-          // 2. Store inbound message (deduplicate by wa_message_id)
-          const { error: msgErr } = await supabase.from('messages').upsert({
-            conversation_id: conversationId,
-            direction: 'inbound',
-            wa_message_id: msg.id,
-            message_type: msg.type,
-            content: extractContent(msg),
-            metadata: msg,
-            status: 'received',
-          }, { onConflict: 'wa_message_id' });
-
-          if (msgErr) console.error('[WEBHOOK] Error storing message:', msgErr);
-
-          // 3. Process conversation state machine
-          const nextState = await processConversationState(
-            supabase, conversationId, currentState, msg, contactPhone, contactName
-          );
-
-          // 4. Log
-          await supabase.from('message_logs').insert({
-            conversation_id: conversationId,
-            direction: 'inbound',
-            provider_message_id: msg.id,
-            status: 'received',
-            response_json: msg,
-          });
+          conversationId = newConv.id;
+          currentState = 'novo_contato';
+          await enqueueAutomation(supabase, 'novo_contato', contactPhone, conversationId, { nome: contactName });
         }
+
+        // 2. Store inbound message
+        const { error: msgErr } = await supabase.from('messages').upsert({
+          conversation_id: conversationId,
+          direction: 'inbound',
+          wa_message_id: nm.id,
+          message_type: nm.type,
+          content: nm.content,
+          metadata: nm.raw,
+          status: 'received',
+        }, { onConflict: 'wa_message_id' });
+
+        if (msgErr) console.error('[WEBHOOK] Error storing message:', msgErr);
+
+        // 3. Build a msg-like object for the state machine
+        const msgForState: any = {
+          id: nm.id,
+          from: nm.from,
+          type: nm.type,
+          text: { body: nm.content },
+          interactive: nm.interactive,
+          location: nm.location,
+        };
+
+        // 4. Process conversation state machine
+        await processConversationState(
+          supabase, conversationId, currentState, msgForState, contactPhone, contactName, provider
+        );
+
+        // 5. Log
+        await supabase.from('message_logs').insert({
+          conversation_id: conversationId,
+          direction: 'inbound',
+          provider_message_id: nm.id,
+          status: 'received',
+          response_json: nm.raw,
+        });
       }
 
-      // ── Process status updates ──
-      if (changes.statuses?.length) {
-        for (const status of changes.statuses) {
-          console.log(`[WEBHOOK] Status: ${status.id} → ${status.status}`);
-
-          // Update message status
-          await supabase.from('messages')
-            .update({ status: status.status })
-            .eq('wa_message_id', status.id);
-
-          // Log status update
-          await supabase.from('message_logs').insert({
-            provider_message_id: status.id,
-            direction: 'outbound',
-            status: status.status,
-            response_json: status,
-          });
-        }
-      }
-
-      // ── Process errors ──
-      if (changes.errors?.length) {
-        for (const error of changes.errors) {
-          console.error(`[WEBHOOK] Error: ${error.code} - ${error.title}`);
-          await supabase.from('message_logs').insert({
-            direction: 'inbound',
-            status: 'error',
-            response_json: error,
-          });
-        }
-      }
-
-      return jsonResponse({ status: 'ok' });
+      return jsonResponse({ status: 'ok', provider, processed: normalized.length });
     } catch (err) {
       console.error('[WEBHOOK] Parse error:', err);
       return jsonResponse({ error: 'Invalid payload' });
@@ -206,7 +377,7 @@ function extractContent(msg: any): string {
   return '';
 }
 
-// ── Conversation State Machine (server-side) ──
+// ── Conversation State Machine ──
 
 async function processConversationState(
   supabase: any,
@@ -214,12 +385,12 @@ async function processConversationState(
   currentState: string,
   msg: any,
   phone: string,
-  contactName: string
+  contactName: string,
+  provider: Provider
 ): Promise<string> {
   const text = extractContent(msg).trim();
   const textLower = text.toLowerCase();
 
-  // Get current conversation data
   const { data: conv } = await supabase
     .from('conversations')
     .select('data')
@@ -231,7 +402,7 @@ async function processConversationState(
   // Cancel check
   if (textLower.includes('cancelar') && currentState !== 'novo_contato') {
     await updateConversation(supabase, conversationId, 'cancelado', data);
-    await sendResponse(supabase, phone, conversationId, '❌ Solicitação cancelada. Se precisar, é só mandar uma nova mensagem!');
+    await sendResponse(supabase, phone, conversationId, '❌ Solicitação cancelada. Se precisar, é só mandar uma nova mensagem!', provider);
     return 'cancelado';
   }
 
@@ -292,18 +463,28 @@ async function processConversationState(
       }
       nextState = 'aguardando_motivo';
       await enqueueAutomation(supabase, 'origem_recebida', phone, conversationId, { origem: data.origem });
-      // Send interactive buttons via whatsapp-send
-      await sendInteractiveButtons(supabase, phone, conversationId,
-        '🔧 Qual o *motivo do atendimento*?',
-        [
-          { id: 'pane_mecanica', title: 'Pane mecânica' },
-          { id: 'pneu_furado', title: 'Pneu furado' },
-          { id: 'outro_motivo', title: 'Outro motivo' },
-        ],
-        'Motivo do atendimento'
-      );
-      await updateConversation(supabase, conversationId, nextState, data);
-      return nextState;
+
+      if (provider === 'wapi') {
+        // W-API: send text with options listed (no interactive buttons support via proxy)
+        responseText =
+          '🔧 Qual o *motivo do atendimento*?\n\n' +
+          '1️⃣ Pane mecânica\n2️⃣ Pneu furado\n3️⃣ Outro motivo\n\n' +
+          '_Responda com o número ou digite o motivo:_';
+      } else {
+        await sendInteractiveButtons(supabase, phone, conversationId,
+          '🔧 Qual o *motivo do atendimento*?',
+          [
+            { id: 'pane_mecanica', title: 'Pane mecânica' },
+            { id: 'pneu_furado', title: 'Pneu furado' },
+            { id: 'outro_motivo', title: 'Outro motivo' },
+          ],
+          'Motivo do atendimento',
+          provider
+        );
+        await updateConversation(supabase, conversationId, nextState, data);
+        return nextState;
+      }
+      break;
     }
 
     case 'aguardando_motivo': {
@@ -311,9 +492,12 @@ async function processConversationState(
         'pane_mecanica': 'Pane mecânica',
         'pneu_furado': 'Pneu furado',
         'outro_motivo': 'Outro',
+        '1': 'Pane mecânica',
+        '2': 'Pneu furado',
+        '3': 'Outro',
       };
       const buttonId = msg.interactive?.button_reply?.id;
-      data.motivo = buttonId ? motivoMap[buttonId] || 'Outro' : text || 'Outro';
+      data.motivo = buttonId ? motivoMap[buttonId] || 'Outro' : motivoMap[textLower] || text || 'Outro';
       nextState = 'aguardando_destino';
       await enqueueAutomation(supabase, 'motivo_recebido', phone, conversationId, { motivo: data.motivo });
       responseText =
@@ -329,29 +513,41 @@ async function processConversationState(
       data.destino = text;
       nextState = 'aguardando_observacoes';
       await enqueueAutomation(supabase, 'destino_recebido', phone, conversationId, { destino: text });
-      // Send observation buttons
-      await sendInteractiveButtons(supabase, phone, conversationId,
-        '📝 Deseja adicionar alguma *observação*?\n_(Ex: veículo rebaixado, rua estreita, etc.)_',
-        [
-          { id: 'sem_obs', title: 'Sem observações' },
-          { id: 'com_obs', title: 'Sim, quero informar' },
-        ]
-      );
-      await updateConversation(supabase, conversationId, nextState, data);
-      return nextState;
+
+      if (provider === 'wapi') {
+        responseText =
+          '📝 Deseja adicionar alguma *observação*?\n_(Ex: veículo rebaixado, rua estreita, etc.)_\n\n' +
+          '1️⃣ Sem observações\n2️⃣ Sim, quero informar\n\n_Responda com o número:_';
+      } else {
+        await sendInteractiveButtons(supabase, phone, conversationId,
+          '📝 Deseja adicionar alguma *observação*?\n_(Ex: veículo rebaixado, rua estreita, etc.)_',
+          [
+            { id: 'sem_obs', title: 'Sem observações' },
+            { id: 'com_obs', title: 'Sim, quero informar' },
+          ],
+          undefined,
+          provider
+        );
+        await updateConversation(supabase, conversationId, nextState, data);
+        return nextState;
+      }
+      break;
     }
 
     case 'aguardando_observacoes': {
       const buttonId = msg.interactive?.button_reply?.id;
-      if (buttonId === 'com_obs') {
-        await sendResponse(supabase, phone, conversationId, 'Digite suas observações:');
+      const isComObs = buttonId === 'com_obs' || textLower === '2';
+      const isSemObs = buttonId === 'sem_obs' || textLower === '1';
+
+      if (isComObs) {
+        await sendResponse(supabase, phone, conversationId, 'Digite suas observações:', provider);
         await updateConversation(supabase, conversationId, currentState, data);
         return currentState;
       }
-      data.observacoes = buttonId === 'sem_obs' ? '' : text;
+      data.observacoes = isSemObs ? '' : text;
       nextState = 'resumo_pronto';
       await enqueueAutomation(supabase, 'observacoes_recebidas', phone, conversationId, { observacoes: data.observacoes });
-      // Generate quote
+
       const distanciaKm = Math.floor(Math.random() * 30) + 5;
       const valorBase = 120;
       const valorKm = distanciaKm * 4.5;
@@ -366,42 +562,46 @@ async function processConversationState(
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : '') +
         `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*`;
 
-      await sendResponse(supabase, phone, conversationId, resumo);
+      await sendResponse(supabase, phone, conversationId, resumo, provider);
       await enqueueAutomation(supabase, 'quote_generated', phone, conversationId, { valor: valorTotal });
 
-      // Send accept/reject
       nextState = 'aguardando_aceite';
-      await sendInteractiveButtons(supabase, phone, conversationId,
-        'Deseja *confirmar* este atendimento?',
-        [
-          { id: 'aceitar', title: '✅ Aceitar' },
-          { id: 'recusar', title: '❌ Recusar' },
-        ],
-        'Confirmar orçamento'
-      );
-      await updateConversation(supabase, conversationId, nextState, data);
-      return nextState;
+
+      if (provider === 'wapi') {
+        responseText = 'Deseja *confirmar* este atendimento?\n\n1️⃣ ✅ Aceitar\n2️⃣ ❌ Recusar';
+      } else {
+        await sendInteractiveButtons(supabase, phone, conversationId,
+          'Deseja *confirmar* este atendimento?',
+          [
+            { id: 'aceitar', title: '✅ Aceitar' },
+            { id: 'recusar', title: '❌ Recusar' },
+          ],
+          'Confirmar orçamento',
+          provider
+        );
+        await updateConversation(supabase, conversationId, nextState, data);
+        return nextState;
+      }
+      break;
     }
 
     case 'aguardando_aceite': {
       const buttonId = msg.interactive?.button_reply?.id;
-      const aceite = buttonId === 'aceitar' || textLower.includes('sim') || textLower.includes('aceito');
-      const recusa = buttonId === 'recusar' || textLower.includes('não') || textLower.includes('cancelar');
+      const aceite = buttonId === 'aceitar' || textLower === '1' || textLower.includes('sim') || textLower.includes('aceito');
+      const recusa = buttonId === 'recusar' || textLower === '2' || textLower.includes('não') || textLower.includes('cancelar');
 
       if (aceite) {
         nextState = 'solicitado';
         await enqueueAutomation(supabase, 'quote_accepted', phone, conversationId, { valor: data.valorEstimado });
         await sendResponse(supabase, phone, conversationId,
-          '✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...');
-
-        // Create solicitacao and trigger dispatch
+          '✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...', provider);
         await createSolicitacaoAndDispatch(supabase, conversationId, data, phone);
       } else if (recusa) {
         nextState = 'cancelado';
         await sendResponse(supabase, phone, conversationId,
-          '❌ Orçamento recusado. Se mudar de ideia, é só enviar uma nova mensagem!');
+          '❌ Orçamento recusado. Se mudar de ideia, é só enviar uma nova mensagem!', provider);
       } else {
-        responseText = 'Por favor, responda *SIM* para aceitar ou *NÃO* para recusar o orçamento.';
+        responseText = 'Por favor, responda *1* para aceitar ou *2* para recusar o orçamento.';
       }
       break;
     }
@@ -411,7 +611,7 @@ async function processConversationState(
   }
 
   if (responseText) {
-    await sendResponse(supabase, phone, conversationId, responseText);
+    await sendResponse(supabase, phone, conversationId, responseText, provider);
   }
   await updateConversation(supabase, conversationId, nextState, data);
   return nextState;
@@ -425,15 +625,69 @@ async function updateConversation(supabase: any, id: string, state: string, data
   }).eq('id', id);
 }
 
-// ── Send message via whatsapp-send Edge Function ──
+// ── Send message — routes to Meta or W-API ──
 
-async function sendResponse(supabase: any, to: string, conversationId: string, text: string) {
+async function sendResponse(supabase: any, to: string, conversationId: string, text: string, provider: Provider) {
+  if (provider === 'wapi') {
+    return sendViaWapi(supabase, to, conversationId, text);
+  }
+  return sendViaMeta(supabase, to, conversationId, text);
+}
+
+async function sendViaWapi(supabase: any, to: string, conversationId: string, text: string) {
+  const INSTANCE_ID = Deno.env.get('WAPI_INSTANCE_ID') || '';
+  const TOKEN = Deno.env.get('WAPI_TOKEN') || '';
+
+  if (!INSTANCE_ID || !TOKEN) {
+    console.warn('[SEND-WAPI] Missing credentials — storing message only');
+    await storeOutboundMessage(supabase, conversationId, to, text, null);
+    return;
+  }
+
+  // Format phone: W-API expects 55XXXXXXXXXXX@c.us or just the number
+  const chatId = to.includes('@') ? to : `${to}@c.us`;
+
+  try {
+    const res = await fetch(
+      `https://api.w-api.app/v2/${INSTANCE_ID}/messages/send-text`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${TOKEN}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ chatId, text }),
+      }
+    );
+    const resBody = await res.text();
+    console.log('[SEND-WAPI] Response:', res.status, resBody.slice(0, 300));
+
+    let messageId: string | null = null;
+    if (res.ok) {
+      try {
+        const parsed = JSON.parse(resBody);
+        messageId = parsed.id || parsed.key?.id || parsed.messageId || null;
+      } catch {}
+    }
+
+    await storeOutboundMessage(supabase, conversationId, to, text, messageId);
+
+    if (!res.ok) {
+      console.error('[SEND-WAPI] API error:', res.status, resBody.slice(0, 300));
+    }
+  } catch (err) {
+    console.error('[SEND-WAPI] Error:', err);
+    await storeOutboundMessage(supabase, conversationId, to, text, null);
+  }
+}
+
+async function sendViaMeta(supabase: any, to: string, conversationId: string, text: string) {
   const ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') || '';
   const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || '';
   const API_VERSION = Deno.env.get('WHATSAPP_API_VERSION') || 'v21.0';
 
   if (!ACCESS_TOKEN || !PHONE_NUMBER_ID) {
-    console.warn('[SEND] No WhatsApp credentials — storing message only');
+    console.warn('[SEND-META] No credentials — storing message only');
     await storeOutboundMessage(supabase, conversationId, to, text, null);
     return;
   }
@@ -454,10 +708,10 @@ async function sendResponse(supabase: any, to: string, conversationId: string, t
     await storeOutboundMessage(supabase, conversationId, to, text, messageId);
 
     if (!res.ok) {
-      console.error('[SEND] Meta API error:', res.status, resBody.slice(0, 300));
+      console.error('[SEND-META] API error:', res.status, resBody.slice(0, 300));
     }
   } catch (err) {
-    console.error('[SEND] Error:', err);
+    console.error('[SEND-META] Error:', err);
     await storeOutboundMessage(supabase, conversationId, to, text, null);
   }
 }
@@ -468,8 +722,17 @@ async function sendInteractiveButtons(
   conversationId: string,
   bodyText: string,
   buttons: { id: string; title: string }[],
-  headerText?: string
+  headerText?: string,
+  provider: Provider = 'meta'
 ) {
+  // W-API doesn't support interactive buttons via Cloud API format,
+  // so send as numbered text
+  if (provider === 'wapi') {
+    const btnText = buttons.map((b, i) => `${i + 1}️⃣ ${b.title}`).join('\n');
+    const fullText = `${bodyText}\n\n${btnText}\n\n_Responda com o número:_`;
+    return sendViaWapi(supabase, to, conversationId, fullText);
+  }
+
   const ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') || '';
   const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || '';
   const API_VERSION = Deno.env.get('WHATSAPP_API_VERSION') || 'v21.0';
@@ -587,7 +850,6 @@ async function createSolicitacaoAndDispatch(
   const now = new Date().toISOString();
   const protocolo = `OS-${Date.now().toString(36).toUpperCase()}`;
 
-  // Create solicitacao
   const { data: sol, error: solErr } = await supabase.from('solicitacoes').insert({
     protocolo,
     data_hora: now,
@@ -612,16 +874,13 @@ async function createSolicitacaoAndDispatch(
     return;
   }
 
-  // Link conversation to solicitacao
   await supabase.from('conversations').update({
     solicitacao_id: sol.id,
   }).eq('id', conversationId);
 
-  // Fire automations
   await enqueueAutomation(supabase, 'order_created', phone, conversationId, { protocolo, solicitacaoId: sol.id });
   await enqueueAutomation(supabase, 'new_request', phone, conversationId, { protocolo });
 
-  // Start dispatch — invoke dispatch-start Edge Function
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 

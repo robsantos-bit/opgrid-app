@@ -6,9 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { getConfig, saveConfig, resetAllData } from '@/data/store';
+import { supabase } from '@/integrations/supabase/client';
 import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2 } from 'lucide-react';
+import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2, Send, Zap } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -69,6 +70,87 @@ function CopyField({ label, value, description }: { label: string; value: string
         </Button>
       </div>
     </div>
+  );
+}
+
+function WapiTestCard() {
+  const [testPhone, setTestPhone] = useState('');
+  const [testMessage, setTestMessage] = useState('🧪 Teste de integração W-API via OpGrid!');
+  const [sending, setSending] = useState(false);
+  const [testResult, setTestResult] = useState<{ ok: boolean; details: string } | null>(null);
+
+  const handleTest = async () => {
+    if (!testPhone.replace(/\D/g, '')) {
+      toast.error('Informe um número de telefone válido');
+      return;
+    }
+    setSending(true);
+    setTestResult(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('whatsapp-send', {
+        body: {
+          provider: 'wapi',
+          to: testPhone.replace(/\D/g, ''),
+          type: 'text',
+          text: { body: testMessage },
+        },
+      });
+      if (error) {
+        setTestResult({ ok: false, details: error.message || JSON.stringify(error) });
+        toast.error('Erro no teste: ' + (error.message || 'Falha'));
+      } else {
+        setTestResult({ ok: true, details: JSON.stringify(data, null, 2) });
+        toast.success('Mensagem de teste enviada com sucesso!');
+      }
+    } catch (err: any) {
+      setTestResult({ ok: false, details: String(err) });
+      toast.error('Erro ao enviar teste');
+    } finally {
+      setSending(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <Zap className="h-4 w-4 text-primary" />
+          <CardTitle className="text-sm">Teste de Envio (W-API)</CardTitle>
+        </div>
+        <p className="text-[11px] text-muted-foreground">Envie uma mensagem de teste para validar a integração</p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Número de destino (com DDD + DDI)</Label>
+          <Input
+            placeholder="5511999999999"
+            value={testPhone}
+            onChange={e => setTestPhone(e.target.value)}
+            className="font-mono text-xs"
+          />
+        </div>
+        <div className="space-y-1">
+          <Label className="text-xs">Mensagem</Label>
+          <Input
+            value={testMessage}
+            onChange={e => setTestMessage(e.target.value)}
+            className="text-xs"
+          />
+        </div>
+        <Button onClick={handleTest} disabled={sending} size="sm" className="w-full">
+          {sending ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Send className="h-3.5 w-3.5 mr-1.5" />}
+          {sending ? 'Enviando...' : 'Enviar Teste'}
+        </Button>
+        {testResult && (
+          <div className={`rounded-md border p-3 text-xs font-mono ${testResult.ok ? 'border-green-500/30 bg-green-500/5' : 'border-destructive/30 bg-destructive/5'}`}>
+            <p className={`font-semibold mb-1 ${testResult.ok ? 'text-green-600' : 'text-destructive'}`}>
+              {testResult.ok ? '✅ Sucesso' : '❌ Erro'}
+            </p>
+            <pre className="whitespace-pre-wrap text-[11px] text-muted-foreground max-h-32 overflow-auto">{testResult.details}</pre>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -159,6 +241,8 @@ function WebhookConfigPanel() {
               </p>
             </CardContent>
           </Card>
+
+          <WapiTestCard />
         </>
       )}
 
