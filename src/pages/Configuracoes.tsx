@@ -73,71 +73,162 @@ function CopyField({ label, value, description }: { label: string; value: string
 }
 
 function WebhookConfigPanel() {
+  const [activeProvider, setActiveProvider] = useState<'meta' | 'wapi'>('wapi');
+
   return (
     <div className="space-y-4 max-w-xl">
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2">
-            <Webhook className="h-4 w-4 text-primary" />
-            <CardTitle className="text-sm">WhatsApp Webhook (Meta)</CardTitle>
-          </div>
-          <p className="text-[11px] text-muted-foreground">Configure estas URLs no painel do Meta Developers → WhatsApp → Configuration</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <CopyField
-            label="Callback URL (Webhook)"
-            value={WEBHOOK_URL}
-            description="Cole em 'Callback URL' no Meta Developers para receber mensagens"
-          />
-          <CopyField
-            label="Verify Token"
-            value="(definido no secret WHATSAPP_WEBHOOK_VERIFY_TOKEN)"
-            description="Use o mesmo token configurado nos secrets do projeto"
-          />
-          <div className="rounded-md bg-muted/50 border border-border p-3 space-y-2">
-            <p className="text-xs font-medium">Campos obrigatórios no Meta:</p>
-            <div className="flex flex-wrap gap-1.5">
-              {['messages', 'message_deliveries', 'message_reads', 'messaging_postbacks'].map(f => (
-                <Badge key={f} variant="secondary" className="text-[10px] font-mono">{f}</Badge>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex gap-2 mb-2">
+        <Button
+          variant={activeProvider === 'wapi' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveProvider('wapi')}
+        >
+          W-API
+        </Button>
+        <Button
+          variant={activeProvider === 'meta' ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => setActiveProvider('meta')}
+        >
+          Meta (Cloud API)
+        </Button>
+      </div>
 
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Edge Functions</CardTitle>
-          <p className="text-[11px] text-muted-foreground">URLs das funções serverless para integração</p>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <CopyField label="Enviar Mensagem" value={SEND_URL} description="POST — envia mensagens via Cloud API" />
-          <CopyField label="Status Callback" value={STATUS_URL} description="POST — recebe atualizações de status (delivered, read, failed)" />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Secrets Necessários</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2 text-[13px]">
-            {[
-              { name: 'WHATSAPP_ACCESS_TOKEN', desc: 'Token permanente da API do WhatsApp Business' },
-              { name: 'WHATSAPP_PHONE_NUMBER_ID', desc: 'ID do número de telefone no Meta' },
-              { name: 'WHATSAPP_WEBHOOK_VERIFY_TOKEN', desc: 'Token de verificação do webhook' },
-            ].map(s => (
-              <div key={s.name} className="flex items-start justify-between py-1.5 border-b border-dashed border-border/60">
-                <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{s.name}</code>
-                <span className="text-muted-foreground text-xs text-right ml-3">{s.desc}</span>
+      {activeProvider === 'wapi' && (
+        <>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Webhook className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm">WhatsApp via W-API</CardTitle>
               </div>
-            ))}
-          </div>
-          <p className="text-[11px] text-muted-foreground mt-3">
-            Gerencie os secrets na aba Cloud → Secrets do Lovable.
-          </p>
-        </CardContent>
-      </Card>
+              <p className="text-[11px] text-muted-foreground">Configure estas URLs no painel da W-API → Instância → Webhooks</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CopyField
+                label="Webhook de Mensagens Recebidas"
+                value={WEBHOOK_URL}
+                description="Cole em 'URL de Webhook' na W-API para receber mensagens (onMessage)"
+              />
+              <CopyField
+                label="Webhook de Status"
+                value={STATUS_URL}
+                description="Cole em 'URL de Status' na W-API para receber atualizações (onMessageStatus)"
+              />
+              <div className="rounded-md bg-muted/50 border border-border p-3 space-y-2">
+                <p className="text-xs font-medium">Eventos recomendados na W-API:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['onMessage', 'onMessageStatus', 'onDisconnect', 'onConnecting'].map(f => (
+                    <Badge key={f} variant="secondary" className="text-[10px] font-mono">{f}</Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Endpoint de Envio (W-API)</CardTitle>
+              <p className="text-[11px] text-muted-foreground">Use a Edge Function como proxy ou chame a W-API diretamente</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <CopyField label="Via Edge Function (recomendado)" value={SEND_URL} description="POST — proxy seguro que mantém o token no servidor" />
+              <CopyField label="API Direta W-API" value="https://api.w-api.app/v2/{instance_id}/messages/send-text" description="Substitua {instance_id} pelo ID da sua instância" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Secrets Necessários (W-API)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-[13px]">
+                {[
+                  { name: 'WAPI_INSTANCE_ID', desc: 'ID da instância na W-API' },
+                  { name: 'WAPI_TOKEN', desc: 'Token de autenticação da W-API' },
+                  { name: 'WHATSAPP_WEBHOOK_VERIFY_TOKEN', desc: 'Token de verificação do webhook (opcional)' },
+                ].map(s => (
+                  <div key={s.name} className="flex items-start justify-between py-1.5 border-b border-dashed border-border/60">
+                    <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{s.name}</code>
+                    <span className="text-muted-foreground text-xs text-right ml-3">{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-3">
+                Encontre esses valores no painel W-API → Sua Instância → Configurações.
+              </p>
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {activeProvider === 'meta' && (
+        <>
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-2">
+                <Webhook className="h-4 w-4 text-primary" />
+                <CardTitle className="text-sm">WhatsApp Webhook (Meta)</CardTitle>
+              </div>
+              <p className="text-[11px] text-muted-foreground">Configure estas URLs no painel do Meta Developers → WhatsApp → Configuration</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <CopyField
+                label="Callback URL (Webhook)"
+                value={WEBHOOK_URL}
+                description="Cole em 'Callback URL' no Meta Developers para receber mensagens"
+              />
+              <CopyField
+                label="Verify Token"
+                value="(definido no secret WHATSAPP_WEBHOOK_VERIFY_TOKEN)"
+                description="Use o mesmo token configurado nos secrets do projeto"
+              />
+              <div className="rounded-md bg-muted/50 border border-border p-3 space-y-2">
+                <p className="text-xs font-medium">Campos obrigatórios no Meta:</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {['messages', 'message_deliveries', 'message_reads', 'messaging_postbacks'].map(f => (
+                    <Badge key={f} variant="secondary" className="text-[10px] font-mono">{f}</Badge>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Edge Functions</CardTitle>
+              <p className="text-[11px] text-muted-foreground">URLs das funções serverless para integração</p>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <CopyField label="Enviar Mensagem" value={SEND_URL} description="POST — envia mensagens via Cloud API" />
+              <CopyField label="Status Callback" value={STATUS_URL} description="POST — recebe atualizações de status (delivered, read, failed)" />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Secrets Necessários</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2 text-[13px]">
+                {[
+                  { name: 'WHATSAPP_ACCESS_TOKEN', desc: 'Token permanente da API do WhatsApp Business' },
+                  { name: 'WHATSAPP_PHONE_NUMBER_ID', desc: 'ID do número de telefone no Meta' },
+                  { name: 'WHATSAPP_WEBHOOK_VERIFY_TOKEN', desc: 'Token de verificação do webhook' },
+                ].map(s => (
+                  <div key={s.name} className="flex items-start justify-between py-1.5 border-b border-dashed border-border/60">
+                    <code className="text-xs font-mono bg-muted px-1.5 py-0.5 rounded">{s.name}</code>
+                    <span className="text-muted-foreground text-xs text-right ml-3">{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-3">
+                Gerencie os secrets na aba Cloud → Secrets do Lovable.
+              </p>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
