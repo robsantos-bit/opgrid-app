@@ -399,18 +399,25 @@ export default function CentralDespacho() {
             </Card>
           )}
 
-          {/* Suggested providers panel */}
+          {/* Suggested providers panel with scoring */}
           {showSugeridos && (() => {
             const d = despachos.find(x => x.id === showSugeridos);
             const sol = d ? getSolicitacao(d.solicitacaoId) : undefined;
-            const sugeridos = getSuggestedPrestadores(prestadores, sol);
+            const allScored = calcularScorePrestadores(prestadores, sol, atendimentos);
+            const eligible = allScored.filter(s => !s.eliminado);
+            const eliminated = allScored.filter(s => s.eliminado);
             return (
               <Card className="border-primary/20 shadow-lg">
                 <CardHeader className="pb-2 pt-3 px-4">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-[12px] font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                      <Users className="h-3.5 w-3.5" /> Prestadores Sugeridos
-                    </CardTitle>
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                      <CardTitle className="text-[12px] font-bold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                        <TrendingUp className="h-3.5 w-3.5" /> Ranking por Score ({eligible.length} elegíveis)
+                      </CardTitle>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Ordenados por pontuação composta (ETA {Math.round(SCORE_WEIGHTS.eta*100)}% · Disp. {Math.round(SCORE_WEIGHTS.disponibilidade*100)}% · Compat. {Math.round(SCORE_WEIGHTS.compatibilidade*100)}% · Cob. {Math.round(SCORE_WEIGHTS.cobertura*100)}% · Perf. {Math.round(SCORE_WEIGHTS.performance*100)}% · Conf. {Math.round(SCORE_WEIGHTS.confiabilidade*100)}%)
+                      </p>
+                    </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="text-[10px]">{selectedPrestadorIds.length} selecionado(s)</Badge>
                       <Button variant="default" size="sm" className="h-7 text-[10px] gap-1" onClick={() => handleEnvioManual(showSugeridos)} disabled={selectedPrestadorIds.length === 0}>
@@ -426,49 +433,100 @@ export default function CentralDespacho() {
                   <Table>
                     <TableHeader><TableRow className="hover:bg-transparent">
                       <TableHead className="w-10"></TableHead>
+                      <TableHead className="text-[10px] uppercase">#</TableHead>
                       <TableHead className="text-[10px] uppercase">Prestador</TableHead>
-                      <TableHead className="text-[10px] uppercase">Cidade</TableHead>
                       <TableHead className="text-[10px] uppercase">Status</TableHead>
-                      <TableHead className="text-[10px] uppercase hidden md:table-cell">Serviços</TableHead>
-                      <TableHead className="text-[10px] uppercase text-right">Distância</TableHead>
-                      <TableHead className="text-[10px] uppercase text-right">Tempo est.</TableHead>
-                      <TableHead className="text-[10px] uppercase text-right hidden lg:table-cell">Score</TableHead>
+                      <TableHead className="text-[10px] uppercase text-right">ETA</TableHead>
+                      <TableHead className="text-[10px] uppercase text-right">Dist.</TableHead>
+                      <TableHead className="text-[10px] uppercase text-center">Score</TableHead>
+                      <TableHead className="text-[10px] uppercase">Confiança</TableHead>
+                      <TableHead className="text-[10px] uppercase hidden xl:table-cell">Justificativa</TableHead>
                     </TableRow></TableHeader>
                     <TableBody>
-                      {sugeridos.length === 0 ? (
-                        <TableRow><TableCell colSpan={8} className="text-center py-8 text-muted-foreground text-sm">
+                      {eligible.length === 0 ? (
+                        <TableRow><TableCell colSpan={9} className="text-center py-8 text-muted-foreground text-sm">
                           Nenhum prestador elegível encontrado. Você pode operar no modo manual.
                         </TableCell></TableRow>
-                      ) : sugeridos.map(p => {
+                      ) : eligible.map((s, idx) => {
+                        const p = s.prestador;
                         const isSelected = selectedPrestadorIds.includes(p.id);
                         const statusColor = p.localizacao?.statusRastreamento === 'Online' ? 'text-success' : p.localizacao?.statusRastreamento === 'A caminho' ? 'text-info' : 'text-muted-foreground';
+                        const topFactor = [...s.fatores].sort((a, b) => b.contribuicao - a.contribuicao)[0];
                         return (
-                          <TableRow key={p.id} className={`table-row-hover cursor-pointer ${isSelected ? 'bg-primary/5' : ''}`} onClick={() => setSelectedPrestadorIds(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}>
-                            <TableCell>
-                              <Checkbox checked={isSelected} onCheckedChange={() => setSelectedPrestadorIds(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])} />
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <p className="text-[13px] font-medium">{p.nomeFantasia}</p>
-                                <p className="text-[10px] text-muted-foreground">{p.tipoParceiro}</p>
-                              </div>
-                            </TableCell>
-                            <TableCell className="text-[12px]">{p.cidade}/{p.uf}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1.5">
-                                <div className={`w-2 h-2 rounded-full ${p.localizacao?.statusRastreamento === 'Online' ? 'bg-success animate-pulse' : 'bg-muted-foreground/30'}`} />
-                                <span className={`text-[11px] ${statusColor}`}>{p.localizacao?.statusRastreamento || 'Offline'}</span>
-                              </div>
-                            </TableCell>
-                            <TableCell className="hidden md:table-cell text-[10px] text-muted-foreground">{p.tiposServico.slice(0, 2).join(', ')}</TableCell>
-                            <TableCell className="text-right font-mono text-[12px] font-medium">{p.distKm < 900 ? `${p.distKm.toFixed(1)} km` : '—'}</TableCell>
-                            <TableCell className="text-right font-mono text-[12px]">{p.tempoMin < 2000 ? `~${p.tempoMin} min` : '—'}</TableCell>
-                            <TableCell className="text-right hidden lg:table-cell">
-                              <Badge variant={p.scoreOperacional >= 80 ? 'success' : p.scoreOperacional >= 60 ? 'warning' : 'destructive'} className="text-[10px]">{p.scoreOperacional}</Badge>
-                            </TableCell>
-                          </TableRow>
+                          <TooltipProvider key={p.id}>
+                            <TableRow className={`table-row-hover cursor-pointer ${isSelected ? 'bg-primary/5' : ''} ${idx === 0 ? 'border-l-2 border-l-success' : idx === 1 ? 'border-l-2 border-l-info' : ''}`} onClick={() => setSelectedPrestadorIds(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}>
+                              <TableCell>
+                                <Checkbox checked={isSelected} onCheckedChange={() => setSelectedPrestadorIds(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])} />
+                              </TableCell>
+                              <TableCell>
+                                <span className={`text-[11px] font-bold ${idx === 0 ? 'text-success' : idx === 1 ? 'text-info' : 'text-muted-foreground'}`}>#{idx + 1}</span>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <p className="text-[13px] font-medium">{p.nomeFantasia}</p>
+                                  <p className="text-[10px] text-muted-foreground">{p.cidade}/{p.uf} · {p.tipoParceiro}</p>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1.5">
+                                  <div className={`w-2 h-2 rounded-full ${p.localizacao?.statusRastreamento === 'Online' ? 'bg-success animate-pulse' : 'bg-muted-foreground/30'}`} />
+                                  <span className={`text-[11px] ${statusColor}`}>{p.localizacao?.statusRastreamento || 'Offline'}</span>
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-[12px]">{s.tempoMin < 2000 ? `~${s.tempoMin} min` : '—'}</TableCell>
+                              <TableCell className="text-right font-mono text-[12px] font-medium">{s.distKm < 900 ? `${s.distKm.toFixed(1)} km` : '—'}</TableCell>
+                              <TableCell className="text-center">
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div className="inline-flex flex-col items-center gap-0.5">
+                                      <span className={`text-[14px] font-bold ${s.scoreTotal >= 70 ? 'text-success' : s.scoreTotal >= 45 ? 'text-warning' : 'text-destructive'}`}>{s.scoreTotal}</span>
+                                      <Progress value={s.scoreTotal} className="w-12 h-1" />
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="left" className="max-w-[280px] p-3">
+                                    <p className="text-[11px] font-bold mb-2">Detalhamento do Score</p>
+                                    <div className="space-y-1.5">
+                                      {s.fatores.map(f => (
+                                        <div key={f.fator} className="text-[10px]">
+                                          <div className="flex justify-between items-center gap-2">
+                                            <span className="text-muted-foreground">{f.fator} ({Math.round(f.peso * 100)}%)</span>
+                                            <span className="font-bold">{Math.round(f.contribuicao)}</span>
+                                          </div>
+                                          <Progress value={f.nota} className="h-0.5 mt-0.5" />
+                                          <p className="text-muted-foreground/70 text-[9px] mt-0.5">{f.justificativa}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={confiancaVariant[s.confianca]} className="text-[9px] gap-1">
+                                  <ShieldCheck className="h-2.5 w-2.5" />{confiancaLabel[s.confianca]}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="hidden xl:table-cell text-[10px] text-muted-foreground max-w-[200px] truncate">
+                                {topFactor?.justificativa || '—'}
+                              </TableCell>
+                            </TableRow>
+                          </TooltipProvider>
                         );
                       })}
+                      {eliminated.length > 0 && (
+                        <>
+                          <TableRow className="hover:bg-transparent"><TableCell colSpan={9} className="pt-3 pb-1">
+                            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">Eliminados ({eliminated.length})</p>
+                          </TableCell></TableRow>
+                          {eliminated.slice(0, 3).map(s => (
+                            <TableRow key={s.prestador.id} className="opacity-40">
+                              <TableCell />
+                              <TableCell><Ban className="h-3 w-3 text-destructive" /></TableCell>
+                              <TableCell className="text-[12px] text-muted-foreground">{s.prestador.nomeFantasia}</TableCell>
+                              <TableCell colSpan={6} className="text-[10px] text-destructive">{s.motivoEliminacao}</TableCell>
+                            </TableRow>
+                          ))}
+                        </>
+                      )}
                     </TableBody>
                   </Table>
                 </CardContent>
