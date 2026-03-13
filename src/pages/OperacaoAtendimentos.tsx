@@ -109,6 +109,15 @@ export default function OperacaoAtendimentos() {
                 <TableCell className="hidden md:table-cell text-[13px]">{a.solicitacoes?.cliente_nome || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{a.solicitacoes?.placa || '—'}</TableCell>
                 <TableCell><Badge variant={statusVariant(a.status)} className="text-[10px]">{statusLabel(a.status)}</Badge></TableCell>
+                <TableCell className="hidden md:table-cell">
+                  {(() => {
+                    const desp = despachos.find((d: any) => d.atendimentoId === a.id);
+                    if (!desp) return <span className="text-[10px] text-muted-foreground">—</span>;
+                    const modo = desp.modoDespacho as ModoDespacho;
+                    const MIcon = modoIcons[modo];
+                    return <Badge variant={modoVariants[modo]} className="text-[10px] gap-1"><MIcon className="h-2.5 w-2.5" />{modoLabels[modo]}</Badge>;
+                  })()}
+                </TableCell>
                 <TableCell className="hidden lg:table-cell text-[12px] text-muted-foreground max-w-[180px] truncate">{a.notas || '—'}</TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{a.created_at ? fmtDate(a.created_at) : '—'}</TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">
