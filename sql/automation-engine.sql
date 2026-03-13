@@ -32,7 +32,7 @@ ALTER TABLE public.message_templates ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "auth_read_message_templates" ON public.message_templates FOR SELECT TO authenticated USING (true);
 CREATE POLICY "auth_insert_message_templates" ON public.message_templates FOR INSERT TO authenticated WITH CHECK (true);
 CREATE POLICY "auth_update_message_templates" ON public.message_templates FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY "auth_delete_message_templates" ON public.message_templates FOR DELETE TO authenticated USING (true);, 
+CREATE POLICY "auth_delete_message_templates" ON public.message_templates FOR DELETE TO authenticated USING (true); 
 
 CREATE TRIGGER trg_message_templates_updated_at
   BEFORE UPDATE ON public.message_templates
