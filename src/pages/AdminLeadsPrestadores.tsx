@@ -260,6 +260,7 @@ export default function AdminLeadsPrestadores() {
                        <ArrowRightLeft className="h-3.5 w-3.5 mr-1" /> Converter em prestador
                      </Button>
                    )}
+                 </div>
 
                 <Separator />
 
