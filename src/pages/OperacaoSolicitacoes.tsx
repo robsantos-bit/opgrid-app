@@ -20,6 +20,7 @@ const modoVariants: Record<ModoDespacho, 'warning' | 'info' | 'success'> = { man
 const PAGE_SIZE = 20;
 
 export default function OperacaoSolicitacoes() {
+  const despachos = useMemo(() => getDespachos(), []);
   const { data: solicitacoes = [], isLoading } = useSolicitacoes();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
