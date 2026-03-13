@@ -263,7 +263,7 @@ export const mockDespachos: Despacho[] = [
     observacoes: '',
   },
   {
-    id: 'd2', solicitacaoId: 's3', atendimentoId: 'a3', rodadaAtual: 1, status: 'Aceito',
+    id: 'd2', solicitacaoId: 's3', atendimentoId: 'a3', rodadaAtual: 1, modoDespacho: 'assistido', status: 'Aceito',
     criadoEm: '2026-03-05T09:55:00', atualizadoEm: '2026-03-05T10:02:00',
     prestadorAceitoId: 'p2', tempoMedioAceiteMinutos: 5,
     ofertas: [
