@@ -253,7 +253,7 @@ export const mockSolicitacoes: Solicitacao[] = [
 
 export const mockDespachos: Despacho[] = [
   {
-    id: 'd1', solicitacaoId: 's1', atendimentoId: 'a1', rodadaAtual: 1, status: 'Aceito',
+    id: 'd1', solicitacaoId: 's1', atendimentoId: 'a1', rodadaAtual: 1, modoDespacho: 'automatico', status: 'Aceito',
     criadoEm: '2026-03-01T08:19:00', atualizadoEm: '2026-03-01T08:25:00',
     prestadorAceitoId: 'p1', tempoMedioAceiteMinutos: 3,
     ofertas: [
