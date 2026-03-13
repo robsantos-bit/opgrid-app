@@ -72,6 +72,8 @@ type FormData = z.infer<typeof formSchema>;
 export default function QueroSerPrestador() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { lookupCep, loading: cepLoading } = useCepLookup();
+  const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
