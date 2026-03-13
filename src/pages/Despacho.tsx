@@ -175,16 +175,16 @@ export default function CentralDespacho() {
     }
 
     const now = new Date().toISOString();
-    const newOfertas: OfertaPrestador[] = sugeridos.map((p, i) => ({
+    const newOfertas: OfertaPrestador[] = top.map((s, i) => ({
       id: `of-auto-${Date.now()}-${i}`,
       despachoId: d.id,
-      prestadorId: p.id,
+      prestadorId: s.prestador.id,
       rodada: d.rodadaAtual + 1,
       status: 'Pendente' as const,
       enviadaEm: now,
       tempoLimiteMinutos: 5,
-      distanciaEstimadaKm: Math.round(p.distKm * 10) / 10,
-      tempoEstimadoMinutos: p.tempoMin,
+      distanciaEstimadaKm: Math.round(s.distKm * 10) / 10,
+      tempoEstimadoMinutos: s.tempoMin,
       valorServico: sol.valorEstimado,
       linkOferta: `/prestador/oferta/of-auto-${Date.now()}-${i}`,
     }));
