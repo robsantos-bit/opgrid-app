@@ -126,7 +126,7 @@ export default function OperacaoSolicitacoes() {
           </TableRow></TableHeader>
           <TableBody>
             {paged.length === 0 ? (
-              <TableRow><TableCell colSpan={8} className="text-center py-16">
+              <TableRow><TableCell colSpan={9} className="text-center py-16">
                 <div className="flex flex-col items-center gap-2"><ClipboardList className="h-5 w-5 text-muted-foreground" /><p className="text-sm text-muted-foreground">Nenhuma solicitação encontrada</p></div>
               </TableCell></TableRow>
             ) : paged.map((s: any) => (
