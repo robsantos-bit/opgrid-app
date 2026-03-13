@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useSolicitacoes } from '@/hooks/useSupabaseData';
-import { Search, X, Eye, Loader2, ClipboardList, ArrowRight } from 'lucide-react';
+import { getDespachos } from '@/data/store';
+import { ModoDespacho } from '@/types';
+import { Search, X, Eye, Loader2, ClipboardList, ArrowRight, Hand, Bot, Sparkles } from 'lucide-react';
 
 const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
