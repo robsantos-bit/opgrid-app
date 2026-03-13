@@ -4,6 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useCepLookup } from '@/hooks/useCepLookup';
+import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -70,6 +72,8 @@ type FormData = z.infer<typeof formSchema>;
 export default function QueroSerPrestador() {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { lookupCep, loading: cepLoading } = useCepLookup();
+  const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
 
   const { register, handleSubmit, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -87,6 +91,37 @@ export default function QueroSerPrestador() {
 
   const servicos = watch('servicos');
   const tipos_veiculo = watch('tipos_veiculo');
+
+  const handleDocumentoBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const doc = e.target.value.replace(/\D/g, '');
+    if (doc.length === 14) {
+      const result = await lookupCnpj(e.target.value);
+      if (result) {
+        if (result.razao_social) setValue('razao_social', result.razao_social);
+        if (result.nome_fantasia) setValue('nome_fantasia', result.nome_fantasia);
+        if (result.telefone) setValue('telefone', result.telefone);
+        if (result.email) setValue('email', result.email);
+        if (result.cep) setValue('cep', result.cep);
+        if (result.logradouro) setValue('endereco', result.logradouro);
+        if (result.numero) setValue('numero', result.numero);
+        if (result.bairro) setValue('bairro', result.bairro);
+        if (result.municipio) setValue('cidade', result.municipio);
+        if (result.uf) setValue('estado', result.uf, { shouldValidate: true });
+        toast.success('Dados do CNPJ preenchidos automaticamente');
+      }
+    }
+  };
+
+  const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const result = await lookupCep(e.target.value);
+    if (result) {
+      if (result.logradouro) setValue('endereco', result.logradouro);
+      if (result.bairro) setValue('bairro', result.bairro);
+      if (result.localidade) setValue('cidade', result.localidade);
+      if (result.uf) setValue('estado', result.uf, { shouldValidate: true });
+      toast.success('Endereço preenchido automaticamente');
+    }
+  };
 
   const toggleArray = (field: 'servicos' | 'tipos_veiculo', value: string) => {
     const current = field === 'servicos' ? servicos : tipos_veiculo;
@@ -202,7 +237,8 @@ export default function QueroSerPrestador() {
                 </div>
                 <div>
                   <Label>CNPJ / CPF *</Label>
-                  <Input {...register('documento')} placeholder="00.000.000/0000-00" />
+                  <Input {...register('documento')} placeholder="00.000.000/0000-00" onBlur={handleDocumentoBlur} />
+                  {cnpjLoading && <p className="text-xs text-muted-foreground mt-1">Buscando dados do CNPJ...</p>}
                   <FieldError msg={errors.documento?.message} />
                 </div>
                 <div>
@@ -234,7 +270,8 @@ export default function QueroSerPrestador() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label>CEP</Label>
-                  <Input {...register('cep')} placeholder="00000-000" />
+                  <Input {...register('cep')} placeholder="00000-000" onBlur={handleCepBlur} />
+                  {cepLoading && <p className="text-xs text-muted-foreground mt-1">Buscando endereço...</p>}
                 </div>
                 <div className="md:col-span-2">
                   <Label>Endereço</Label>
