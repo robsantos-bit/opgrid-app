@@ -48,6 +48,8 @@ export async function handleIncomingMessage(
 
   if (!session) {
     session = createSession(from, contactName);
+    fireAutomation('novo_contato', from, { nome: contactName });
+    fireAutomation('new_conversation', from, { nome: contactName });
   }
 
   // Check window — if client sends message, window resets
