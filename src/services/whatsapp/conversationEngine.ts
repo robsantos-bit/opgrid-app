@@ -232,6 +232,7 @@ async function processStep(
       if (aceite) {
         session.currentStep = 'aceite_confirmado';
         upsertSession(session);
+        fireAutomation('quote_accepted', from, { valor: session.data.valorEstimado });
         await sendText(from, '✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...');
         addAutomationEvent({ sessionId: session.id, step: 'aceite_confirmado', action: 'client_accepted', success: true });
         await createOsAndDispatch(session, from);
