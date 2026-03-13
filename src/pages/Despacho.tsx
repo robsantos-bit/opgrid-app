@@ -167,8 +167,9 @@ export default function CentralDespacho() {
     const sol = d ? getSolicitacao(d.solicitacaoId) : undefined;
     if (!d || !sol) return;
 
-    const sugeridos = getSuggestedPrestadores(prestadores, sol).slice(0, 2);
-    if (sugeridos.length === 0) {
+    const scored = calcularScorePrestadores(prestadores, sol, atendimentos);
+    const top = getTopPrestadores(scored, 2);
+    if (top.length === 0) {
       toast.error('Nenhum prestador elegível encontrado');
       return;
     }
