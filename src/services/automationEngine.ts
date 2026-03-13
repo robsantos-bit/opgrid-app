@@ -73,7 +73,7 @@ export async function toggleAutomation(id: string, is_active: boolean) {
 
 export async function deleteAutomation(id: string) {
   const { error } = await supabase
-    .from('automations')
+    .from('message_automations')
     .delete()
     .eq('id', id);
   if (error) throw error;
