@@ -285,10 +285,11 @@ function MessagePanel({ conversation, onClose }: { conversation: Conversation; o
       await createMessage.mutateAsync({
         conversation_id: conversation.id,
         direction: 'outbound' as const,
-        type: 'text',
+        message_type: 'text',
         content: replyText.trim(),
         wa_message_id: null,
         status: 'sent',
+        metadata: {},
       });
 
       // Also send via Edge Function
