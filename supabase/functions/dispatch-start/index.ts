@@ -76,6 +76,11 @@ Deno.serve(async (req: Request) => {
       }
       atendimentoId = newAtd.id;
 
+      // Link solicitacao to atendimento
+      await supabase.from('solicitacoes').update({
+        atendimento_id: atendimentoId,
+      }).eq('id', solicitacao_id);
+
       // Link conversation to atendimento
       if (conversation_id) {
         await supabase.from('conversations').update({
