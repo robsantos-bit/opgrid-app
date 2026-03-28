@@ -595,7 +595,7 @@ async function processConversationState(
         await enqueueAutomation(supabase, 'quote_accepted', phone, conversationId, { valor: data.valorEstimado });
         await sendResponse(supabase, phone, conversationId,
           '✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...', provider);
-        await createSolicitacaoAndDispatch(supabase, conversationId, data, phone);
+        await createSolicitacaoAndDispatch(supabase, conversationId, data, phone, provider);
       } else if (recusa) {
         nextState = 'cancelado';
         await sendResponse(supabase, phone, conversationId,
@@ -603,6 +603,31 @@ async function processConversationState(
       } else {
         responseText = 'Por favor, responda *1* para aceitar ou *2* para recusar o orçamento.';
       }
+      break;
+    }
+
+    case 'solicitado': {
+      responseText = '⏳ Sua OS já está sendo processada! Estamos localizando o prestador mais próximo. Aguarde um momento...';
+      break;
+    }
+
+    case 'prestador_aceito': {
+      responseText = '🚗 O prestador já está a caminho! Se precisar de algo, responda aqui.';
+      break;
+    }
+
+    case 'em_andamento': {
+      responseText = '🔧 Seu atendimento está em andamento. Se tiver alguma urgência, responda aqui.';
+      break;
+    }
+
+    case 'concluido': {
+      responseText = '✅ Este atendimento já foi concluído. Para uma nova solicitação, envie "Oi".';
+      break;
+    }
+
+    case 'humano': {
+      // Conversation handed to human operator — don't auto-respond
       break;
     }
 
