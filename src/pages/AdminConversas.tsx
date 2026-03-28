@@ -345,7 +345,7 @@ function MessagePanel({ conversation, onClose }: { conversation: Conversation; o
             {messages.map(msg => (
               <div
                 key={msg.id}
-                className={`flex ${msg.direction === 'outgoing' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
                   className={`max-w-[85%] rounded-lg px-3 py-2 text-xs ${
