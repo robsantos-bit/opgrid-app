@@ -356,7 +356,7 @@ function MessagePanel({ conversation, onClose }: { conversation: Conversation; o
                 >
                   <p className="whitespace-pre-wrap break-words">{msg.content || '[mídia]'}</p>
                   <p className={`text-[10px] mt-1 ${
-                    msg.direction === 'outgoing' ? 'text-primary-foreground/60' : 'text-muted-foreground'
+                    msg.direction === 'outbound' ? 'text-primary-foreground/60' : 'text-muted-foreground'
                   }`}>
                     {msg.created_at ? format(new Date(msg.created_at), 'HH:mm', { locale: ptBR }) : ''}
                   </p>
