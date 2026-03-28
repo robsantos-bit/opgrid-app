@@ -45,7 +45,7 @@ export default function AdminAutomacoes() {
 
   const openEdit = (a: Automation) => {
     setEditing(a);
-    setForm({ name: a.name, trigger_event: a.trigger_event, channel: a.channel, audience: (a as any).audience || 'cliente', template_key: a.template_key || '', delay_seconds: a.delay_seconds });
+    setForm({ name: a.name, trigger_event: a.trigger_event, channel: a.channel, audience: (a as any).audience || 'cliente', template_key: a.template_key || '__none__', delay_seconds: a.delay_seconds });
     setModalOpen(true);
   };
 
