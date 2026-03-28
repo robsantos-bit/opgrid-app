@@ -1,5 +1,18 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+
+export function useUpdatePrestador() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...fields }: { id: string; [key: string]: any }) => {
+      const { error } = await supabase.from('prestadores').update(fields).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['prestadores'] });
+    },
+  });
+}
 
 export function usePrestadores() {
   return useQuery({
