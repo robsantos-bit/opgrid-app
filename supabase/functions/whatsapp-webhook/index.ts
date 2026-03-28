@@ -595,7 +595,7 @@ async function processConversationState(
         await enqueueAutomation(supabase, 'quote_accepted', phone, conversationId, { valor: data.valorEstimado });
         await sendResponse(supabase, phone, conversationId,
           '✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...', provider);
-        await createSolicitacaoAndDispatch(supabase, conversationId, data, phone);
+        await createSolicitacaoAndDispatch(supabase, conversationId, data, phone, provider);
       } else if (recusa) {
         nextState = 'cancelado';
         await sendResponse(supabase, phone, conversationId,
@@ -603,6 +603,31 @@ async function processConversationState(
       } else {
         responseText = 'Por favor, responda *1* para aceitar ou *2* para recusar o orçamento.';
       }
+      break;
+    }
+
+    case 'solicitado': {
+      responseText = '⏳ Sua OS já está sendo processada! Estamos localizando o prestador mais próximo. Aguarde um momento...';
+      break;
+    }
+
+    case 'prestador_aceito': {
+      responseText = '🚗 O prestador já está a caminho! Se precisar de algo, responda aqui.';
+      break;
+    }
+
+    case 'em_andamento': {
+      responseText = '🔧 Seu atendimento está em andamento. Se tiver alguma urgência, responda aqui.';
+      break;
+    }
+
+    case 'concluido': {
+      responseText = '✅ Este atendimento já foi concluído. Para uma nova solicitação, envie "Oi".';
+      break;
+    }
+
+    case 'humano': {
+      // Conversation handed to human operator — don't auto-respond
       break;
     }
 
@@ -845,7 +870,8 @@ async function createSolicitacaoAndDispatch(
   supabase: any,
   conversationId: string,
   data: any,
-  phone: string
+  phone: string,
+  provider: Provider
 ) {
   const now = new Date().toISOString();
   const protocolo = `OS-${Date.now().toString(36).toUpperCase()}`;
@@ -871,16 +897,35 @@ async function createSolicitacaoAndDispatch(
 
   if (solErr) {
     console.error('[DISPATCH] Error creating solicitacao:', solErr);
+    await sendResponse(supabase, phone, conversationId,
+      '⚠️ Ocorreu um erro ao criar sua OS. Nossa equipe foi notificada e entrará em contato.', provider);
     return;
   }
 
+  // Update conversation with solicitacao link
   await supabase.from('conversations').update({
     solicitacao_id: sol.id,
   }).eq('id', conversationId);
 
+  // Send OS confirmation directly to client
+  const osConfirmation =
+    `📄 *Ordem de Serviço Criada!*\n\n` +
+    `📋 Protocolo: *${protocolo}*\n` +
+    `👤 Cliente: ${data.nome}\n` +
+    `🚗 Placa: ${data.placa}\n` +
+    `🔧 Motivo: ${data.motivo}\n` +
+    `📍 Origem: ${data.origem}\n` +
+    `🏁 Destino: ${data.destino}\n` +
+    `💰 Valor: R$ ${data.valorEstimado?.toFixed(2)}\n\n` +
+    `⏳ Estamos acionando os prestadores próximos. Você receberá atualizações aqui!`;
+
+  await sendResponse(supabase, phone, conversationId, osConfirmation, provider);
+
+  // Enqueue automations
   await enqueueAutomation(supabase, 'order_created', phone, conversationId, { protocolo, solicitacaoId: sol.id });
   await enqueueAutomation(supabase, 'new_request', phone, conversationId, { protocolo });
 
+  // Call dispatch-start
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -899,5 +944,20 @@ async function createSolicitacaoAndDispatch(
     });
   } catch (err) {
     console.error('[DISPATCH] Error calling dispatch-start:', err);
+  }
+
+  // Auto-trigger process-queue to send enqueued automation messages
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/process-queue`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${serviceKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({}),
+    });
+    console.log('[DISPATCH] process-queue triggered');
+  } catch (err) {
+    console.error('[DISPATCH] Error triggering process-queue:', err);
   }
 }

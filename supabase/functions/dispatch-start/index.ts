@@ -153,6 +153,23 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[DISPATCH] Created ${insertedOffers?.length} offers for round ${round}`);
 
+    // Auto-trigger process-queue to deliver enqueued automation messages
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      await fetch(`${supabaseUrl}/functions/v1/process-queue`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${serviceKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}),
+      });
+      console.log('[DISPATCH] process-queue triggered');
+    } catch (err) {
+      console.error('[DISPATCH] Error triggering process-queue:', err);
+    }
+
     return jsonResponse({
       status: 'ok',
       atendimento_id: atendimentoId,
