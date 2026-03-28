@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,34 +8,41 @@ import {
 } from '@/components/ui/table';
 import {
   MessageCircle, Phone, User, Clock, Search, RefreshCw, Headphones,
-  CheckCircle2, AlertTriangle, Loader2, Ban, ArrowRight
+  CheckCircle2, Loader2, Ban, ArrowRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useConversations, useAssignOperator } from '@/hooks/useWhatsAppData';
+import { useQueryClient } from '@tanstack/react-query';
+import type { Conversation, ConversationState } from '@/types/whatsapp';
 
-interface ConversationEntry {
-  id: string;
-  nome: string;
-  telefone: string;
-  etapa: string;
-  status: string;
-  ultimaInteracao: string;
-  origem: string;
-  protocolo?: string;
-  atendimentoId?: string;
-}
-
-const STEP_LABELS: Record<string, string> = {
-  greeting: 'Início', nome: 'Nome', telefone: 'Telefone', placa: 'Veículo',
-  localizacao: 'Localização', motivo: 'Motivo', destino: 'Destino',
-  observacoes: 'Observações', resumo: 'Resumo', calculando: 'Calculando',
-  proposta: 'Proposta', aceite: 'Aceite', gerando_os: 'Gerando OS',
-  despacho: 'Despacho', aguardando_prestador: 'Aguardando prestador',
-  prestador_confirmado: 'Prestador confirmado', prestador_caminho: 'A caminho',
-  prestador_chegou: 'No local', em_atendimento: 'Em atendimento',
-  concluido: 'Concluído', cancelado: 'Cancelado',
-  encaminhado_humano: 'Encaminhado p/ central',
+const STATE_LABELS: Record<string, string> = {
+  novo_contato: 'Novo contato',
+  aguardando_nome: 'Nome',
+  aguardando_telefone: 'Telefone',
+  aguardando_veiculo: 'Veículo',
+  aguardando_origem: 'Origem',
+  aguardando_motivo: 'Motivo',
+  aguardando_destino: 'Destino',
+  aguardando_observacoes: 'Observações',
+  resumo_pronto: 'Resumo',
+  aguardando_aceite: 'Aguardando aceite',
+  solicitado: 'OS criada',
+  cancelado: 'Cancelado',
+  humano: 'Encaminhado p/ central',
 };
+
+function deriveStatus(state: ConversationState): string {
+  if (['novo_contato', 'aguardando_nome', 'aguardando_telefone', 'aguardando_veiculo',
+    'aguardando_origem', 'aguardando_motivo', 'aguardando_destino', 'aguardando_observacoes'].includes(state))
+    return 'Coletando dados';
+  if (state === 'resumo_pronto') return 'Proposta enviada';
+  if (state === 'aguardando_aceite') return 'Aguardando aceite';
+  if (state === 'solicitado') return 'OS em andamento';
+  if (state === 'cancelado') return 'Cancelado';
+  if (state === 'humano') return 'Encaminhado p/ central';
+  return state;
+}
 
 function getStatusBadge(status: string) {
   switch (status) {
@@ -45,10 +52,7 @@ function getStatusBadge(status: string) {
     case 'Aguardando aceite':
       return <Badge className="bg-warning/10 text-warning border-warning/20 gap-1 text-[10px]"><Clock className="h-3 w-3" />{status}</Badge>;
     case 'OS em andamento':
-    case 'Em atendimento':
       return <Badge className="bg-info/10 text-info border-info/20 gap-1 text-[10px]"><ArrowRight className="h-3 w-3" />{status}</Badge>;
-    case 'Concluído':
-      return <Badge className="bg-success/10 text-success border-success/20 gap-1 text-[10px]"><CheckCircle2 className="h-3 w-3" />{status}</Badge>;
     case 'Cancelado':
       return <Badge className="bg-destructive/10 text-destructive border-destructive/20 gap-1 text-[10px]"><Ban className="h-3 w-3" />{status}</Badge>;
     case 'Encaminhado p/ central':
@@ -59,39 +63,24 @@ function getStatusBadge(status: string) {
 }
 
 export default function AdminConversas() {
-  const [conversations, setConversations] = useState<ConversationEntry[]>([]);
+  const { data: conversations = [], isLoading } = useConversations();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
 
-  const loadConversations = () => {
-    try {
-      const data = JSON.parse(localStorage.getItem('opgrid_wa_conversations') || '[]');
-      setConversations(data);
-    } catch {
-      setConversations([]);
-    }
-  };
+  const filtered = conversations.filter(c => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    const name = c.contact_name?.toLowerCase() || '';
+    const phone = c.contact_phone || '';
+    return name.includes(q) || phone.includes(q) || c.id.includes(q);
+  });
 
-  useEffect(() => {
-    loadConversations();
-    const handler = () => loadConversations();
-    window.addEventListener('opgrid-conversation-update', handler);
-    const interval = setInterval(loadConversations, 3000);
-    return () => {
-      window.removeEventListener('opgrid-conversation-update', handler);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const filtered = conversations.filter(c =>
-    !search || c.nome?.toLowerCase().includes(search.toLowerCase()) ||
-    c.telefone?.includes(search) || c.protocolo?.includes(search)
-  );
-
+  const terminal: ConversationState[] = ['solicitado', 'cancelado', 'humano'];
   const stats = {
     total: conversations.length,
-    emAndamento: conversations.filter(c => !['Concluído', 'Cancelado', 'Encaminhado p/ central'].includes(c.status)).length,
-    concluidas: conversations.filter(c => c.status === 'Concluído').length,
-    humano: conversations.filter(c => c.status === 'Encaminhado p/ central').length,
+    emAndamento: conversations.filter(c => !terminal.includes(c.state)).length,
+    concluidas: conversations.filter(c => c.state === 'solicitado').length,
+    humano: conversations.filter(c => c.state === 'humano').length,
   };
 
   return (
@@ -103,17 +92,19 @@ export default function AdminConversas() {
             Acompanhe em tempo real todas as jornadas conversacionais em andamento.
           </p>
         </div>
-        <Button onClick={loadConversations} variant="outline" size="sm" className="gap-1.5 text-xs">
+        <Button
+          onClick={() => queryClient.invalidateQueries({ queryKey: ['conversations'] })}
+          variant="outline" size="sm" className="gap-1.5 text-xs"
+        >
           <RefreshCw className="h-3.5 w-3.5" />Atualizar
         </Button>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Total', value: stats.total, icon: MessageCircle, color: 'text-primary' },
           { label: 'Em andamento', value: stats.emAndamento, icon: Loader2, color: 'text-info' },
-          { label: 'Concluídas', value: stats.concluidas, icon: CheckCircle2, color: 'text-success' },
+          { label: 'OS criada', value: stats.concluidas, icon: CheckCircle2, color: 'text-success' },
           { label: 'Encaminhadas', value: stats.humano, icon: Headphones, color: 'text-warning' },
         ].map(s => (
           <Card key={s.label}>
@@ -128,14 +119,13 @@ export default function AdminConversas() {
         ))}
       </div>
 
-      {/* Search & Table */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center gap-3 mb-4">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nome, telefone ou protocolo..."
+                placeholder="Buscar por nome, telefone ou ID..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
                 className="pl-9 text-sm"
@@ -143,11 +133,16 @@ export default function AdminConversas() {
             </div>
           </div>
 
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin opacity-40" />
+              <p className="text-sm">Carregando conversas...</p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <MessageCircle className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm font-medium">Nenhuma conversa registrada</p>
-              <p className="text-xs mt-1">Inicie uma simulação no Simulador WhatsApp para ver as conversas aqui.</p>
+              <p className="text-xs mt-1">As conversas aparecerão aqui quando o webhook receber mensagens.</p>
             </div>
           ) : (
             <div className="rounded-md border overflow-hidden">
@@ -158,51 +153,50 @@ export default function AdminConversas() {
                     <TableHead className="text-[11px]">Telefone</TableHead>
                     <TableHead className="text-[11px]">Etapa</TableHead>
                     <TableHead className="text-[11px]">Status</TableHead>
-                    <TableHead className="text-[11px]">Última interação</TableHead>
-                    <TableHead className="text-[11px]">Protocolo</TableHead>
+                    <TableHead className="text-[11px]">Última atualização</TableHead>
                     <TableHead className="text-[11px]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map(conv => (
-                    <TableRow key={conv.id}>
-                      <TableCell className="text-xs font-medium">
-                        <div className="flex items-center gap-2">
-                          <User className="h-3.5 w-3.5 text-muted-foreground" />
-                          {conv.nome || '—'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <div className="flex items-center gap-1.5">
-                          <Phone className="h-3 w-3 text-muted-foreground" />
-                          {conv.telefone || '—'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs">
-                        <Badge variant="outline" className="text-[10px]">
-                          {STEP_LABELS[conv.etapa] || conv.etapa}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{getStatusBadge(conv.status)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3 w-3" />
-                          {conv.ultimaInteracao
-                            ? formatDistanceToNow(new Date(conv.ultimaInteracao), { addSuffix: true, locale: ptBR })
-                            : '—'}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-xs font-mono">
-                        {conv.protocolo || '—'}
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
-                          <Headphones className="h-3 w-3" />
-                          Assumir
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filtered.map(conv => {
+                    const status = deriveStatus(conv.state);
+                    return (
+                      <TableRow key={conv.id}>
+                        <TableCell className="text-xs font-medium">
+                          <div className="flex items-center gap-2">
+                            <User className="h-3.5 w-3.5 text-muted-foreground" />
+                            {conv.contact_name || '—'}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <div className="flex items-center gap-1.5">
+                            <Phone className="h-3 w-3 text-muted-foreground" />
+                            {conv.contact_phone || '—'}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant="outline" className="text-[10px]">
+                            {STATE_LABELS[conv.state] || conv.state}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{getStatusBadge(status)}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
+                            {conv.updated_at
+                              ? formatDistanceToNow(new Date(conv.updated_at), { addSuffix: true, locale: ptBR })
+                              : '—'}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="outline" size="sm" className="h-7 text-[10px] gap-1">
+                            <Headphones className="h-3 w-3" />
+                            Assumir
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
