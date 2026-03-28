@@ -8,15 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { usePrestadores } from '@/hooks/useSupabaseData';
+import { usePrestadores, useUpdatePrestador } from '@/hooks/useSupabaseData';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
-import { Search, X, Eye, Loader2, Users, MapPin, UserPlus, Building2, Phone, Mail, Truck, UsersRound, CheckCircle2, Info } from 'lucide-react';
+import { Search, X, Eye, Loader2, Users, MapPin, UserPlus, Building2, Phone, Mail, Truck, UsersRound, CheckCircle2, Info, Pencil, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
+const STATUSES = ['ativo', 'inativo', 'bloqueado'];
+const TIPOS = ['guincho', 'plataforma', 'apoio'];
 
 export default function RedePrestadores() {
   const { data: prestadores = [], isLoading } = usePrestadores();
+  const updateMut = useUpdatePrestador();
   const { lookupCnpj, loading: cnpjLoading } = useCnpjLookup();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -24,6 +27,8 @@ export default function RedePrestadores() {
   const [selected, setSelected] = useState<any>(null);
   const [page, setPage] = useState(0);
   const [showCadastro, setShowCadastro] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [cadastroForm, setCadastroForm] = useState({
     nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '',
   });
@@ -72,6 +77,37 @@ export default function RedePrestadores() {
       setCadastroForm({ nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '' });
       toast.success('Prestador cadastrado com sucesso! Senha enviada por email.');
     }, 1200);
+  };
+
+  const openDetail = (p: any) => {
+    setSelected(p);
+    setEditMode(false);
+    setEditForm({});
+  };
+
+  const startEdit = () => {
+    if (!selected) return;
+    setEditForm({
+      nome: selected.nome || '',
+      cnpj: selected.cnpj || '',
+      telefone: selected.telefone || '',
+      email: selected.email || '',
+      tipo: selected.tipo || 'guincho',
+      status: selected.status || 'ativo',
+    });
+    setEditMode(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selected) return;
+    try {
+      await updateMut.mutateAsync({ id: selected.id, ...editForm });
+      toast.success('Prestador atualizado com sucesso.');
+      setSelected({ ...selected, ...editForm });
+      setEditMode(false);
+    } catch (err: any) {
+      toast.error('Erro ao atualizar: ' + err.message);
+    }
   };
 
   const filtered = useMemo(() => {
@@ -162,7 +198,7 @@ export default function RedePrestadores() {
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Tipo</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden xl:table-cell">Cadastro</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right w-[60px]">Ações</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right w-[80px]">Ações</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {paged.length === 0 ? (
@@ -170,7 +206,7 @@ export default function RedePrestadores() {
                 <div className="flex flex-col items-center gap-2"><Users className="h-5 w-5 text-muted-foreground" /><p className="text-sm text-muted-foreground">Nenhum prestador encontrado</p></div>
               </TableCell></TableRow>
             ) : paged.map((p: any) => (
-              <TableRow key={p.id} className="table-row-hover cursor-pointer" onClick={() => setSelected(p)}>
+              <TableRow key={p.id} className="table-row-hover cursor-pointer" onClick={() => openDetail(p)}>
                 <TableCell className="font-medium text-[13px]">{p.nome || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{p.cnpj || '—'}</TableCell>
                 <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{p.telefone || '—'}</TableCell>
@@ -178,16 +214,20 @@ export default function RedePrestadores() {
                 <TableCell><Badge variant={statusBadge(p.status)} className="text-[10px] capitalize">{p.status || '—'}</Badge></TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
                 <TableCell className="text-right">
-                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); }}>
-                    <Eye className="h-3.5 w-3.5" />
-                  </Button>
+                  <div className="flex justify-end gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); openDetail(p); }}>
+                      <Eye className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); setEditForm({ nome: p.nome || '', cnpj: p.cnpj || '', telefone: p.telefone || '', email: p.email || '', tipo: p.tipo || 'guincho', status: p.status || 'ativo' }); setEditMode(true); }}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t">
             <p className="text-[11px] text-muted-foreground">
@@ -201,42 +241,94 @@ export default function RedePrestadores() {
         )}
       </CardContent></Card>
 
-      {/* Detail sheet */}
-      <Sheet open={!!selected} onOpenChange={() => setSelected(null)}>
+      {/* Detail / Edit Sheet */}
+      <Sheet open={!!selected} onOpenChange={(open) => { if (!open) { setSelected(null); setEditMode(false); } }}>
         <SheetContent className="w-[420px] sm:w-[480px] overflow-y-auto">
           {selected && (
             <>
               <SheetHeader>
-                <SheetTitle>{selected.nome}</SheetTitle>
-                <div className="flex gap-2">
-                  <Badge variant={statusBadge(selected.status)} className="capitalize">{selected.status}</Badge>
-                  <Badge variant={tipoBadge(selected.tipo)} className="capitalize">{selected.tipo}</Badge>
-                </div>
-              </SheetHeader>
-              <div className="mt-4 space-y-3 text-[13px]">
-                {[
-                  ['CNPJ', selected.cnpj],
-                  ['Telefone', selected.telefone],
-                  ['Tipo', selected.tipo],
-                  ['Status', selected.status],
-                  ['Cadastrado em', selected.created_at ? new Date(selected.created_at).toLocaleString('pt-BR') : '—'],
-                ].map(([label, val]) => (
-                  <div key={String(label)} className="flex justify-between py-2 border-b border-dashed border-border/60">
-                    <span className="text-muted-foreground">{label}</span>
-                    <span className="font-medium capitalize">{val || '—'}</span>
-                  </div>
-                ))}
-                {(selected.latitude && selected.longitude) && (
-                  <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
-                    <MapPin className="h-3.5 w-3.5" />
-                    <span>{selected.latitude?.toFixed(4)}, {selected.longitude?.toFixed(4)}</span>
+                <SheetTitle>{editMode ? 'Editar Prestador' : selected.nome}</SheetTitle>
+                {!editMode && (
+                  <div className="flex gap-2">
+                    <Badge variant={statusBadge(selected.status)} className="capitalize">{selected.status}</Badge>
+                    <Badge variant={tipoBadge(selected.tipo)} className="capitalize">{selected.tipo}</Badge>
                   </div>
                 )}
-              </div>
+              </SheetHeader>
+
+              {editMode ? (
+                <div className="mt-4 space-y-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Nome</Label>
+                    <Input value={editForm.nome} onChange={e => setEditForm(p => ({ ...p, nome: e.target.value }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">CNPJ</Label>
+                    <Input value={editForm.cnpj} onChange={e => setEditForm(p => ({ ...p, cnpj: formatCnpj(e.target.value) }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Telefone</Label>
+                    <Input value={editForm.telefone} onChange={e => setEditForm(p => ({ ...p, telefone: formatPhone(e.target.value) }))} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Email</Label>
+                    <Input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Tipo</Label>
+                      <Select value={editForm.tipo} onValueChange={v => setEditForm(p => ({ ...p, tipo: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{TIPOS.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Status</Label>
+                      <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button variant="outline" className="flex-1" onClick={() => setEditMode(false)}>Cancelar</Button>
+                    <Button className="flex-1 gap-2" onClick={handleSaveEdit} disabled={updateMut.isPending}>
+                      {updateMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                      Salvar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 space-y-3 text-[13px]">
+                  {[
+                    ['CNPJ', selected.cnpj],
+                    ['Telefone', selected.telefone],
+                    ['Email', selected.email],
+                    ['Tipo', selected.tipo],
+                    ['Status', selected.status],
+                    ['Cadastrado em', selected.created_at ? new Date(selected.created_at).toLocaleString('pt-BR') : '—'],
+                  ].map(([label, val]) => (
+                    <div key={String(label)} className="flex justify-between py-2 border-b border-dashed border-border/60">
+                      <span className="text-muted-foreground">{label}</span>
+                      <span className="font-medium capitalize">{val || '—'}</span>
+                    </div>
+                  ))}
+                  {(selected.latitude && selected.longitude) && (
+                    <div className="flex items-center gap-2 pt-2 text-[11px] text-muted-foreground">
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>{selected.latitude?.toFixed(4)}, {selected.longitude?.toFixed(4)}</span>
+                    </div>
+                  )}
+                  <Button className="w-full mt-4 gap-2" variant="outline" onClick={startEdit}>
+                    <Pencil className="h-4 w-4" /> Editar Prestador
+                  </Button>
+                </div>
+              )}
             </>
           )}
         </SheetContent>
       </Sheet>
+
       {/* Cadastro Dialog */}
       <Dialog open={showCadastro} onOpenChange={setShowCadastro}>
         <DialogContent className="sm:max-w-[520px]">
