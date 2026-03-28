@@ -58,7 +58,7 @@ export default function AdminAutomacoes() {
   const handleSave = async () => {
     if (!form.name) { toast.error('Informe o nome da automação.'); return; }
     try {
-      const payload: any = { ...form, template_key: form.template_key || null };
+      const payload: any = { ...form, template_key: form.template_key === '__none__' ? null : form.template_key };
       if (editing) payload.id = editing.id;
       await upsertMut.mutateAsync(payload);
       toast.success(editing ? 'Automação atualizada.' : 'Automação criada.');
