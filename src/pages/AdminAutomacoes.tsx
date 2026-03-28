@@ -51,7 +51,7 @@ export default function AdminAutomacoes() {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp', audience: 'cliente', template_key: '', delay_seconds: 0 });
+    setForm({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp', audience: 'cliente', template_key: '__none__', delay_seconds: 0 });
     setModalOpen(true);
   };
 
