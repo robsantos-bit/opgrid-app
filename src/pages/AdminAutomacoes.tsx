@@ -34,7 +34,7 @@ export default function AdminAutomacoes() {
   const [filterAudience, setFilterAudience] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Automation | null>(null);
-  const [form, setForm] = useState({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp' as AutomationChannel, audience: 'cliente' as AutomationAudience, template_key: '', delay_seconds: 0 });
+  const [form, setForm] = useState({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp' as AutomationChannel, audience: 'cliente' as AutomationAudience, template_key: '__none__', delay_seconds: 0 });
 
   const filtered = useMemo(() => automacoes.filter(a =>
     (!search || a.name.toLowerCase().includes(search.toLowerCase()) || a.trigger_event.toLowerCase().includes(search.toLowerCase())) &&
