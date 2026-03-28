@@ -5,11 +5,53 @@ export function useUpdatePrestador() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...fields }: { id: string; [key: string]: any }) => {
-      console.log('[useUpdatePrestador] Updating prestador:', id, fields);
-      const { data, error, status } = await supabase.from('prestadores').update(fields).eq('id', id).select();
-      console.log('[useUpdatePrestador] Response:', { data, error, status });
-      if (error) throw error;
-      return data;
+      const cleanFields = Object.fromEntries(
+        Object.entries(fields).filter(([, value]) => value !== undefined)
+      );
+
+      console.log('[useUpdatePrestador] Updating prestador:', id, cleanFields);
+
+      const updateWithPayload = (payload: Record<string, any>) =>
+        supabase.from('prestadores').update(payload).eq('id', id).select();
+
+      const unknownColumnRegex = /Could not find the '([^']+)' column of 'prestadores'/i;
+      let payload = { ...cleanFields };
+      let lastError: any = null;
+      let lastStatus: number | null = null;
+
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const { data, error, status } = await updateWithPayload(payload);
+        lastStatus = status;
+
+        if (!error) {
+          console.log('[useUpdatePrestador] Response:', { data, error, status, payload });
+          return data;
+        }
+
+        lastError = error;
+        const unknownColumn = error.message?.match(unknownColumnRegex)?.[1];
+
+        if (!unknownColumn || !(unknownColumn in payload)) {
+          break;
+        }
+
+        const { [unknownColumn]: _removed, ...nextPayload } = payload;
+
+        console.warn('[useUpdatePrestador] Removing unsupported column and retrying:', {
+          unknownColumn,
+          attempt: attempt + 1,
+          nextPayload,
+        });
+
+        if (Object.keys(nextPayload).length === 0) {
+          break;
+        }
+
+        payload = nextPayload;
+      }
+
+      console.log('[useUpdatePrestador] Response:', { data: null, error: lastError, status: lastStatus, payload });
+      throw lastError;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['prestadores'] });
