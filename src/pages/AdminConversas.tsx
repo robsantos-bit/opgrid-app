@@ -284,7 +284,7 @@ function MessagePanel({ conversation, onClose }: { conversation: Conversation; o
     try {
       await createMessage.mutateAsync({
         conversation_id: conversation.id,
-        direction: 'outgoing',
+        direction: 'outbound' as const,
         type: 'text',
         content: replyText.trim(),
         wa_message_id: null,
