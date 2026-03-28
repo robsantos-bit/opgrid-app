@@ -34,7 +34,7 @@ export default function AdminAutomacoes() {
   const [filterAudience, setFilterAudience] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Automation | null>(null);
-  const [form, setForm] = useState({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp' as AutomationChannel, audience: 'cliente' as AutomationAudience, template_key: '', delay_seconds: 0 });
+  const [form, setForm] = useState({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp' as AutomationChannel, audience: 'cliente' as AutomationAudience, template_key: '__none__', delay_seconds: 0 });
 
   const filtered = useMemo(() => automacoes.filter(a =>
     (!search || a.name.toLowerCase().includes(search.toLowerCase()) || a.trigger_event.toLowerCase().includes(search.toLowerCase())) &&
@@ -45,20 +45,20 @@ export default function AdminAutomacoes() {
 
   const openEdit = (a: Automation) => {
     setEditing(a);
-    setForm({ name: a.name, trigger_event: a.trigger_event, channel: a.channel, audience: (a as any).audience || 'cliente', template_key: a.template_key || '', delay_seconds: a.delay_seconds });
+    setForm({ name: a.name, trigger_event: a.trigger_event, channel: a.channel, audience: (a as any).audience || 'cliente', template_key: a.template_key || '__none__', delay_seconds: a.delay_seconds });
     setModalOpen(true);
   };
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp', audience: 'cliente', template_key: '', delay_seconds: 0 });
+    setForm({ name: '', trigger_event: 'novo_contato', channel: 'whatsapp', audience: 'cliente', template_key: '__none__', delay_seconds: 0 });
     setModalOpen(true);
   };
 
   const handleSave = async () => {
     if (!form.name) { toast.error('Informe o nome da automação.'); return; }
     try {
-      const payload: any = { ...form, template_key: form.template_key || null };
+      const payload: any = { ...form, template_key: form.template_key === '__none__' ? null : form.template_key };
       if (editing) payload.id = editing.id;
       await upsertMut.mutateAsync(payload);
       toast.success(editing ? 'Automação atualizada.' : 'Automação criada.');
@@ -189,7 +189,7 @@ export default function AdminAutomacoes() {
               <Select value={form.template_key} onValueChange={v => setForm(p => ({ ...p, template_key: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar template..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
                   {templates.map(t => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}
                 </SelectContent>
               </Select>
