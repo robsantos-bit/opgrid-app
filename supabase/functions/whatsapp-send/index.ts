@@ -37,31 +37,76 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const body = await req.json();
+    let body: any;
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON body' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Allow explicit provider selection
-    const provider = body.provider || (useWapi ? 'wapi' : 'meta');
-    const to = body.to || body.chatId;
+    const requestedProvider = typeof body.provider === 'string' ? body.provider.toLowerCase() : '';
+    const provider = (requestedProvider || (useWapi ? 'wapi' : 'meta')) as 'wapi' | 'meta';
+    const to = typeof body.to === 'string' ? body.to : (typeof body.chatId === 'string' ? body.chatId : '');
 
     console.log(`[SEND] Provider: ${provider} | To: ${to} | Type: ${body.type || 'text'}`);
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      console.error('[SEND] Missing internal Supabase env vars', {
-        hasSupabaseUrl: !!supabaseUrl,
-        hasServiceRoleKey: !!supabaseServiceKey,
-      });
+    if (provider !== 'wapi' && provider !== 'meta') {
       return new Response(
-        JSON.stringify({ error: 'Server configuration error: missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY' }),
+        JSON.stringify({ error: "Invalid provider. Use 'wapi' or 'meta'." }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    if (provider === 'wapi' && !useWapi) {
+      return new Response(
+        JSON.stringify({ error: 'W-API credentials not configured (WAPI_INSTANCE_ID/WAPI_TOKEN)' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    if (provider === 'meta' && !useMeta) {
+      return new Response(
+        JSON.stringify({ error: 'Meta credentials not configured (WHATSAPP_ACCESS_TOKEN/WHATSAPP_PHONE_NUMBER_ID)' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const supabase = (supabaseUrl && supabaseServiceKey)
+      ? createClient(supabaseUrl, supabaseServiceKey)
+      : null;
+
+    if (!supabase) {
+      console.warn('[SEND] SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing; continuing without message_logs insert');
+    }
+
+    const logMessage = async (payload: {
+      provider_message_id: string | null;
+      direction: 'outbound';
+      status: 'sent' | 'failed';
+      response_json: unknown;
+    }) => {
+      if (!supabase) return;
+      const { error } = await supabase.from('message_logs').insert(payload);
+      if (error) {
+        console.error('[SEND] Failed to insert message_logs:', error.message);
+      }
+    };
 
     if (provider === 'wapi') {
       // ── W-API Send ──
+      if (!to) {
+        return new Response(
+          JSON.stringify({ error: "Missing 'to' (or 'chatId') for W-API send" }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       const chatId = to.includes('@') ? to : `${to}@c.us`;
       const text = body.text?.body || body.text || body.message || '';
 
@@ -83,7 +128,7 @@ Deno.serve(async (req: Request) => {
       let resData: any = null;
       try { resData = JSON.parse(resBody); } catch {}
 
-      await supabase.from('message_logs').insert({
+      await logMessage({
         provider_message_id: resData?.id || resData?.key?.id || null,
         direction: 'outbound',
         status: res.ok ? 'sent' : 'failed',
@@ -121,9 +166,16 @@ Deno.serve(async (req: Request) => {
       const metaBody = await metaRes.text();
       console.log('[SEND-META] Response:', metaRes.status, metaBody.slice(0, 300));
 
-      const metaData = metaRes.ok ? JSON.parse(metaBody) : null;
+      let metaData: any = null;
+      if (metaRes.ok) {
+        try {
+          metaData = JSON.parse(metaBody);
+        } catch {
+          metaData = { raw: metaBody };
+        }
+      }
 
-      await supabase.from('message_logs').insert({
+      await logMessage({
         provider_message_id: metaData?.messages?.[0]?.id || null,
         direction: 'outbound',
         status: metaRes.ok ? 'sent' : 'failed',
