@@ -189,7 +189,7 @@ export default function AdminAutomacoes() {
               <Select value={form.template_key} onValueChange={v => setForm(p => ({ ...p, template_key: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecionar template..." /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="__none__">Nenhum</SelectItem>
                   {templates.map(t => <SelectItem key={t.key} value={t.key}>{t.name}</SelectItem>)}
                 </SelectContent>
               </Select>
