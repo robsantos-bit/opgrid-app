@@ -74,7 +74,7 @@ function CopyField({ label, value, description }: { label: string; value: string
 }
 
 function WapiTestCard() {
-  const [testPhone, setTestPhone] = useState('');
+  const [testPhone, setTestPhone] = useState('5512992184913');
   const [testMessage, setTestMessage] = useState('🧪 Teste de integração W-API via OpGrid!');
   const [sending, setSending] = useState(false);
   const [testResult, setTestResult] = useState<{ ok: boolean; details: string } | null>(null);
