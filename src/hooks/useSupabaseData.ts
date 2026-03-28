@@ -5,8 +5,11 @@ export function useUpdatePrestador() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...fields }: { id: string; [key: string]: any }) => {
-      const { error } = await supabase.from('prestadores').update(fields).eq('id', id);
+      console.log('[useUpdatePrestador] Updating prestador:', id, fields);
+      const { data, error, status } = await supabase.from('prestadores').update(fields).eq('id', id).select();
+      console.log('[useUpdatePrestador] Response:', { data, error, status });
       if (error) throw error;
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['prestadores'] });
