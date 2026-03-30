@@ -84,6 +84,7 @@ async function getCurrentAuthData(): Promise<AuthContextData> {
         .eq('user_id', user.id),
     ]);
 
+  console.log('[AuthProfile] Profile:', { profileError: profileError?.message, rolesError: rolesError?.message, roles: roleRows });
   if (profileError) throw profileError;
   if (rolesError) throw rolesError;
 
