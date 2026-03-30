@@ -77,9 +77,18 @@ Deno.serve(async (req: Request) => {
       if (offer.atendimento_id) {
         await supabase.from('atendimentos').update({
           prestador_id: offer.prestador_id,
-          status: 'Em andamento',
+          status: 'em_andamento',
         }).eq('id', offer.atendimento_id);
       }
+
+      // 3.1 Update solicitacao status/link so operation screens stop showing it as pending
+      await supabase
+        .from('solicitacoes')
+        .update({
+          status: 'Convertida em OS',
+          atendimento_id: offer.atendimento_id,
+        })
+        .eq('id', offer.solicitacao_id);
 
       // 4. Update conversation state
       const { data: conv } = await supabase
@@ -107,6 +116,12 @@ Deno.serve(async (req: Request) => {
 
         // Notify client
         await enqueueAutomation(supabase, 'provider_assigned', conv.contact_phone, conv.id, {
+          protocolo: offer.solicitacoes?.protocolo,
+          prestadorNome,
+          atendimentoId: offer.atendimento_id,
+        });
+
+        await enqueueAutomation(supabase, 'cliente_prestador_confirmado', conv.contact_phone, conv.id, {
           protocolo: offer.solicitacoes?.protocolo,
           prestadorNome,
           atendimentoId: offer.atendimento_id,

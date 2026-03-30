@@ -281,6 +281,26 @@ export function useDispatchOffers(solicitacaoId: string | null | undefined) {
   });
 }
 
+export function useAllDispatchOffers() {
+  return useQuery({
+    queryKey: ['dispatch_offers', 'all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('dispatch_offers')
+        .select(`
+          *,
+          prestadores ( id, nome, telefone ),
+          solicitacoes ( id, cliente_nome, placa, origem_endereco, destino_endereco )
+        `)
+        .order('sent_at', { ascending: false });
+
+      if (error) throw error;
+      return (data || []) as DispatchOffer[];
+    },
+    refetchInterval: 5000,
+  });
+}
+
 export function useDispatchOfferById(id: string | null | undefined) {
   return useQuery({
     queryKey: ['dispatch_offers', 'detail', id],
