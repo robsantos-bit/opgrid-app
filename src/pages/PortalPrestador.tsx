@@ -21,6 +21,10 @@ import {
   Send, ChevronRight, Radio, Eye, LocateFixed, Upload, Lock, KeyRound, Trash2
 } from 'lucide-react';
 
+const getSolicitacaoPlaca = (solicitacao: any) => solicitacao?.placa || solicitacao?.veiculo_placa || 'N/D';
+const getSolicitacaoVeiculo = (solicitacao: any) => solicitacao?.tipo_veiculo || solicitacao?.veiculo_modelo || getSolicitacaoPlaca(solicitacao);
+const getSolicitacaoValor = (solicitacao: any, oferta: any) => Number(oferta?.service_value ?? solicitacao?.valor ?? solicitacao?.valor_estimado ?? 0);
+
 function formatDate(d: string) {
   return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
@@ -125,21 +129,19 @@ function OfertaView({ oferta }: { oferta: any }) {
   const handleAceitar = async () => {
     setLoading(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL || 'https://dnzsmogsqctscfqulffr.supabase.co'}/functions/v1/dispatch-respond`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_pINhdvMNkPDccZrkuGpxKw_9Js8NA5j' },
-        body: JSON.stringify({ offer_id: oferta.id, action: 'accept' }),
+      const { data, error } = await supabase.functions.invoke('dispatch-respond', {
+        body: { offer_id: oferta.id, action: 'accept' },
       });
-      const data = await res.json();
-      if (res.ok) {
+
+      if (!error) {
         setStatus('accepted');
         setAtendimentoId(data.atendimento_id || oferta.atendimento_id);
         toast.success('Oferta aceita com sucesso!');
       } else {
-        toast.error(data.error || data.detail || 'Erro ao aceitar oferta');
+        const message = (error as any)?.context?.error || (error as any)?.message || 'Erro ao aceitar oferta';
+        toast.error(message);
       }
-    } catch (err) {
+    } catch {
       toast.error('Erro de conexão. Tente novamente.');
     } finally {
       setLoading(false);
@@ -151,13 +153,16 @@ function OfertaView({ oferta }: { oferta: any }) {
   const confirmRecusa = async () => {
     setLoading(true);
     try {
-      const url = `${import.meta.env.VITE_SUPABASE_URL || 'https://dnzsmogsqctscfqulffr.supabase.co'}/functions/v1/dispatch-respond`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_pINhdvMNkPDccZrkuGpxKw_9Js8NA5j' },
-        body: JSON.stringify({ offer_id: oferta.id, action: 'reject', rejection_reason: motivoRecusa || 'Outro' }),
+      const { error } = await supabase.functions.invoke('dispatch-respond', {
+        body: { offer_id: oferta.id, action: 'reject', rejection_reason: motivoRecusa || 'Outro' },
       });
-      await res.json();
+
+      if (error) {
+        const message = (error as any)?.context?.error || (error as any)?.message || 'Erro ao recusar oferta';
+        toast.error(message);
+        return;
+      }
+
       setStatus('rejected');
       setShowRecusa(false);
       toast.success('Oferta recusada.');
@@ -220,15 +225,15 @@ function OfertaView({ oferta }: { oferta: any }) {
   return (
     <MobileShell>
       {/* Header — green bar like reference */}
-      <div className="bg-[hsl(160,60%,38%)] text-white px-5 py-4 flex items-center justify-between">
+      <div className="bg-primary text-primary-foreground px-5 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-            <Truck className="h-4.5 w-4.5 text-white" />
+          <div className="w-8 h-8 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
+            <Truck className="h-4.5 w-4.5 text-primary-foreground" />
           </div>
           <span className="text-base font-bold uppercase tracking-wide">Novo Chamado</span>
         </div>
-        <button className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
-          <Radio className="h-4 w-4 text-white/80" />
+        <button className="w-8 h-8 rounded-lg bg-primary-foreground/10 flex items-center justify-center">
+          <Radio className="h-4 w-4 text-primary-foreground/80" />
         </button>
       </div>
 
@@ -238,7 +243,7 @@ function OfertaView({ oferta }: { oferta: any }) {
       {/* Info cards */}
       <div className="px-4 pb-4">
         <Card className="overflow-hidden">
-          <InfoRow icon={Car} label="Veículo" value={solicitacao?.placa || 'N/D'} iconColor="text-muted-foreground" />
+          <InfoRow icon={Car} label="Veículo" value={getSolicitacaoVeiculo(solicitacao)} iconColor="text-muted-foreground" />
           <InfoRow icon={User} label="Cliente" value={solicitacao?.cliente_nome || 'Cliente'} iconColor="text-muted-foreground" />
           <InfoRow icon={MapPin} label="Origem" value={solicitacao?.origem_endereco || 'N/D'} iconColor="text-warning" />
           <InfoRow icon={MapPin} label="Destino" value={solicitacao?.destino_endereco || 'N/D'} iconColor="text-destructive" />
@@ -250,7 +255,7 @@ function OfertaView({ oferta }: { oferta: any }) {
         <Card className="border-2 border-success/30 bg-success/5">
           <CardContent className="p-3 text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Valor</p>
-            <p className="text-xl font-bold text-success">R$ {Number(oferta.service_value || 0).toFixed(2)}</p>
+            <p className="text-xl font-bold text-success">R$ {getSolicitacaoValor(solicitacao, oferta).toFixed(2)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -265,7 +270,7 @@ function OfertaView({ oferta }: { oferta: any }) {
       <div className="px-4 pb-6 space-y-2.5">
         {!showRecusa ? (
           <>
-            <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={handleAceitar} disabled={loading}>
+            <Button className="w-full h-14 text-base font-bold" onClick={handleAceitar} disabled={loading}>
               {loading && <Loader2 className="h-5 w-5 mr-2 animate-spin" />}
               <CheckCircle2 className="h-5 w-5 mr-2" />Aceitar chamado
             </Button>

@@ -311,7 +311,7 @@ export function useDispatchOfferById(id: string | null | undefined) {
         .select(`
           *,
           prestadores ( id, nome, telefone ),
-          solicitacoes ( id, cliente_nome, placa, origem_endereco, destino_endereco )
+          solicitacoes ( id, cliente_nome, cliente_telefone, cliente_whatsapp, placa, veiculo_placa, tipo_veiculo, veiculo_modelo, origem_endereco, destino_endereco, valor, valor_estimado, created_at, data_hora )
         `)
         .eq('id', id!)
         .maybeSingle();
