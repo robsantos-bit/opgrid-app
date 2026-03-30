@@ -42,34 +42,34 @@ export interface AuthContextData {
   canAccessPrestador: boolean;
 }
 
-async function getCurrentAuthData(): Promise<AuthContextData> {
-  console.log('[AuthProfile] Fetching auth data...');
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser();
+const UNAUTHENTICATED: AuthContextData = {
+  userId: null,
+  email: null,
+  isAuthenticated: false,
+  profile: null,
+  roles: [],
+  primaryRole: null,
+  providerId: null,
+  isAdmin: false,
+  isOperador: false,
+  isFinanceiro: false,
+  isPrestador: false,
+  isComercial: false,
+  canAccessApp: false,
+  canAccessPrestador: false,
+};
 
-  console.log('[AuthProfile] getUser result:', { userId: user?.id, authError: authError?.message });
-  if (authError) throw authError;
+async function getCurrentAuthData(): Promise<AuthContextData> {
+  // Try getSession first (uses local token, works in preview proxy)
+  const { data: sessionData } = await supabase.auth.getSession();
+  const user = sessionData?.session?.user;
 
   if (!user) {
-    return {
-      userId: null,
-      email: null,
-      isAuthenticated: false,
-      profile: null,
-      roles: [],
-      primaryRole: null,
-      providerId: null,
-      isAdmin: false,
-      isOperador: false,
-      isFinanceiro: false,
-      isPrestador: false,
-      isComercial: false,
-      canAccessApp: false,
-      canAccessPrestador: false,
-    };
+    console.log('[AuthProfile] No session found');
+    return UNAUTHENTICATED;
   }
+
+  console.log('[AuthProfile] Session user:', user.id);
 
   const [{ data: profile, error: profileError }, { data: roleRows, error: rolesError }] =
     await Promise.all([
@@ -84,11 +84,17 @@ async function getCurrentAuthData(): Promise<AuthContextData> {
         .eq('user_id', user.id),
     ]);
 
-  console.log('[AuthProfile] Profile:', { profileError: profileError?.message, rolesError: rolesError?.message, roles: roleRows });
-  if (profileError) throw profileError;
-  if (rolesError) throw rolesError;
+  if (profileError) {
+    console.error('[AuthProfile] Profile error:', profileError.message);
+  }
+  if (rolesError) {
+    console.error('[AuthProfile] Roles error:', rolesError.message);
+  }
 
+  // Even if profile/roles fail, user IS authenticated
   const roles = ((roleRows || []).map((row) => row.role) as AppRole[]) || [];
+
+  console.log('[AuthProfile] Loaded:', { roles, profile: !!profile });
 
   const priorityOrder: AppRole[] = [
     'admin',
@@ -130,6 +136,7 @@ export function useAuthProfile() {
     queryKey: ['auth-profile'],
     queryFn: getCurrentAuthData,
     staleTime: 30_000,
+    retry: 1,
   });
 }
 
@@ -138,9 +145,12 @@ export function useRoleGuards() {
 
   const guards = useMemo(() => {
     const data = query.data;
+    // Treat error state as "done loading" to avoid infinite spinner
+    const isDone = !query.isLoading && !query.isFetching;
+    const isStillLoading = query.isLoading && !query.isError;
 
     return {
-      isLoading: query.isLoading,
+      isLoading: isStillLoading,
       isAuthenticated: data?.isAuthenticated ?? false,
       canAccessApp: data?.canAccessApp ?? false,
       canAccessPrestador: data?.canAccessPrestador ?? false,
@@ -152,7 +162,7 @@ export function useRoleGuards() {
       primaryRole: data?.primaryRole ?? null,
       providerId: data?.providerId ?? null,
     };
-  }, [query.data, query.isLoading]);
+  }, [query.data, query.isLoading, query.isError, query.isFetching]);
 
   return {
     ...query,
