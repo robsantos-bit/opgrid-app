@@ -21,9 +21,9 @@ import {
   Send, ChevronRight, Radio, Eye, LocateFixed, Upload, Lock, KeyRound, Trash2
 } from 'lucide-react';
 
-const getSolicitacaoPlaca = (solicitacao: any) => solicitacao?.placa || solicitacao?.veiculo_placa || 'N/D';
-const getSolicitacaoVeiculo = (solicitacao: any) => solicitacao?.tipo_veiculo || solicitacao?.veiculo_modelo || getSolicitacaoPlaca(solicitacao);
-const getSolicitacaoValor = (solicitacao: any, oferta: any) => Number(oferta?.service_value ?? solicitacao?.valor ?? solicitacao?.valor_estimado ?? 0);
+const getSolicitacaoPlaca = (solicitacao: any) => solicitacao?.placa || 'N/D';
+const getSolicitacaoVeiculo = (solicitacao: any) => solicitacao?.tipo_veiculo || solicitacao?.placa || 'N/D';
+const getSolicitacaoValor = (solicitacao: any, oferta: any) => Number(oferta?.service_value ?? solicitacao?.valor ?? 0);
 
 function formatDate(d: string) {
   return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });

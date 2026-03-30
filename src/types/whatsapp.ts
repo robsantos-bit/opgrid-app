@@ -84,5 +84,5 @@ export interface DispatchOffer {
   created_at: string;
   // Joined relations
   prestadores?: { id: string; nome: string; telefone: string } | null;
-  solicitacoes?: { id: string; cliente_nome: string; placa: string } | null;
+  solicitacoes?: { id: string; cliente_nome: string; cliente_telefone: string; placa: string; tipo_veiculo: string; origem_endereco: string; destino_endereco: string; valor: number; created_at: string } | null;
 }
