@@ -883,15 +883,15 @@ async function createSolicitacaoAndDispatch(
     cliente_nome: data.nome,
     cliente_telefone: phone,
     cliente_whatsapp: phone,
-    veiculo_placa: data.placa,
-    veiculo_modelo: data.modelo || 'Veículo',
+    placa: data.placa,
+    tipo_veiculo: data.modelo || 'Veículo não informado',
     origem_endereco: data.origem,
     destino_endereco: data.destino,
     motivo: data.motivo || 'Outro',
     observacoes: data.observacoes || '',
     distancia_estimada_km: data.distanciaKm,
-    valor_estimado: data.valorEstimado,
-    status: 'Convertida em OS',
+    valor: data.valorEstimado,
+    status: 'pendente',
     status_proposta: 'Aceita',
   }).select().single();
 
@@ -930,7 +930,7 @@ async function createSolicitacaoAndDispatch(
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
   try {
-    await fetch(`${supabaseUrl}/functions/v1/dispatch-start`, {
+    const dispatchRes = await fetch(`${supabaseUrl}/functions/v1/dispatch-start`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${serviceKey}`,
@@ -942,6 +942,10 @@ async function createSolicitacaoAndDispatch(
         contact_phone: phone,
       }),
     });
+
+    if (!dispatchRes.ok) {
+      console.error('[DISPATCH] dispatch-start returned error:', await dispatchRes.text());
+    }
   } catch (err) {
     console.error('[DISPATCH] Error calling dispatch-start:', err);
   }

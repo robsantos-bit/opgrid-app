@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
     // Get offer with concurrency check — only process if still pending
     const { data: offer, error: offerErr } = await supabase
       .from('dispatch_offers')
-      .select('*, prestadores(id, nome, nome_fantasia, telefone), solicitacoes(id, protocolo, cliente_nome, cliente_whatsapp)')
+      .select('*, prestadores(id, nome, telefone), solicitacoes(id, protocolo, cliente_nome, cliente_whatsapp)')
       .eq('id', offer_id)
       .eq('status', 'pending')
       .single();
@@ -89,7 +89,7 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
 
       if (conv) {
-        const prestadorNome = offer.prestadores?.nome_fantasia || offer.prestadores?.nome || 'Prestador';
+        const prestadorNome = offer.prestadores?.nome || 'Prestador';
         const mergedData = {
           ...(conv.data || {}),
           prestador_nome: prestadorNome,
