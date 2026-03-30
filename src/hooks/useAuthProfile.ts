@@ -43,11 +43,13 @@ export interface AuthContextData {
 }
 
 async function getCurrentAuthData(): Promise<AuthContextData> {
+  console.log('[AuthProfile] Fetching auth data...');
   const {
     data: { user },
     error: authError,
   } = await supabase.auth.getUser();
 
+  console.log('[AuthProfile] getUser result:', { userId: user?.id, authError: authError?.message });
   if (authError) throw authError;
 
   if (!user) {
@@ -82,6 +84,7 @@ async function getCurrentAuthData(): Promise<AuthContextData> {
         .eq('user_id', user.id),
     ]);
 
+  console.log('[AuthProfile] Profile:', { profileError: profileError?.message, rolesError: rolesError?.message, roles: roleRows });
   if (profileError) throw profileError;
   if (rolesError) throw rolesError;
 
