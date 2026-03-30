@@ -14,6 +14,9 @@ export type ConversationState =
   | 'resumo_pronto'
   | 'aguardando_aceite'
   | 'solicitado'
+  | 'prestador_aceito'
+  | 'em_andamento'
+  | 'concluido'
   | 'cancelado'
   | 'humano';
 
