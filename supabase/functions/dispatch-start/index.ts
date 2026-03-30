@@ -53,22 +53,22 @@ Deno.serve(async (req: Request) => {
     if (existingAtd) {
       atendimentoId = existingAtd.id;
     } else {
-      const { data: newAtd, error: atdErr } = await supabase.from('atendimentos').insert({
-        protocolo: sol.protocolo,
-        data_hora: new Date().toISOString(),
-        cliente_nome: sol.cliente_nome,
-        solicitante: sol.cliente_nome,
-        origem: sol.origem_endereco,
-        destino: sol.destino_endereco,
-        tipo_atendimento: sol.motivo || 'Guincho',
-        veiculo: sol.tipo_veiculo || sol.veiculo_modelo || 'Veículo não informado',
-        placa: sol.placa || sol.veiculo_placa,
-        km_previsto: sol.distancia_estimada_km,
-        status: 'Aberto',
-        prioridade: 'Normal',
-        valor_total: sol.valor || sol.valor_estimado,
+      const atendimentoPayload = {
         solicitacao_id: sol.id,
-      }).select().single();
+        status: 'aberto',
+        notas: [
+          `OS criada via WhatsApp (${sol.protocolo || 'sem protocolo'})`,
+          sol.motivo ? `Motivo: ${sol.motivo}` : null,
+          sol.origem_endereco ? `Origem: ${sol.origem_endereco}` : null,
+          sol.destino_endereco ? `Destino: ${sol.destino_endereco}` : null,
+        ].filter(Boolean).join(' • '),
+      };
+
+      const { data: newAtd, error: atdErr } = await supabase
+        .from('atendimentos')
+        .insert(atendimentoPayload)
+        .select('id')
+        .single();
 
       if (atdErr) {
         console.error('[DISPATCH] Error creating atendimento:', atdErr);
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
       status: 'pending',
       estimated_distance_km: Math.floor(Math.random() * 15) + 3,
       estimated_time_min: Math.floor(Math.random() * 25) + 10,
-      service_value: sol.valor_estimado,
+        service_value: sol.valor || sol.valor_estimado || null,
       sent_at: new Date().toISOString(),
       expires_at: expiresAt,
     }));

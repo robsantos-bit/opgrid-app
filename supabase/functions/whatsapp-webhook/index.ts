@@ -873,6 +873,17 @@ async function createSolicitacaoAndDispatch(
   phone: string,
   provider: Provider
 ) {
+  const { data: conversation } = await supabase
+    .from('conversations')
+    .select('data')
+    .eq('id', conversationId)
+    .maybeSingle();
+
+  const mergedData = {
+    ...(conversation?.data || {}),
+    ...(data || {}),
+  };
+
   const now = new Date().toISOString();
   const protocolo = `OS-${Date.now().toString(36).toUpperCase()}`;
 
@@ -880,17 +891,17 @@ async function createSolicitacaoAndDispatch(
     protocolo,
     data_hora: now,
     canal: 'WhatsApp',
-    cliente_nome: data.nome,
+    cliente_nome: mergedData.nome || null,
     cliente_telefone: phone,
     cliente_whatsapp: phone,
-    placa: data.placa,
-    tipo_veiculo: data.modelo || 'Veículo não informado',
-    origem_endereco: data.origem,
-    destino_endereco: data.destino,
-    motivo: data.motivo || 'Outro',
-    observacoes: data.observacoes || '',
-    distancia_estimada_km: data.distanciaKm,
-    valor: data.valorEstimado,
+    placa: mergedData.placa || null,
+    tipo_veiculo: mergedData.modelo || 'Veículo não informado',
+    origem_endereco: mergedData.origem || null,
+    destino_endereco: mergedData.destino || null,
+    motivo: mergedData.motivo || 'Outro',
+    observacoes: mergedData.observacoes || '',
+    distancia_estimada_km: mergedData.distanciaKm || null,
+    valor: mergedData.valorEstimado || null,
     status: 'pendente',
     status_proposta: 'Aceita',
   }).select().single();
@@ -911,12 +922,12 @@ async function createSolicitacaoAndDispatch(
   const osConfirmation =
     `📄 *Ordem de Serviço Criada!*\n\n` +
     `📋 Protocolo: *${protocolo}*\n` +
-    `👤 Cliente: ${data.nome}\n` +
-    `🚗 Placa: ${data.placa}\n` +
-    `🔧 Motivo: ${data.motivo}\n` +
-    `📍 Origem: ${data.origem}\n` +
-    `🏁 Destino: ${data.destino}\n` +
-    `💰 Valor: R$ ${data.valorEstimado?.toFixed(2)}\n\n` +
+    `👤 Cliente: ${mergedData.nome || 'Não informado'}\n` +
+    `🚗 Placa: ${mergedData.placa || 'Não informada'}\n` +
+    `🔧 Motivo: ${mergedData.motivo || 'Outro'}\n` +
+    `📍 Origem: ${mergedData.origem || 'Não informada'}\n` +
+    `🏁 Destino: ${mergedData.destino || 'Não informado'}\n` +
+    `💰 Valor: R$ ${(Number(mergedData.valorEstimado || 0)).toFixed(2)}\n\n` +
     `⏳ Estamos acionando os prestadores próximos. Você receberá atualizações aqui!`;
 
   await sendResponse(supabase, phone, conversationId, osConfirmation, provider);
