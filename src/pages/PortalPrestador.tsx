@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback, ReactNode } from 'react';
 import { playProviderSiren } from '@/lib/sirenSound';
 import { useParams, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,15 +8,15 @@ import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { getDespachos, getAtendimentos, getSolicitacoes, getPrestadores, updateDespacho, updateSolicitacao, updateAtendimento } from '@/data/store';
-import { addNotification } from '@/lib/notifications';
-import { OfertaPrestador, Atendimento, Solicitacao, Prestador, StatusOsPrestador, ChecklistItem, CHECKLIST_PADRAO } from '@/types';
+import { StatusOsPrestador, ChecklistItem, CHECKLIST_PADRAO } from '@/types';
+import { useDispatchOfferById } from '@/hooks/useWhatsAppData';
+import { supabase } from '@/integrations/supabase/client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from 'sonner';
 import ChecklistExecucao from '@/components/ChecklistExecucao';
 import {
-  Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, XCircle, AlertTriangle,
+  Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, XCircle, AlertTriangle, Loader2,
   Navigation, Camera, FileText, Timer, Shield, Zap, ArrowRight, User, Car, DollarSign,
   Send, ChevronRight, Radio, Eye, LocateFixed, Upload, Lock, KeyRound, Trash2
 } from 'lucide-react';
@@ -85,17 +85,23 @@ function InfoRow({ icon: Icon, label, value, iconColor }: { icon: typeof Truck; 
 }
 
 // ====== OFFER PAGE ======
-function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestador; solicitacao: Solicitacao | undefined; prestador: Prestador | undefined }) {
+function OfertaView({ oferta }: { oferta: any }) {
   const [status, setStatus] = useState(oferta.status);
   const [showRecusa, setShowRecusa] = useState(false);
   const [motivoRecusa, setMotivoRecusa] = useState('');
   const [sirenPlayed, setSirenPlayed] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [atendimentoId, setAtendimentoId] = useState<string | null>(oferta.atendimento_id);
 
-  const expiresAt = new Date(oferta.enviadaEm).getTime() + oferta.tempoLimiteMinutos * 60000;
-  const expired = status === 'Pendente' && expiresAt < Date.now();
+  const solicitacao = oferta.solicitacoes;
+  const prestador = oferta.prestadores;
+
+  const expiresAt = oferta.expires_at ? new Date(oferta.expires_at).getTime() : (new Date(oferta.sent_at).getTime() + 2 * 60 * 1000);
+  const expired = status === 'pending' && expiresAt < Date.now();
+  const totalMinutes = oferta.expires_at ? Math.max(1, Math.round((new Date(oferta.expires_at).getTime() - new Date(oferta.sent_at).getTime()) / 60000)) : 2;
 
   useEffect(() => {
-    if (status === 'Pendente' && !expired && !sirenPlayed) {
+    if (status === 'pending' && !expired && !sirenPlayed) {
       const playOnInteraction = () => {
         playProviderSiren(3);
         setSirenPlayed(true);
@@ -116,76 +122,53 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     }
   }, [status, expired, sirenPlayed]);
 
-  const handleAceitar = () => {
-    setStatus('Aceita');
-    const despachos = getDespachos();
-    const desp = despachos.find(d => d.id === oferta.despachoId);
-    if (desp) {
-      const now = new Date().toISOString();
-      desp.ofertas = desp.ofertas.map(o => o.id === oferta.id ? { ...o, status: 'Aceita' as const, respondidaEm: now } : o);
-      desp.ofertas = desp.ofertas.map(o => o.id !== oferta.id && o.status === 'Pendente' ? { ...o, status: 'Encerrada' as const, respondidaEm: now } : o);
-      desp.status = 'Aceito';
-      desp.prestadorAceitoId = oferta.prestadorId;
-      desp.atualizadoEm = now;
-      updateDespacho(desp);
-      if (desp.atendimentoId) {
-        const atendimentos = getAtendimentos();
-        const atd = atendimentos.find(a => a.id === desp.atendimentoId);
-        if (atd) {
-          atd.prestadorId = oferta.prestadorId;
-          atd.status = 'Em andamento';
-          atd.statusPrestador = 'Aceito';
-          atd.linkPrestador = `/prestador/os/${atd.id}`;
-          atd.timeline = [...atd.timeline, { data: now, descricao: `Prestador ${prestador?.nomeFantasia || ''} aceitou a OS` }];
-          updateAtendimento(atd);
-        }
-      }
-      const sols = getSolicitacoes();
-      const sol = sols.find(s => s.id === desp.solicitacaoId);
-      if (sol) {
-        sol.status = 'Em atendimento';
-        sol.statusProposta = 'Aceita';
-        sol.propostaRespondidaEm = now;
-        sol.timeline.push({ data: now, descricao: `Prestador ${prestador?.nomeFantasia || ''} aceitou a oferta`, tipo: 'sistema' });
-        updateSolicitacao(sol);
-      }
-      addNotification({
-        type: 'oferta_aceita',
-        title: '✅ Oferta aceita!',
-        message: `${prestador?.nomeFantasia || 'Prestador'} aceitou a oferta para ${solicitacao?.protocolo || 'solicitação'}`,
-        solicitacaoId: desp.solicitacaoId,
-        prestadorNome: prestador?.nomeFantasia,
+  const handleAceitar = async () => {
+    setLoading(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL || 'https://dnzsmogsqctscfqulffr.supabase.co'}/functions/v1/dispatch-respond`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_pINhdvMNkPDccZrkuGpxKw_9Js8NA5j' },
+        body: JSON.stringify({ offer_id: oferta.id, action: 'accept' }),
       });
+      const data = await res.json();
+      if (res.ok) {
+        setStatus('accepted');
+        setAtendimentoId(data.atendimento_id || oferta.atendimento_id);
+        toast.success('Oferta aceita com sucesso!');
+      } else {
+        toast.error(data.error || data.detail || 'Erro ao aceitar oferta');
+      }
+    } catch (err) {
+      toast.error('Erro de conexão. Tente novamente.');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleRecusar = () => { setShowRecusa(true); };
 
-  const confirmRecusa = () => {
-    setStatus('Recusada');
-    setShowRecusa(false);
-    const despachos = getDespachos();
-    const desp = despachos.find(d => d.id === oferta.despachoId);
-    if (desp) {
-      const now = new Date().toISOString();
-      desp.ofertas = desp.ofertas.map(o => o.id === oferta.id ? { ...o, status: 'Recusada' as const, respondidaEm: now, motivoRecusa: (motivoRecusa || 'Outro') as any } : o);
-      const allResolved = desp.ofertas.every(o => o.status !== 'Pendente');
-      if (allResolved && !desp.ofertas.some(o => o.status === 'Aceita')) {
-        desp.status = 'Sem prestador';
-      }
-      desp.atualizadoEm = now;
-      updateDespacho(desp);
-      addNotification({
-        type: 'oferta_recusada',
-        title: '❌ Oferta recusada',
-        message: `${prestador?.nomeFantasia || 'Prestador'} recusou a oferta para ${solicitacao?.protocolo || 'solicitação'}. Motivo: ${motivoRecusa || 'Não informado'}`,
-        solicitacaoId: desp.solicitacaoId,
-        prestadorNome: prestador?.nomeFantasia,
+  const confirmRecusa = async () => {
+    setLoading(true);
+    try {
+      const url = `${import.meta.env.VITE_SUPABASE_URL || 'https://dnzsmogsqctscfqulffr.supabase.co'}/functions/v1/dispatch-respond`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_pINhdvMNkPDccZrkuGpxKw_9Js8NA5j' },
+        body: JSON.stringify({ offer_id: oferta.id, action: 'reject', rejection_reason: motivoRecusa || 'Outro' }),
       });
+      await res.json();
+      setStatus('rejected');
+      setShowRecusa(false);
+      toast.success('Oferta recusada.');
+    } catch {
+      toast.error('Erro de conexão.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (expired && status === 'Pendente') {
+  if (expired && status === 'pending') {
     return (
       <MobileShell>
         <div className="flex flex-col items-center justify-center py-16 text-center px-6">
@@ -199,9 +182,8 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     );
   }
 
-  if (status === 'Aceita') {
-    const desp = getDespachos().find(d => d.id === oferta.despachoId);
-    const osId = desp?.atendimentoId;
+  if (status === 'accepted') {
+    const osId = atendimentoId;
     return (
       <MobileShell>
         <div className="flex flex-col items-center justify-center py-16 text-center px-6">
@@ -221,7 +203,7 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
     );
   }
 
-  if (status === 'Recusada') {
+  if (status === 'rejected') {
     return (
       <MobileShell>
         <div className="flex flex-col items-center justify-center py-16 text-center px-6">
@@ -251,15 +233,15 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
       </div>
 
       {/* Countdown timer circle */}
-      <CountdownCircle expiresAt={expiresAt} totalMinutes={oferta.tempoLimiteMinutos} />
+      <CountdownCircle expiresAt={expiresAt} totalMinutes={totalMinutes} />
 
       {/* Info cards */}
       <div className="px-4 pb-4">
         <Card className="overflow-hidden">
-          <InfoRow icon={Car} label="Veículo" value={solicitacao ? `${solicitacao.veiculoModelo} • ${solicitacao.veiculoPlaca}` : 'N/D'} iconColor="text-muted-foreground" />
-          <InfoRow icon={User} label="Cliente" value={solicitacao?.clienteNome || 'Cliente não encontrado'} iconColor="text-muted-foreground" />
-          <InfoRow icon={MapPin} label="Origem" value={solicitacao?.origemEndereco || 'N/D'} iconColor="text-warning" />
-          <InfoRow icon={MapPin} label="Destino" value={solicitacao?.destinoEndereco || 'N/D'} iconColor="text-destructive" />
+          <InfoRow icon={Car} label="Veículo" value={solicitacao?.placa || 'N/D'} iconColor="text-muted-foreground" />
+          <InfoRow icon={User} label="Cliente" value={solicitacao?.cliente_nome || 'Cliente'} iconColor="text-muted-foreground" />
+          <InfoRow icon={MapPin} label="Origem" value={solicitacao?.origem_endereco || 'N/D'} iconColor="text-warning" />
+          <InfoRow icon={MapPin} label="Destino" value={solicitacao?.destino_endereco || 'N/D'} iconColor="text-destructive" />
         </Card>
       </div>
 
@@ -268,13 +250,13 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
         <Card className="border-2 border-success/30 bg-success/5">
           <CardContent className="p-3 text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Valor</p>
-            <p className="text-xl font-bold text-success">R$ {oferta.valorServico.toFixed(2)}</p>
+            <p className="text-xl font-bold text-success">R$ {Number(oferta.service_value || 0).toFixed(2)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Distância</p>
-            <p className="text-xl font-bold text-foreground">{oferta.distanciaEstimadaKm} km</p>
+            <p className="text-xl font-bold text-foreground">{oferta.estimated_distance_km || '—'} km</p>
           </CardContent>
         </Card>
       </div>
@@ -283,10 +265,11 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
       <div className="px-4 pb-6 space-y-2.5">
         {!showRecusa ? (
           <>
-            <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={handleAceitar}>
+            <Button className="w-full h-14 text-base font-bold bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)]" onClick={handleAceitar} disabled={loading}>
+              {loading && <Loader2 className="h-5 w-5 mr-2 animate-spin" />}
               <CheckCircle2 className="h-5 w-5 mr-2" />Aceitar chamado
             </Button>
-            <Button variant="outline" className="w-full h-12 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={handleRecusar}>
+            <Button variant="outline" className="w-full h-12 text-destructive border-destructive/30 hover:bg-destructive/5" onClick={handleRecusar} disabled={loading}>
               <XCircle className="h-4 w-4 mr-2" />Recusar
             </Button>
           </>
@@ -307,7 +290,9 @@ function OfertaView({ oferta, solicitacao, prestador }: { oferta: OfertaPrestado
               ))}
               <div className="flex gap-2 mt-2">
                 <Button variant="outline" className="flex-1" onClick={() => setShowRecusa(false)}>Voltar</Button>
-                <Button variant="destructive" className="flex-1" onClick={confirmRecusa} disabled={!motivoRecusa}>Confirmar recusa</Button>
+                <Button variant="destructive" className="flex-1" onClick={confirmRecusa} disabled={!motivoRecusa || loading}>
+                  {loading && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}Confirmar recusa
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -934,22 +919,21 @@ function Row({ icon: Icon, label, value }: { icon: typeof Truck; label: string; 
 export default function PortalPrestador() {
   const { tipo: paramTipo, id } = useParams<{ tipo: string; id: string }>();
   const location = useLocation();
-  // Derive tipo from URL path if not in params (e.g. /prestador/oferta/:id)
   const tipo = paramTipo || (location.pathname.includes('/oferta/') ? 'oferta' : location.pathname.includes('/os/') ? 'os' : undefined);
 
-  const despachos = useMemo(() => getDespachos(), []);
-  const atendimentos = useMemo(() => getAtendimentos(), []);
-  const solicitacoes = useMemo(() => getSolicitacoes(), []);
-  const prestadores = useMemo(() => getPrestadores(), []);
+  // Fetch offer from Supabase for /prestador/oferta/:id
+  const { data: dbOffer, isLoading: loadingOffer } = useDispatchOfferById(tipo === 'oferta' ? id : undefined);
 
   if (tipo === 'oferta' && id) {
-    let oferta: OfertaPrestador | undefined;
-    for (const d of despachos) {
-      const found = d.ofertas.find(o => o.id === id);
-      if (found) { oferta = found; break; }
+    if (loadingOffer) {
+      return (
+        <MobileShell>
+          <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+        </MobileShell>
+      );
     }
 
-    if (!oferta) {
+    if (!dbOffer) {
       return (
         <MobileShell>
           <div className="flex flex-col items-center justify-center py-20 text-center px-6">
@@ -963,33 +947,21 @@ export default function PortalPrestador() {
       );
     }
 
-    const despacho = despachos.find(d => d.id === oferta!.despachoId);
-    const sol = despacho ? solicitacoes.find(s => s.id === despacho.solicitacaoId) : undefined;
-    const prest = prestadores.find(p => p.id === oferta.prestadorId);
-
-    return <OfertaView oferta={oferta} solicitacao={sol} prestador={prest} />;
+    return <OfertaView oferta={dbOffer} />;
   }
 
   if (tipo === 'os' && id) {
-    const atendimento = atendimentos.find(a => a.id === id);
-    if (!atendimento) {
-      return (
-        <MobileShell>
-          <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-              <FileText className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <h2 className="text-lg font-bold mb-1">OS não encontrada</h2>
-            <p className="text-sm text-muted-foreground">Este link pode estar incorreto ou a OS não existe.</p>
+    return (
+      <MobileShell>
+        <div className="flex flex-col items-center justify-center py-20 text-center px-6">
+          <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mb-4">
+            <CheckCircle2 className="h-8 w-8 text-success" />
           </div>
-        </MobileShell>
-      );
-    }
-
-    const sol = atendimento.solicitacaoId ? solicitacoes.find(s => s.id === atendimento.solicitacaoId) : undefined;
-    const prest = prestadores.find(p => p.id === atendimento.prestadorId);
-
-    return <OsView atendimento={atendimento} solicitacao={sol} prestador={prest} />;
+          <h2 className="text-lg font-bold mb-1">OS em andamento</h2>
+          <p className="text-sm text-muted-foreground max-w-[280px]">O atendimento está em acompanhamento pela central. Para atualizações, entre em contato com a operação.</p>
+        </div>
+      </MobileShell>
+    );
   }
 
   return (
