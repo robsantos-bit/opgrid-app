@@ -61,12 +61,12 @@ Deno.serve(async (req: Request) => {
         origem: sol.origem_endereco,
         destino: sol.destino_endereco,
         tipo_atendimento: sol.motivo || 'Guincho',
-        veiculo: sol.veiculo_modelo,
-        placa: sol.veiculo_placa,
+        veiculo: sol.tipo_veiculo || sol.veiculo_modelo || 'Veículo não informado',
+        placa: sol.placa || sol.veiculo_placa,
         km_previsto: sol.distancia_estimada_km,
         status: 'Aberto',
         prioridade: 'Normal',
-        valor_total: sol.valor_estimado,
+        valor_total: sol.valor || sol.valor_estimado,
         solicitacao_id: sol.id,
       }).select().single();
 
@@ -89,14 +89,17 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // Find active & homologated providers (top 2 by score)
-    const { data: providers } = await supabase
+    // Find active providers using the real schema columns
+    const { data: providers, error: providersErr } = await supabase
       .from('prestadores')
-      .select('id, nome, nome_fantasia, telefone, score_operacional')
-      .eq('status', 'Ativo')
-      .eq('homologacao', 'Homologado')
-      .order('score_operacional', { ascending: false })
+      .select('id, nome, telefone, status')
+      .or('status.eq.Ativo,status.eq.ativo')
       .limit(2);
+
+    if (providersErr) {
+      console.error('[DISPATCH] Error fetching providers:', providersErr);
+      return jsonResponse({ error: 'Erro ao buscar prestadores' }, 500);
+    }
 
     if (!providers?.length) {
       console.warn('[DISPATCH] No providers found');
@@ -141,8 +144,8 @@ Deno.serve(async (req: Request) => {
       if (phone) {
         await enqueueAutomation(supabase, 'new_dispatch_offer', phone, conversation_id || '', {
           protocolo: sol.protocolo,
-          prestadorNome: p.nome_fantasia || p.nome,
-          valor: sol.valor_estimado,
+            prestadorNome: p.nome,
+            valor: sol.valor || sol.valor_estimado,
           prestadorId: p.id,
         });
       }

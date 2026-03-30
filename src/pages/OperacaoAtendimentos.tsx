@@ -13,6 +13,7 @@ import { Search, X, Eye, Loader2, Headphones, Hand, Bot, Sparkles } from 'lucide
 
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('pt-BR');
 const fmtDateTime = (d: string) => new Date(d).toLocaleString('pt-BR');
+const getSolicitacaoPlaca = (s?: any) => s?.placa || s?.veiculo_placa || '—';
 
 const modoIcons: Record<ModoDespacho, typeof Hand> = { manual: Hand, automatico: Bot, assistido: Sparkles };
 const modoLabels: Record<ModoDespacho, string> = { manual: 'Manual', automatico: 'Automático', assistido: 'Assistido' };
@@ -107,7 +108,7 @@ export default function OperacaoAtendimentos() {
               <TableRow key={a.id} className="table-row-hover cursor-pointer" onClick={() => setSelected(a)}>
                 <TableCell className="text-[13px] font-medium">{a.prestadores?.nome || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-[13px]">{a.solicitacoes?.cliente_nome || '—'}</TableCell>
-                <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{a.solicitacoes?.placa || '—'}</TableCell>
+                <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{getSolicitacaoPlaca(a.solicitacoes)}</TableCell>
                 <TableCell><Badge variant={statusVariant(a.status)} className="text-[10px]">{statusLabel(a.status)}</Badge></TableCell>
                 <TableCell className="hidden md:table-cell">
                   {(() => {
@@ -148,7 +149,7 @@ export default function OperacaoAtendimentos() {
                   ['Tel. Prestador', selected.prestadores?.telefone],
                   ['Cliente', selected.solicitacoes?.cliente_nome],
                   ['Tel. Cliente', selected.solicitacoes?.cliente_telefone],
-                  ['Placa', selected.solicitacoes?.placa],
+                  ['Placa', getSolicitacaoPlaca(selected.solicitacoes)],
                   ['Notas', selected.notas],
                   ['Criado em', selected.created_at ? fmtDateTime(selected.created_at) : '—'],
                   ['Finalizado em', selected.finalizado_at ? fmtDateTime(selected.finalizado_at) : 'Em aberto'],

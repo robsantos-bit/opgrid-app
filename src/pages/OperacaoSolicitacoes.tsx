@@ -19,6 +19,12 @@ const modoLabels: Record<ModoDespacho, string> = { manual: 'Manual', automatico:
 const modoVariants: Record<ModoDespacho, 'warning' | 'info' | 'success'> = { manual: 'warning', automatico: 'info', assistido: 'success' };
 const PAGE_SIZE = 20;
 
+const getPlaca = (s: any) => s.placa || s.veiculo_placa || '';
+const getTipoVeiculo = (s: any) => s.tipo_veiculo || s.veiculo_modelo || '';
+const getValor = (s: any) => Number(s.valor ?? s.valor_estimado ?? 0);
+const getDataSolicitacao = (s: any) => s.created_at || s.data_hora || null;
+const getAtualizacaoSolicitacao = (s: any) => s.updated_at || s.data_hora || null;
+
 export default function OperacaoSolicitacoes() {
   const despachos = useMemo(() => getDespachos(), []);
   const { data: solicitacoes = [], isLoading } = useSolicitacoes();
@@ -31,7 +37,7 @@ export default function OperacaoSolicitacoes() {
   const filtered = useMemo(() => {
     return solicitacoes.filter((s: any) => {
       const q = search.toLowerCase();
-      const matchSearch = !q || (s.cliente_nome || '').toLowerCase().includes(q) || (s.placa || '').toLowerCase().includes(q);
+      const matchSearch = !q || (s.cliente_nome || '').toLowerCase().includes(q) || getPlaca(s).toLowerCase().includes(q);
       const matchStatus = filterStatus === 'all' || s.status === filterStatus;
       const matchPrio = filterPrioridade === 'all' || s.prioridade === filterPrioridade;
       return matchSearch && matchStatus && matchPrio;
@@ -53,12 +59,13 @@ export default function OperacaoSolicitacoes() {
       case 'cancelada': return 'destructive' as const;
       case 'pendente': return 'warning' as const;
       case 'em_andamento': return 'info' as const;
+      case 'Convertida em OS': return 'info' as const;
       default: return 'secondary' as const;
     }
   };
 
   const statusLabel = (s: string) => {
-    const map: Record<string, string> = { pendente: 'Pendente', em_andamento: 'Em andamento', concluida: 'Concluída', cancelada: 'Cancelada' };
+    const map: Record<string, string> = { pendente: 'Pendente', em_andamento: 'Em andamento', concluida: 'Concluída', cancelada: 'Cancelada', 'Convertida em OS': 'OS criada' };
     return map[s] || s;
   };
 
@@ -70,7 +77,7 @@ export default function OperacaoSolicitacoes() {
     }
   };
 
-  const valorTotal = filtered.reduce((sum: number, s: any) => sum + (Number(s.valor) || 0), 0);
+  const valorTotal = filtered.reduce((sum: number, s: any) => sum + getValor(s), 0);
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -134,10 +141,10 @@ export default function OperacaoSolicitacoes() {
                 <TableCell>
                   <div>
                     <p className="font-medium text-[13px]">{s.cliente_nome || '—'}</p>
-                    <p className="text-[11px] text-muted-foreground md:hidden">{s.placa || ''}</p>
+                    <p className="text-[11px] text-muted-foreground md:hidden">{getPlaca(s)}</p>
                   </div>
                 </TableCell>
-                <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{s.placa || '—'}</TableCell>
+                <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{getPlaca(s) || '—'}</TableCell>
                 <TableCell className="hidden xl:table-cell text-[11px] text-muted-foreground">
                   <div className="flex items-center gap-1 max-w-[220px]">
                     <span className="truncate">{s.origem_endereco || '—'}</span>
@@ -159,9 +166,9 @@ export default function OperacaoSolicitacoes() {
                   <Badge variant={prioridadeBadge(s.prioridade)} className="text-[10px] capitalize">{s.prioridade || '—'}</Badge>
                 </TableCell>
                 <TableCell className="text-right hidden lg:table-cell tabular-nums text-[13px] font-medium">
-                  {s.valor ? fmt(Number(s.valor)) : '—'}
+                  {getValor(s) ? fmt(getValor(s)) : '—'}
                 </TableCell>
-                <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{s.created_at ? fmtDate(s.created_at) : '—'}</TableCell>
+                <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{getDataSolicitacao(s) ? fmtDate(getDataSolicitacao(s)) : '—'}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(s); }}>
                     <Eye className="h-3.5 w-3.5" />
@@ -197,14 +204,14 @@ export default function OperacaoSolicitacoes() {
               <div className="mt-4 space-y-3 text-[13px]">
                 {[
                   ['Cliente', selected.cliente_nome],
-                  ['Telefone', selected.cliente_telefone],
-                  ['Placa', selected.placa],
-                  ['Tipo Veículo', selected.tipo_veiculo],
+                  ['Telefone', selected.cliente_telefone || selected.cliente_whatsapp],
+                  ['Placa', getPlaca(selected)],
+                  ['Tipo Veículo', getTipoVeiculo(selected)],
                   ['Origem', selected.origem_endereco],
                   ['Destino', selected.destino_endereco],
-                  ['Valor', selected.valor ? fmt(Number(selected.valor)) : '—'],
-                  ['Data', selected.created_at ? fmtDateTime(selected.created_at) : '—'],
-                  ['Atualização', selected.updated_at ? fmtDateTime(selected.updated_at) : '—'],
+                  ['Valor', getValor(selected) ? fmt(getValor(selected)) : '—'],
+                  ['Data', getDataSolicitacao(selected) ? fmtDateTime(getDataSolicitacao(selected)) : '—'],
+                  ['Atualização', getAtualizacaoSolicitacao(selected) ? fmtDateTime(getAtualizacaoSolicitacao(selected)) : '—'],
                 ].map(([label, val]) => (
                   <div key={String(label)} className="flex justify-between py-2 border-b border-dashed border-border/60">
                     <span className="text-muted-foreground">{label}</span>
