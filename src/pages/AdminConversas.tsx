@@ -34,6 +34,9 @@ const STATE_LABELS: Record<string, string> = {
   resumo_pronto: 'Resumo',
   aguardando_aceite: 'Aguardando aceite',
   solicitado: 'OS criada',
+  prestador_aceito: 'Prestador confirmado',
+  em_andamento: 'Em andamento',
+  concluido: 'Concluído',
   cancelado: 'Cancelado',
   humano: 'Encaminhado p/ central',
 };
@@ -45,6 +48,9 @@ function deriveStatus(state: ConversationState): string {
   if (state === 'resumo_pronto') return 'Proposta enviada';
   if (state === 'aguardando_aceite') return 'Aguardando aceite';
   if (state === 'solicitado') return 'OS em andamento';
+  if (state === 'prestador_aceito') return 'Prestador confirmado';
+  if (state === 'em_andamento') return 'Atendimento em andamento';
+  if (state === 'concluido') return 'Concluído';
   if (state === 'cancelado') return 'Cancelado';
   if (state === 'humano') return 'Encaminhado p/ central';
   return state;

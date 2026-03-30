@@ -84,18 +84,28 @@ Deno.serve(async (req: Request) => {
       // 4. Update conversation state
       const { data: conv } = await supabase
         .from('conversations')
-        .select('id, contact_phone')
+        .select('id, contact_phone, data')
         .eq('solicitacao_id', offer.solicitacao_id)
         .maybeSingle();
 
       if (conv) {
+        const prestadorNome = offer.prestadores?.nome_fantasia || offer.prestadores?.nome || 'Prestador';
+        const mergedData = {
+          ...(conv.data || {}),
+          prestador_nome: prestadorNome,
+          prestador_telefone: offer.prestadores?.telefone || null,
+          atendimento_id: offer.atendimento_id,
+          prestador_id: offer.prestador_id,
+        };
+
         await supabase.from('conversations').update({
-          state: 'aguardando_aceite',
+          state: 'prestador_aceito',
+          data: mergedData,
           assigned_operator_id: offer.prestador_id,
+          atendimento_id: offer.atendimento_id,
         }).eq('id', conv.id);
 
         // Notify client
-        const prestadorNome = offer.prestadores?.nome_fantasia || offer.prestadores?.nome || 'Prestador';
         await enqueueAutomation(supabase, 'provider_assigned', conv.contact_phone, conv.id, {
           protocolo: offer.solicitacoes?.protocolo,
           prestadorNome,
@@ -110,6 +120,23 @@ Deno.serve(async (req: Request) => {
           protocolo: offer.solicitacoes?.protocolo,
           clienteNome: offer.solicitacoes?.cliente_nome,
         });
+      }
+
+      // Trigger queue immediately so client/provider receive follow-up without waiting for cron
+      try {
+        const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+        const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+        await fetch(`${supabaseUrl}/functions/v1/process-queue`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${serviceKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({}),
+        });
+        console.log('[DISPATCH-RESPOND] process-queue triggered');
+      } catch (err) {
+        console.error('[DISPATCH-RESPOND] Error triggering process-queue:', err);
       }
 
       return jsonResponse({
