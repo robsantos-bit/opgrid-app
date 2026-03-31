@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
         rejection_reason,
         created_at,
         prestadores ( id, nome, telefone ),
-        solicitacoes ( id, protocolo, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, valor, created_at )
+        solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, valor, status, prioridade, protocolo, motivo, created_at )
       `)
       .eq('id', offer_id)
       .maybeSingle();

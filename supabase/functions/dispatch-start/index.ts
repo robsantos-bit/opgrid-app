@@ -31,10 +31,10 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[DISPATCH] Starting for solicitacao ${solicitacao_id}, round ${round}`);
 
-    // Get solicitacao details
+    // Get solicitacao details (only columns that exist)
     const { data: sol, error: solErr } = await supabase
       .from('solicitacoes')
-      .select('*')
+      .select('id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, valor, status, prioridade, protocolo, motivo, valor_estimado, atendimento_id, created_at')
       .eq('id', solicitacao_id)
       .single();
 
@@ -57,8 +57,9 @@ Deno.serve(async (req: Request) => {
         solicitacao_id: sol.id,
         status: 'aberto',
         notas: [
-          `OS criada via WhatsApp (${sol.protocolo || 'sem protocolo'})`,
+          `OS criada via WhatsApp (${sol.protocolo || sol.id?.slice(0, 8) || 'sem protocolo'})`,
           sol.motivo ? `Motivo: ${sol.motivo}` : null,
+          sol.cliente_nome ? `Cliente: ${sol.cliente_nome}` : null,
           sol.origem_endereco ? `Origem: ${sol.origem_endereco}` : null,
           sol.destino_endereco ? `Destino: ${sol.destino_endereco}` : null,
         ].filter(Boolean).join(' • '),
@@ -106,7 +107,7 @@ Deno.serve(async (req: Request) => {
       // Fire no_provider_found automation
       if (conversation_id && contact_phone) {
         await enqueueAutomation(supabase, 'no_provider_found', contact_phone, conversation_id, {
-          protocolo: sol.protocolo,
+          protocolo: sol.protocolo || sol.id?.slice(0, 8),
         });
       }
       return jsonResponse({ status: 'no_providers', offers: 0 });
@@ -123,7 +124,7 @@ Deno.serve(async (req: Request) => {
       status: 'pending',
       estimated_distance_km: Math.floor(Math.random() * 15) + 3,
       estimated_time_min: Math.floor(Math.random() * 25) + 10,
-        service_value: sol.valor || sol.valor_estimado || null,
+      service_value: sol.valor || sol.valor_estimado || null,
       sent_at: new Date().toISOString(),
       expires_at: expiresAt,
     }));
@@ -143,10 +144,13 @@ Deno.serve(async (req: Request) => {
       const phone = p.telefone?.replace(/\D/g, '');
       if (phone) {
         await enqueueAutomation(supabase, 'new_dispatch_offer', phone, conversation_id || '', {
-          protocolo: sol.protocolo,
-            prestadorNome: p.nome,
-            valor: sol.valor || sol.valor_estimado,
+          protocolo: sol.protocolo || sol.id?.slice(0, 8),
+          prestadorNome: p.nome,
+          valor: sol.valor || sol.valor_estimado,
           prestadorId: p.id,
+          clienteNome: sol.cliente_nome,
+          origem: sol.origem_endereco,
+          destino: sol.destino_endereco,
         });
       }
     }
@@ -154,7 +158,7 @@ Deno.serve(async (req: Request) => {
     // Notify client
     if (contact_phone && conversation_id) {
       await enqueueAutomation(supabase, 'order_created', contact_phone, conversation_id, {
-        protocolo: sol.protocolo,
+        protocolo: sol.protocolo || sol.id?.slice(0, 8),
         prestadoresNotificados: providers.length,
       });
     }

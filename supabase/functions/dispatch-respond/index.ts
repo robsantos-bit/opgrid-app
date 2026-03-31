@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
       .select(`
         *,
         prestadores(id, nome, telefone),
-        solicitacoes(id, protocolo, cliente_nome, cliente_telefone, origem_endereco, destino_endereco, motivo)
+        solicitacoes(id, cliente_nome, cliente_telefone, origem_endereco, destino_endereco, placa, tipo_veiculo, valor, protocolo, motivo)
       `)
       .eq('id', offer_id)
       .eq('status', 'pending')
@@ -248,7 +248,7 @@ async function ensureAtendimento(supabase: any, offer: any) {
   }
 
   const notas = [
-    `OS criada via aceite do prestador (${offer.solicitacoes?.protocolo || 'sem protocolo'})`,
+    `OS criada via aceite do prestador (${offer.solicitacoes?.protocolo || offer.solicitacao_id?.slice(0, 8) || 'sem protocolo'})`,
     offer.solicitacoes?.motivo ? `Motivo: ${offer.solicitacoes.motivo}` : null,
     offer.solicitacoes?.origem_endereco ? `Origem: ${offer.solicitacoes.origem_endereco}` : null,
     offer.solicitacoes?.destino_endereco ? `Destino: ${offer.solicitacoes.destino_endereco}` : null,

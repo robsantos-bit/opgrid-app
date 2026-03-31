@@ -91,18 +91,17 @@ Deno.serve(async (req: Request) => {
       }
 
       const phone = String(to).replace(/\D/g, '');
-      const chatId = phone.includes('@') ? phone : `${phone}@c.us`;
       const text = String(textContent).replace(/\\n/g, '\n');
 
       const res = await fetch(
-        `https://api.w-api.app/v2/${WAPI_INSTANCE_ID}/messages/send-text`,
+        `https://api.w-api.app/v1/message/send-text?instanceId=${WAPI_INSTANCE_ID}`,
         {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${WAPI_TOKEN}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ chatId, text }),
+          body: JSON.stringify({ phone, message: text }),
         }
       );
 
