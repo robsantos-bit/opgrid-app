@@ -57,8 +57,9 @@ Deno.serve(async (req: Request) => {
         solicitacao_id: sol.id,
         status: 'aberto',
         notas: [
-          `OS criada via WhatsApp (${sol.protocolo || 'sem protocolo'})`,
+          `OS criada via WhatsApp (${sol.protocolo || sol.id?.slice(0, 8) || 'sem protocolo'})`,
           sol.motivo ? `Motivo: ${sol.motivo}` : null,
+          sol.cliente_nome ? `Cliente: ${sol.cliente_nome}` : null,
           sol.origem_endereco ? `Origem: ${sol.origem_endereco}` : null,
           sol.destino_endereco ? `Destino: ${sol.destino_endereco}` : null,
         ].filter(Boolean).join(' • '),
