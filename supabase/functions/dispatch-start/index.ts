@@ -139,20 +139,51 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({ error: 'Erro ao criar ofertas' }, 500);
     }
 
-    // Fire automation for each provider
-    for (const p of providers) {
+    // Determine base URL for offer links
+    const baseUrl = Deno.env.get('APP_BASE_URL') || 'https://opgrid.lovable.app';
+    const protocolo = sol.protocolo || sol.id?.slice(0, 8) || 'N/D';
+
+    // Send WhatsApp message directly to each provider with the offer link
+    for (let i = 0; i < providers.length; i++) {
+      const p = providers[i];
+      const offer = insertedOffers?.[i];
+      if (!offer) continue;
+
       const phone = p.telefone?.replace(/\D/g, '');
-      if (phone) {
-        await enqueueAutomation(supabase, 'new_dispatch_offer', phone, conversation_id || '', {
-          protocolo: sol.protocolo || sol.id?.slice(0, 8),
-          prestadorNome: p.nome,
-          valor: sol.valor || sol.valor_estimado,
-          prestadorId: p.id,
-          clienteNome: sol.cliente_nome,
-          origem: sol.origem_endereco,
-          destino: sol.destino_endereco,
-        });
-      }
+      if (!phone) continue;
+
+      const ofertaLink = `${baseUrl}/prestador/oferta/${offer.id}`;
+      const distKm = offer.estimated_distance_km || '?';
+      const tempoMin = offer.estimated_time_min || '?';
+      const valor = sol.valor || sol.valor_estimado || 0;
+
+      const msgText =
+        `🚨 *OPGRID — Nova Solicitação!*\n\n` +
+        `📋 Protocolo: *${protocolo}*\n` +
+        `👤 Cliente: ${sol.cliente_nome || 'N/I'}\n` +
+        `🚗 Veículo: ${sol.tipo_veiculo || 'N/I'} • ${sol.placa || 'N/I'}\n` +
+        `🔧 Motivo: ${sol.motivo || 'Não informado'}\n` +
+        `📍 Origem: ${sol.origem_endereco || 'N/I'}\n` +
+        `🏁 Destino: ${sol.destino_endereco || 'N/I'}\n` +
+        `📏 Distância: ~${distKm} km • ⏱ ~${tempoMin} min\n` +
+        `💰 Valor: R$ ${Number(valor).toFixed(2)}\n\n` +
+        `🔗 *Aceitar oferta:*\n${ofertaLink}\n\n` +
+        `⏱ Expira em 2 minutos!`;
+
+      // Send directly via W-API or whatsapp-send
+      await sendOfferMessage(phone, msgText);
+
+      // Also enqueue automation if configured
+      await enqueueAutomation(supabase, 'new_dispatch_offer', phone, conversation_id || '', {
+        protocolo,
+        prestadorNome: p.nome,
+        valor,
+        prestadorId: p.id,
+        clienteNome: sol.cliente_nome,
+        origem: sol.origem_endereco,
+        destino: sol.destino_endereco,
+        ofertaLink,
+      });
     }
 
     // Notify client
@@ -229,6 +260,44 @@ async function enqueueAutomation(
     await supabase.from('message_queue').insert(queueItems);
   } catch (err) {
     console.error('[AUTOMATION] enqueue error:', err);
+  }
+}
+
+// Send offer message directly via W-API (bypasses automation/queue for immediate delivery)
+async function sendOfferMessage(phone: string, text: string) {
+  const INSTANCE_ID = Deno.env.get('WAPI_INSTANCE_ID') || '';
+  const TOKEN = Deno.env.get('WAPI_TOKEN') || '';
+
+  if (!INSTANCE_ID || !TOKEN) {
+    // Fallback: try whatsapp-send edge function
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: phone, text: { body: text } }),
+      });
+    } catch (err) {
+      console.error('[DISPATCH] Fallback send error:', err);
+    }
+    return;
+  }
+
+  try {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const res = await fetch(
+      `https://api.w-api.app/v1/message/send-text?instanceId=${INSTANCE_ID}`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone, message: text }),
+      }
+    );
+    const resBody = await res.text();
+    console.log(`[DISPATCH] W-API send to ${cleanPhone}:`, res.status, resBody.slice(0, 200));
+  } catch (err) {
+    console.error('[DISPATCH] W-API send error:', err);
   }
 }
 
