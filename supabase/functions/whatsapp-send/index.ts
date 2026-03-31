@@ -1,7 +1,3 @@
-// Edge Function: Send WhatsApp messages
-// Supports both Meta Cloud API and W-API
-// Auto-detects provider based on available credentials
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -18,7 +14,6 @@ Deno.serve(async (req: Request) => {
     return new Response('Method not allowed', { status: 405, headers: corsHeaders });
   }
 
-  // Detect provider: if W-API credentials exist, prefer W-API
   const WAPI_INSTANCE_ID = Deno.env.get('WAPI_INSTANCE_ID') || '';
   const WAPI_TOKEN = Deno.env.get('WAPI_TOKEN') || '';
   const META_ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') || '';
@@ -29,7 +24,7 @@ Deno.serve(async (req: Request) => {
   const useMeta = !!(META_ACCESS_TOKEN && META_PHONE_NUMBER_ID);
 
   if (!useWapi && !useMeta) {
-    console.error('[SEND] No WhatsApp credentials configured (neither W-API nor Meta)');
+    console.error('[SEND] Nenhuma credencial WhatsApp configurada');
     return new Response(
       JSON.stringify({ error: 'WhatsApp credentials not configured' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -47,43 +42,33 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    // Allow explicit provider selection
-    const requestedProvider = typeof body.provider === 'string' ? body.provider.toLowerCase() : '';
+    console.log('[SEND] Payload recebido:', JSON.stringify(body).slice(0, 500));
+
+    // Suporte a database webhook trigger (payload.record) e chamada direta
+    const dados = body.record || body;
+
+    // Extrai provider e destinatário
+    const requestedProvider = typeof dados.provider === 'string' ? dados.provider.toLowerCase() : '';
     const provider = (requestedProvider || (useWapi ? 'wapi' : 'meta')) as 'wapi' | 'meta';
-    const to = typeof body.to === 'string' ? body.to : (typeof body.chatId === 'string' ? body.chatId : '');
 
-    console.log(`[SEND] Provider: ${provider} | To: ${to} | Type: ${body.type || 'text'}`);
+    const to = dados.to || dados.recipient_phone || dados.phone || dados.contact_phone || dados.chatId || '';
+    const textContent = dados.text?.body || dados.text || dados.message || dados.content || dados.body || '';
 
-    if (provider !== 'wapi' && provider !== 'meta') {
+    console.log(`[SEND] Provider: ${provider} | To: ${to} | Texto: ${String(textContent).slice(0, 100)}`);
+
+    if (!to) {
       return new Response(
-        JSON.stringify({ error: "Invalid provider. Use 'wapi' or 'meta'." }),
+        JSON.stringify({ error: 'Destinatário ausente (to/recipient_phone/phone)' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    if (provider === 'wapi' && !useWapi) {
-      return new Response(
-        JSON.stringify({ error: 'W-API credentials not configured (WAPI_INSTANCE_ID/WAPI_TOKEN)' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    if (provider === 'meta' && !useMeta) {
-      return new Response(
-        JSON.stringify({ error: 'Meta credentials not configured (WHATSAPP_ACCESS_TOKEN/WHATSAPP_PHONE_NUMBER_ID)' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
+    // Supabase client para logging
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     const supabase = (supabaseUrl && supabaseServiceKey)
       ? createClient(supabaseUrl, supabaseServiceKey)
       : null;
-
-    if (!supabase) {
-      console.warn('[SEND] SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY missing; continuing without message_logs insert');
-    }
 
     const logMessage = async (payload: {
       provider_message_id: string | null;
@@ -93,22 +78,21 @@ Deno.serve(async (req: Request) => {
     }) => {
       if (!supabase) return;
       const { error } = await supabase.from('message_logs').insert(payload);
-      if (error) {
-        console.error('[SEND] Failed to insert message_logs:', error.message);
-      }
+      if (error) console.error('[SEND] Falha ao inserir message_logs:', error.message);
     };
 
+    // ── W-API ──
     if (provider === 'wapi') {
-      // ── W-API Send ──
-      if (!to) {
+      if (!useWapi) {
         return new Response(
-          JSON.stringify({ error: "Missing 'to' (or 'chatId') for W-API send" }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'Credenciais W-API não configuradas' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
-      const chatId = to.includes('@') ? to : `${to}@c.us`;
-      const text = body.text?.body || body.text || body.message || '';
+      const phone = String(to).replace(/\D/g, '');
+      const chatId = phone.includes('@') ? phone : `${phone}@c.us`;
+      const text = String(textContent).replace(/\\n/g, '\n');
 
       const res = await fetch(
         `https://api.w-api.app/v2/${WAPI_INSTANCE_ID}/messages/send-text`,
@@ -142,60 +126,63 @@ Deno.serve(async (req: Request) => {
         );
       }
 
-      return new Response(JSON.stringify(resData), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-
-    } else {
-      // ── Meta Cloud API Send ──
-      const messagePayload = { ...body };
-      delete messagePayload.provider;
-
-      const metaUrl = `https://graph.facebook.com/${API_VERSION}/${META_PHONE_NUMBER_ID}/messages`;
-
-      const metaRes = await fetch(metaUrl, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${META_ACCESS_TOKEN}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(messagePayload),
-      });
-
-      const metaBody = await metaRes.text();
-      console.log('[SEND-META] Response:', metaRes.status, metaBody.slice(0, 300));
-
-      let metaData: any = null;
-      if (metaRes.ok) {
-        try {
-          metaData = JSON.parse(metaBody);
-        } catch {
-          metaData = { raw: metaBody };
-        }
-      }
-
-      await logMessage({
-        provider_message_id: metaData?.messages?.[0]?.id || null,
-        direction: 'outbound',
-        status: metaRes.ok ? 'sent' : 'failed',
-        response_json: metaRes.ok ? metaData : { error: metaBody.slice(0, 500) },
-      });
-
-      if (!metaRes.ok) {
-        return new Response(
-          JSON.stringify({ error: 'Meta API error', status: metaRes.status, details: metaBody }),
-          { status: metaRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-
-      return new Response(JSON.stringify(metaData), {
+      return new Response(JSON.stringify({ success: true, result: resData }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // ── Meta Cloud API ──
+    const messagePayload = { ...dados };
+    delete messagePayload.provider;
+    delete messagePayload.record;
+
+    // Se veio de formato simplificado, montar payload Meta
+    if (!messagePayload.messaging_product) {
+      messagePayload.messaging_product = 'whatsapp';
+      messagePayload.to = String(to).replace(/\D/g, '');
+      messagePayload.type = 'text';
+      messagePayload.text = { body: String(textContent) };
+    }
+
+    const metaUrl = `https://graph.facebook.com/${API_VERSION}/${META_PHONE_NUMBER_ID}/messages`;
+
+    const metaRes = await fetch(metaUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${META_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messagePayload),
+    });
+
+    const metaBody = await metaRes.text();
+    console.log('[SEND-META] Response:', metaRes.status, metaBody.slice(0, 300));
+
+    let metaData: any = null;
+    try { metaData = JSON.parse(metaBody); } catch { metaData = { raw: metaBody }; }
+
+    await logMessage({
+      provider_message_id: metaData?.messages?.[0]?.id || null,
+      direction: 'outbound',
+      status: metaRes.ok ? 'sent' : 'failed',
+      response_json: metaRes.ok ? metaData : { error: metaBody.slice(0, 500) },
+    });
+
+    if (!metaRes.ok) {
+      return new Response(
+        JSON.stringify({ error: 'Meta API error', status: metaRes.status, details: metaBody }),
+        { status: metaRes.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    return new Response(JSON.stringify({ success: true, result: metaData }), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
   } catch (err) {
-    console.error('[SEND] Error:', err);
+    console.error('[SEND] Erro:', err);
     return new Response(
       JSON.stringify({ error: 'Internal error', details: String(err) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
