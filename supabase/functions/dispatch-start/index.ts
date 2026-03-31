@@ -124,7 +124,7 @@ Deno.serve(async (req: Request) => {
       status: 'pending',
       estimated_distance_km: Math.floor(Math.random() * 15) + 3,
       estimated_time_min: Math.floor(Math.random() * 25) + 10,
-        service_value: sol.valor || sol.valor_estimado || null,
+      service_value: sol.valor || sol.valor_estimado || null,
       sent_at: new Date().toISOString(),
       expires_at: expiresAt,
     }));
