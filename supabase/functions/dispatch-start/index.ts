@@ -144,10 +144,13 @@ Deno.serve(async (req: Request) => {
       const phone = p.telefone?.replace(/\D/g, '');
       if (phone) {
         await enqueueAutomation(supabase, 'new_dispatch_offer', phone, conversation_id || '', {
-          protocolo: sol.protocolo,
-            prestadorNome: p.nome,
-            valor: sol.valor || sol.valor_estimado,
+          protocolo: sol.protocolo || sol.id?.slice(0, 8),
+          prestadorNome: p.nome,
+          valor: sol.valor || sol.valor_estimado,
           prestadorId: p.id,
+          clienteNome: sol.cliente_nome,
+          origem: sol.origem_endereco,
+          destino: sol.destino_endereco,
         });
       }
     }
