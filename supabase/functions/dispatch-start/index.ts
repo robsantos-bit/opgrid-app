@@ -31,10 +31,10 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[DISPATCH] Starting for solicitacao ${solicitacao_id}, round ${round}`);
 
-    // Get solicitacao details
+    // Get solicitacao details (only columns that exist)
     const { data: sol, error: solErr } = await supabase
       .from('solicitacoes')
-      .select('*')
+      .select('id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, valor, status, prioridade, protocolo, motivo, valor_estimado, atendimento_id, created_at')
       .eq('id', solicitacao_id)
       .single();
 
