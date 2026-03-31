@@ -158,7 +158,7 @@ Deno.serve(async (req: Request) => {
     // Notify client
     if (contact_phone && conversation_id) {
       await enqueueAutomation(supabase, 'order_created', contact_phone, conversation_id, {
-        protocolo: sol.protocolo,
+        protocolo: sol.protocolo || sol.id?.slice(0, 8),
         prestadoresNotificados: providers.length,
       });
     }
