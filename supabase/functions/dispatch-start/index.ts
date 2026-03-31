@@ -107,7 +107,7 @@ Deno.serve(async (req: Request) => {
       // Fire no_provider_found automation
       if (conversation_id && contact_phone) {
         await enqueueAutomation(supabase, 'no_provider_found', contact_phone, conversation_id, {
-          protocolo: sol.protocolo,
+          protocolo: sol.protocolo || sol.id?.slice(0, 8),
         });
       }
       return jsonResponse({ status: 'no_providers', offers: 0 });
