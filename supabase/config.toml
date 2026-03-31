@@ -18,3 +18,6 @@ verify_jwt = false
 
 [functions.dispatch-respond]
 verify_jwt = false
+
+[functions.dispatch-offer-detail]
+verify_jwt = false

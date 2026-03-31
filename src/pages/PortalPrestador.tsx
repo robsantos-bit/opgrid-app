@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { StatusOsPrestador, ChecklistItem, CHECKLIST_PADRAO } from '@/types';
-import { useDispatchOfferById } from '@/hooks/useWhatsAppData';
+import { usePublicDispatchOfferById } from '@/hooks/useWhatsAppData';
 import { supabase } from '@/integrations/supabase/client';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -401,7 +401,7 @@ export default function PortalPrestador() {
   const tipo = paramTipo || (location.pathname.includes('/oferta/') ? 'oferta' : location.pathname.includes('/os/') ? 'os' : undefined);
 
   // Fetch offer from Supabase for /prestador/oferta/:id
-  const { data: dbOffer, isLoading: loadingOffer } = useDispatchOfferById(tipo === 'oferta' ? id : undefined);
+  const { data: dbOffer, isLoading: loadingOffer } = usePublicDispatchOfferById(tipo === 'oferta' ? id : undefined);
 
   if (tipo === 'oferta' && id) {
     if (loadingOffer) {

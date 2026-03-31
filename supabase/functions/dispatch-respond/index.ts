@@ -1,20 +1,17 @@
-// Edge Function: Handle Provider Dispatch Response
-// Processes accept/reject from providers with concurrency control
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405, headers: corsHeaders });
+    return jsonResponse({ error: 'Method not allowed' }, 405);
   }
 
   const supabase = createClient(
@@ -35,15 +32,19 @@ Deno.serve(async (req: Request) => {
 
     console.log(`[DISPATCH-RESPOND] Offer ${offer_id} → ${action}`);
 
-    // Get offer with concurrency check — only process if still pending
     const { data: offer, error: offerErr } = await supabase
       .from('dispatch_offers')
-      .select('*, prestadores(id, nome, telefone), solicitacoes(id, protocolo, cliente_nome, cliente_whatsapp)')
+      .select(`
+        *,
+        prestadores(id, nome, telefone),
+        solicitacoes(id, protocolo, cliente_nome, cliente_telefone, origem_endereco, destino_endereco, motivo)
+      `)
       .eq('id', offer_id)
       .eq('status', 'pending')
       .single();
 
     if (offerErr || !offer) {
+      console.error('[DISPATCH-RESPOND] Pending offer not found:', offerErr);
       return jsonResponse({
         error: 'Oferta não encontrada ou já respondida',
         detail: 'Esta oferta pode ter expirado ou outro prestador já aceitou.',
@@ -53,19 +54,21 @@ Deno.serve(async (req: Request) => {
     const now = new Date().toISOString();
 
     if (action === 'accept') {
-      // ── ACCEPT ──
-      // 1. Update this offer as accepted
-      const { error: updateErr } = await supabase
-        .from('dispatch_offers')
-        .update({ status: 'accepted', responded_at: now })
-        .eq('id', offer_id)
-        .eq('status', 'pending'); // Idempotency guard
+      const atendimentoId = await ensureAtendimento(supabase, offer);
 
-      if (updateErr) {
-        return jsonResponse({ error: 'Falha ao aceitar — tente novamente' }, 500);
+      const { data: acceptedOffer, error: acceptError } = await supabase
+        .from('dispatch_offers')
+        .update({ status: 'accepted', responded_at: now, atendimento_id: atendimentoId })
+        .eq('id', offer_id)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle();
+
+      if (acceptError || !acceptedOffer) {
+        console.error('[DISPATCH-RESPOND] Accept failed:', acceptError);
+        return jsonResponse({ error: 'Falha ao aceitar — tente novamente' }, acceptError ? 500 : 409);
       }
 
-      // 2. Cancel other pending offers for same solicitacao
       await supabase
         .from('dispatch_offers')
         .update({ status: 'cancelled', responded_at: now })
@@ -73,24 +76,22 @@ Deno.serve(async (req: Request) => {
         .neq('id', offer_id)
         .eq('status', 'pending');
 
-      // 3. Update atendimento with provider
-      if (offer.atendimento_id) {
-        await supabase.from('atendimentos').update({
+      await supabase
+        .from('atendimentos')
+        .update({
           prestador_id: offer.prestador_id,
           status: 'em_andamento',
-        }).eq('id', offer.atendimento_id);
-      }
+        })
+        .eq('id', atendimentoId);
 
-      // 3.1 Update solicitacao status/link so operation screens stop showing it as pending
       await supabase
         .from('solicitacoes')
         .update({
           status: 'Convertida em OS',
-          atendimento_id: offer.atendimento_id,
+          atendimento_id: atendimentoId,
         })
         .eq('id', offer.solicitacao_id);
 
-      // 4. Update conversation state
       const { data: conv } = await supabase
         .from('conversations')
         .select('id, contact_phone, data')
@@ -103,32 +104,44 @@ Deno.serve(async (req: Request) => {
           ...(conv.data || {}),
           prestador_nome: prestadorNome,
           prestador_telefone: offer.prestadores?.telefone || null,
-          atendimento_id: offer.atendimento_id,
+          atendimento_id: atendimentoId,
           prestador_id: offer.prestador_id,
         };
 
-        await supabase.from('conversations').update({
-          state: 'prestador_aceito',
-          data: mergedData,
-          assigned_operator_id: offer.prestador_id,
-          atendimento_id: offer.atendimento_id,
-        }).eq('id', conv.id);
+        const { error: conversationError } = await supabase
+          .from('conversations')
+          .update({
+            state: 'prestador_aceito',
+            data: mergedData,
+            atendimento_id: atendimentoId,
+          })
+          .eq('id', conv.id);
 
-        // Notify client
+        if (conversationError) {
+          console.warn('[DISPATCH-RESPOND] prestador_aceito failed, fallback to solicitado:', conversationError);
+          await supabase
+            .from('conversations')
+            .update({
+              state: 'solicitado',
+              data: mergedData,
+              atendimento_id: atendimentoId,
+            })
+            .eq('id', conv.id);
+        }
+
         await enqueueAutomation(supabase, 'provider_assigned', conv.contact_phone, conv.id, {
           protocolo: offer.solicitacoes?.protocolo,
           prestadorNome,
-          atendimentoId: offer.atendimento_id,
+          atendimentoId: atendimentoId,
         });
 
         await enqueueAutomation(supabase, 'cliente_prestador_confirmado', conv.contact_phone, conv.id, {
           protocolo: offer.solicitacoes?.protocolo,
           prestadorNome,
-          atendimentoId: offer.atendimento_id,
+          atendimentoId: atendimentoId,
         });
       }
 
-      // Notify provider
       const providerPhone = offer.prestadores?.telefone?.replace(/\D/g, '');
       if (providerPhone) {
         await enqueueAutomation(supabase, 'order_assigned', providerPhone, conv?.id || '', {
@@ -137,7 +150,6 @@ Deno.serve(async (req: Request) => {
         });
       }
 
-      // Trigger queue immediately so client/provider receive follow-up without waiting for cron
       try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
         const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -157,72 +169,112 @@ Deno.serve(async (req: Request) => {
       return jsonResponse({
         status: 'accepted',
         message: 'Oferta aceita com sucesso!',
-        atendimento_id: offer.atendimento_id,
-      });
-
-    } else {
-      // ── REJECT ──
-      await supabase
-        .from('dispatch_offers')
-        .update({
-          status: 'rejected',
-          responded_at: now,
-          rejection_reason: rejection_reason || null,
-        })
-        .eq('id', offer_id);
-
-      // Notify automation
-      const providerPhone = offer.prestadores?.telefone?.replace(/\D/g, '');
-      if (providerPhone) {
-        await enqueueAutomation(supabase, 'dispatch_offer_rejected', providerPhone, '', {
-          protocolo: offer.solicitacoes?.protocolo,
-          prestadorId: offer.prestador_id,
-          reason: rejection_reason,
-        });
-      }
-
-      // Check if all offers in this round are rejected
-      const { data: pendingOffers } = await supabase
-        .from('dispatch_offers')
-        .select('id')
-        .eq('solicitacao_id', offer.solicitacao_id)
-        .eq('round', offer.round)
-        .eq('status', 'pending');
-
-      if (!pendingOffers?.length) {
-        console.log(`[DISPATCH] All offers rejected for round ${offer.round}`);
-
-        // Get conversation for client notification
-        const { data: conv } = await supabase
-          .from('conversations')
-          .select('id, contact_phone')
-          .eq('solicitacao_id', offer.solicitacao_id)
-          .maybeSingle();
-
-        if (conv) {
-          await enqueueAutomation(supabase, 'dispatch_round_expired', conv.contact_phone, conv.id, {
-            protocolo: offer.solicitacoes?.protocolo,
-            round: offer.round,
-          });
-        }
-
-        // Could trigger next round here
-        // await fetch(`${supabaseUrl}/functions/v1/dispatch-start`, { ... round: offer.round + 1 });
-      }
-
-      return jsonResponse({
-        status: 'rejected',
-        message: 'Oferta rejeitada.',
+        atendimento_id: atendimentoId,
       });
     }
+
+    await supabase
+      .from('dispatch_offers')
+      .update({
+        status: 'rejected',
+        responded_at: now,
+        rejection_reason: rejection_reason || null,
+      })
+      .eq('id', offer_id);
+
+    const providerPhone = offer.prestadores?.telefone?.replace(/\D/g, '');
+    if (providerPhone) {
+      await enqueueAutomation(supabase, 'dispatch_offer_rejected', providerPhone, '', {
+        protocolo: offer.solicitacoes?.protocolo,
+        prestadorId: offer.prestador_id,
+        reason: rejection_reason,
+      });
+    }
+
+    const { data: pendingOffers } = await supabase
+      .from('dispatch_offers')
+      .select('id')
+      .eq('solicitacao_id', offer.solicitacao_id)
+      .eq('round', offer.round)
+      .eq('status', 'pending');
+
+    if (!pendingOffers?.length) {
+      const { data: conv } = await supabase
+        .from('conversations')
+        .select('id, contact_phone')
+        .eq('solicitacao_id', offer.solicitacao_id)
+        .maybeSingle();
+
+      if (conv) {
+        await enqueueAutomation(supabase, 'dispatch_round_expired', conv.contact_phone, conv.id, {
+          protocolo: offer.solicitacoes?.protocolo,
+          round: offer.round,
+        });
+      }
+    }
+
+    return jsonResponse({
+      status: 'rejected',
+      message: 'Oferta rejeitada.',
+    });
   } catch (err) {
     console.error('[DISPATCH-RESPOND] Error:', err);
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return jsonResponse({ error: String(err) }, 500);
   }
 });
+
+async function ensureAtendimento(supabase: any, offer: any) {
+  if (offer.atendimento_id) {
+    return offer.atendimento_id;
+  }
+
+  const { data: existingAtendimento, error: existingError } = await supabase
+    .from('atendimentos')
+    .select('id')
+    .eq('solicitacao_id', offer.solicitacao_id)
+    .maybeSingle();
+
+  if (existingError) {
+    throw existingError;
+  }
+
+  if (existingAtendimento?.id) {
+    await supabase
+      .from('dispatch_offers')
+      .update({ atendimento_id: existingAtendimento.id })
+      .eq('id', offer.id);
+
+    return existingAtendimento.id;
+  }
+
+  const notas = [
+    `OS criada via aceite do prestador (${offer.solicitacoes?.protocolo || 'sem protocolo'})`,
+    offer.solicitacoes?.motivo ? `Motivo: ${offer.solicitacoes.motivo}` : null,
+    offer.solicitacoes?.origem_endereco ? `Origem: ${offer.solicitacoes.origem_endereco}` : null,
+    offer.solicitacoes?.destino_endereco ? `Destino: ${offer.solicitacoes.destino_endereco}` : null,
+  ].filter(Boolean).join(' • ');
+
+  const { data: createdAtendimento, error: createError } = await supabase
+    .from('atendimentos')
+    .insert({
+      solicitacao_id: offer.solicitacao_id,
+      status: 'aberto',
+      notas,
+    })
+    .select('id')
+    .single();
+
+  if (createError || !createdAtendimento?.id) {
+    throw createError || new Error('Erro ao criar atendimento');
+  }
+
+  await supabase
+    .from('dispatch_offers')
+    .update({ atendimento_id: createdAtendimento.id })
+    .eq('id', offer.id);
+
+  return createdAtendimento.id;
+}
 
 async function enqueueAutomation(
   supabase: any,
