@@ -263,6 +263,44 @@ async function enqueueAutomation(
   }
 }
 
+// Send offer message directly via W-API (bypasses automation/queue for immediate delivery)
+async function sendOfferMessage(phone: string, text: string) {
+  const INSTANCE_ID = Deno.env.get('WAPI_INSTANCE_ID') || '';
+  const TOKEN = Deno.env.get('WAPI_TOKEN') || '';
+
+  if (!INSTANCE_ID || !TOKEN) {
+    // Fallback: try whatsapp-send edge function
+    try {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: phone, text: { body: text } }),
+      });
+    } catch (err) {
+      console.error('[DISPATCH] Fallback send error:', err);
+    }
+    return;
+  }
+
+  try {
+    const cleanPhone = phone.replace(/\D/g, '');
+    const res = await fetch(
+      `https://api.w-api.app/v1/message/send-text?instanceId=${INSTANCE_ID}`,
+      {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: cleanPhone, message: text }),
+      }
+    );
+    const resBody = await res.text();
+    console.log(`[DISPATCH] W-API send to ${cleanPhone}:`, res.status, resBody.slice(0, 200));
+  } catch (err) {
+    console.error('[DISPATCH] W-API send error:', err);
+  }
+}
+
 function jsonResponse(data: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
