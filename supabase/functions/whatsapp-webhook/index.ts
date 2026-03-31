@@ -669,19 +669,18 @@ async function sendViaWapi(supabase: any, to: string, conversationId: string, te
     return;
   }
 
-  // Format phone: W-API expects 55XXXXXXXXXXX@c.us or just the number
-  const chatId = to.includes('@') ? to : `${to}@c.us`;
+  const phone = String(to).replace(/\D/g, '');
 
   try {
     const res = await fetch(
-      `https://api.w-api.app/v2/${INSTANCE_ID}/messages/send-text`,
+      `https://api.w-api.app/v1/message/send-text?instanceId=${INSTANCE_ID}`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${TOKEN}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ chatId, text }),
+        body: JSON.stringify({ phone, message: text.replace(/\\n/g, '\n') }),
       }
     );
     const resBody = await res.text();
