@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
       .select(`
         *,
         prestadores(id, nome, telefone),
-        solicitacoes(id, protocolo, cliente_nome, cliente_telefone, origem_endereco, destino_endereco, motivo)
+        solicitacoes(id, cliente_nome, cliente_telefone, origem_endereco, destino_endereco, placa, tipo_veiculo, valor, protocolo, motivo)
       `)
       .eq('id', offer_id)
       .eq('status', 'pending')
