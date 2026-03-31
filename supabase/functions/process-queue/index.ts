@@ -30,6 +30,10 @@ Deno.serve(async (req: Request) => {
   const ACCESS_TOKEN = Deno.env.get('WHATSAPP_ACCESS_TOKEN') || '';
   const PHONE_NUMBER_ID = Deno.env.get('WHATSAPP_PHONE_NUMBER_ID') || '';
   const API_VERSION = Deno.env.get('WHATSAPP_API_VERSION') || 'v21.0';
+  const WAPI_INSTANCE_ID = Deno.env.get('WAPI_INSTANCE_ID') || '';
+  const WAPI_TOKEN = Deno.env.get('WAPI_TOKEN') || '';
+  const useMeta = !!(ACCESS_TOKEN && PHONE_NUMBER_ID);
+  const useWapi = !!(WAPI_INSTANCE_ID && WAPI_TOKEN);
 
   try {
     const now = new Date().toISOString();
@@ -83,9 +87,8 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      // Send via Meta API
-      if (!ACCESS_TOKEN || !PHONE_NUMBER_ID) {
-        // No credentials — mark as sent (simulation mode)
+      // No credentials — mark as sent (simulation mode)
+      if (!useMeta && !useWapi) {
         await supabase.from('message_queue').update({
           status: 'sent',
           sent_at: new Date().toISOString(),
@@ -103,31 +106,76 @@ Deno.serve(async (req: Request) => {
       }
 
       try {
-        const payload = {
-          messaging_product: 'whatsapp',
-          to: item.recipient_phone,
-          type: 'text',
-          text: { body: content },
-        };
+        let responseOk = false;
+        let responseStatus = 500;
+        let providerMessageId: string | null = null;
+        let responsePayload: Record<string, unknown> = {};
 
-        const res = await fetch(
-          `https://graph.facebook.com/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${ACCESS_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload),
+        if (useWapi) {
+          const res = await fetch(
+            `https://api.w-api.app/v1/message/send-text?instanceId=${WAPI_INSTANCE_ID}`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${WAPI_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                phone: String(item.recipient_phone).replace(/\D/g, ''),
+                message: content.replace(/\\n/g, '\n'),
+              }),
+            }
+          );
+
+          const resBody = await res.text();
+          responseOk = res.ok;
+          responseStatus = res.status;
+
+          let resData: any = null;
+          try {
+            resData = JSON.parse(resBody);
+          } catch {
+            resData = { raw: resBody };
           }
-        );
 
-        const resBody = await res.text();
+          providerMessageId = resData?.id || resData?.key?.id || resData?.messageId || null;
+          responsePayload = responseOk ? resData : { error: resBody.slice(0, 500) };
+        } else {
+          const payload = {
+            messaging_product: 'whatsapp',
+            to: item.recipient_phone,
+            type: 'text',
+            text: { body: content },
+          };
 
-        if (res.ok) {
-          const resData = JSON.parse(resBody);
-          const messageId = resData.messages?.[0]?.id;
+          const res = await fetch(
+            `https://graph.facebook.com/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
+            {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(payload),
+            }
+          );
 
+          const resBody = await res.text();
+          responseOk = res.ok;
+          responseStatus = res.status;
+
+          let resData: any = null;
+          try {
+            resData = JSON.parse(resBody);
+          } catch {
+            resData = { raw: resBody };
+          }
+
+          providerMessageId = resData?.messages?.[0]?.id || null;
+          responsePayload = responseOk ? resData : { error: resBody.slice(0, 500) };
+        }
+
+        if (responseOk) {
           await supabase.from('message_queue').update({
             status: 'sent',
             sent_at: new Date().toISOString(),
@@ -136,18 +184,17 @@ Deno.serve(async (req: Request) => {
           await supabase.from('message_logs').insert({
             queue_id: item.id,
             conversation_id: item.conversation_id,
-            provider_message_id: messageId,
+            provider_message_id: providerMessageId,
             direction: 'outbound',
             status: 'sent',
-            response_json: resData,
+            response_json: responsePayload,
           });
 
-          // Store outbound message
           if (item.conversation_id) {
             await supabase.from('messages').insert({
               conversation_id: item.conversation_id,
               direction: 'outbound',
-              wa_message_id: messageId,
+              wa_message_id: providerMessageId,
               message_type: 'text',
               content,
               status: 'sent',
@@ -156,17 +203,22 @@ Deno.serve(async (req: Request) => {
 
           sent++;
         } else {
+          const errorPreview = typeof responsePayload.error === 'string'
+            ? responsePayload.error
+            : JSON.stringify(responsePayload).slice(0, 200);
+
           await supabase.from('message_queue').update({
             status: 'failed',
-            error_message: `HTTP ${res.status}: ${resBody.slice(0, 200)}`,
+            error_message: `HTTP ${responseStatus}: ${errorPreview}`,
           }).eq('id', item.id);
 
           await supabase.from('message_logs').insert({
             queue_id: item.id,
             conversation_id: item.conversation_id,
+            provider_message_id: providerMessageId,
             direction: 'outbound',
             status: 'failed',
-            response_json: { error: resBody.slice(0, 500) },
+            response_json: responsePayload,
           });
           failed++;
         }
