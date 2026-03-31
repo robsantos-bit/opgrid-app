@@ -322,6 +322,21 @@ export function useDispatchOfferById(id: string | null | undefined) {
   });
 }
 
+export function usePublicDispatchOfferById(id: string | null | undefined) {
+  return useQuery({
+    queryKey: ['dispatch_offers', 'public-detail', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('dispatch-offer-detail', {
+        body: { offer_id: id! },
+      });
+
+      if (error) throw error;
+      return ((data as { offer?: DispatchOffer | null } | null)?.offer ?? null) as DispatchOffer | null;
+    },
+  });
+}
+
 export function useCreateDispatchOffer() {
   const qc = useQueryClient();
 
