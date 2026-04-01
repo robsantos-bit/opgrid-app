@@ -17,16 +17,13 @@ Deno.serve(async (req: Request) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  // GET — Meta webhook verification
   if (req.method === "GET") {
     const url = new URL(req.url);
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
     const VERIFY_TOKEN = Deno.env.get("WHATSAPP_WEBHOOK_VERIFY_TOKEN") || "";
-
     if (mode === "subscribe" && token === VERIFY_TOKEN) {
-      console.log("[WEBHOOK] Verification OK");
       return new Response(challenge, { status: 200, headers: corsHeaders });
     }
     return new Response("Forbidden", { status: 403, headers: corsHeaders });
@@ -40,64 +37,74 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json();
-    console.log("[WEBHOOK] Payload:", JSON.stringify(body).slice(0, 600));
+    console.log("[WEBHOOK] Payload:", JSON.stringify(body).slice(0, 800));
 
-    // Detect provider
     const provider = detectProvider(body);
     console.log("[WEBHOOK] Provider:", provider);
 
-    // Normalize messages
-    const normalized = provider === "wapi"
-      ? normalizeWapi(body)
-      : normalizeMeta(body);
+    const normalized = provider === "wapi" ? normalizeWapi(body) : normalizeMeta(body);
 
     if (!normalized.length) {
+      console.log("[WEBHOOK] No messages to process");
       return jsonOk({ status: "no_messages", provider });
     }
 
     for (const nm of normalized) {
-      // Status updates
       if (nm.isStatus) {
-        console.log(`[WEBHOOK] Status: ${nm.id} → ${nm.statusValue}`);
+        console.log(`[WEBHOOK] Status update: ${nm.id} → ${nm.statusValue}`);
         await supabase.from("messages").update({ status: nm.statusValue }).eq("wa_message_id", nm.id);
         await supabase.from("message_logs").insert({
-          provider_message_id: nm.id,
-          direction: "outbound",
-          status: nm.statusValue,
-          response_json: nm.raw,
+          provider_message_id: nm.id, direction: "outbound",
+          status: nm.statusValue, response_json: nm.raw,
         });
         continue;
       }
 
       const contactPhone = nm.from.replace(/\D/g, "");
-      const contactName = nm.contactName;
-      console.log(`[WEBHOOK] Msg from ${contactName} (${contactPhone}): ${nm.content.slice(0, 80)}`);
+      console.log(`[WEBHOOK] Inbound from ${contactPhone}: "${nm.content.slice(0, 100)}" (type: ${nm.type})`);
 
-      // 1. Find or create conversation
+      if (!contactPhone || contactPhone.length < 8) {
+        console.warn("[WEBHOOK] Invalid phone, skipping");
+        continue;
+      }
+
+      // ── DEDUP: skip if this wa_message_id was already processed ──
+      if (nm.id && !nm.id.startsWith("wapi_")) {
+        const { data: existing } = await supabase
+          .from("messages")
+          .select("id")
+          .eq("wa_message_id", nm.id)
+          .maybeSingle();
+        if (existing) {
+          console.log(`[WEBHOOK] Duplicate message ${nm.id}, skipping`);
+          continue;
+        }
+      }
+
+      // ── Find or create conversation ──
       const { data: found, error: findErr } = await supabase
         .from("conversations")
         .select("*")
         .eq("contact_phone", contactPhone)
         .not("state", "in", "(cancelado,concluido)")
-        .order("created_at", { ascending: false })
+        .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
 
-      if (findErr) {
-        console.error("[WEBHOOK] Find conversation error:", findErr);
-      }
+      if (findErr) console.error("[WEBHOOK] Find error:", findErr);
 
       let conversa = found;
       if (!conversa) {
+        console.log("[WEBHOOK] Creating new conversation for", contactPhone);
         const now = new Date();
         const { data: nova, error: insertErr } = await supabase
           .from("conversations")
           .insert({
             contact_phone: contactPhone,
             wa_contact_id: contactPhone,
-            contact_name: contactName,
+            contact_name: nm.contactName,
             state: "novo_contato",
-            data: { nome: contactName, telefone: contactPhone },
+            data: {},
             window_opened_at: now.toISOString(),
             window_expires_at: new Date(now.getTime() + 24 * 3600 * 1000).toISOString(),
           })
@@ -105,12 +112,12 @@ Deno.serve(async (req: Request) => {
           .single();
 
         if (insertErr || !nova) {
-          console.error("[WEBHOOK] Error creating conversation:", insertErr);
-          return jsonOk({ status: "error", error: insertErr?.message || "insert failed" });
+          console.error("[WEBHOOK] Insert conversation error:", insertErr);
+          return jsonOk({ status: "error", error: insertErr?.message });
         }
         conversa = nova;
       } else {
-        // Refresh window
+        console.log(`[WEBHOOK] Found conversation ${conversa.id} in state "${conversa.state}"`);
         const now = new Date();
         await supabase.from("conversations").update({
           window_opened_at: now.toISOString(),
@@ -119,8 +126,8 @@ Deno.serve(async (req: Request) => {
         }).eq("id", conversa.id);
       }
 
-      // 2. Store inbound message
-      await supabase.from("messages").upsert({
+      // ── Store inbound message ──
+      await supabase.from("messages").insert({
         conversation_id: conversa.id,
         direction: "inbound",
         wa_message_id: nm.id,
@@ -128,18 +135,27 @@ Deno.serve(async (req: Request) => {
         content: nm.content,
         metadata: nm.raw,
         status: "received",
-      }, { onConflict: "wa_message_id" });
+      });
 
-      // 3. Process state machine
+      // ── Re-read conversation to get latest state (avoid stale data) ──
+      const { data: freshConv } = await supabase
+        .from("conversations")
+        .select("*")
+        .eq("id", conversa.id)
+        .single();
+
+      if (freshConv) {
+        console.log(`[WEBHOOK] Processing state machine: state="${freshConv.state}"`);
+        conversa = freshConv;
+      }
+
+      // ── Process state machine ──
       await processState(supabase, conversa, nm, provider);
 
-      // 4. Log
+      // ── Log ──
       await supabase.from("message_logs").insert({
-        conversation_id: conversa.id,
-        direction: "inbound",
-        provider_message_id: nm.id,
-        status: "received",
-        response_json: nm.raw,
+        conversation_id: conversa.id, direction: "inbound",
+        provider_message_id: nm.id, status: "received", response_json: nm.raw,
       });
     }
 
@@ -182,8 +198,9 @@ function normalizeWapi(body: any): NormalizedMessage[] {
   const messages: NormalizedMessage[] = [];
   const event = body.event || "";
 
-  // Skip group messages and own messages
-  if (body.isGroup || body.fromMe) return messages;
+  // Skip group and own messages (multiple checks for different W-API versions)
+  if (body.isGroup) { console.log("[WAPI] Skipping group message"); return messages; }
+  if (body.fromMe === true) { console.log("[WAPI] Skipping fromMe (top-level)"); return messages; }
 
   // Status events
   if (event === "onMessageStatus" || event === "message_status") {
@@ -195,39 +212,32 @@ function normalizeWapi(body: any): NormalizedMessage[] {
     messages.push({
       id: key.id || data.id || "",
       from: (key.remoteJid || "").replace(/@s\.whatsapp\.net|@c\.us/g, ""),
-      contactName: "",
-      type: "status",
-      content: "",
-      raw: body,
-      isStatus: true,
-      statusValue: statusStr,
+      contactName: "", type: "status", content: "", raw: body,
+      isStatus: true, statusValue: statusStr,
     });
     return messages;
   }
 
-  // Message events (multiple W-API event formats)
+  // Message events
   if (event === "onMessage" || event === "messages.upsert" || event === "webhookReceived" || !event) {
-    // W-API has different payload shapes depending on version
     const data = body.data || body;
     const key = data.key || {};
 
-    // Skip outgoing
-    if (key.fromMe) return messages;
+    // Multiple fromMe checks
+    if (key.fromMe === true) { console.log("[WAPI] Skipping fromMe (key)"); return messages; }
+    if (data.fromMe === true) { console.log("[WAPI] Skipping fromMe (data)"); return messages; }
 
-    // Extract phone - handles both sender.id format and key.remoteJid format
     let phone = "";
     if (body.sender?.id) {
       phone = body.sender.id.replace(/@s\.whatsapp\.net|@c\.us/g, "");
     } else {
       phone = (key.remoteJid || data.from || "").replace(/@s\.whatsapp\.net|@c\.us/g, "");
     }
-
     if (!phone) return messages;
 
     const msgId = key.id || data.id || body.messageId || `wapi_${Date.now()}`;
-    const pushName = data.pushName || data.senderName || body.sender?.name || phone;
+    const pushName = data.pushName || data.senderName || body.sender?.name || "";
 
-    // Content extraction - handles both msgContent and data.message shapes
     const msg = body.msgContent || data.message || {};
     let type = "text";
     let content = "";
@@ -239,17 +249,13 @@ function normalizeWapi(body: any): NormalizedMessage[] {
     } else if (msg.extendedTextMessage?.text) {
       content = msg.extendedTextMessage.text;
     } else if (msg.imageMessage) {
-      type = "image";
-      content = msg.imageMessage.caption || "[Imagem]";
+      type = "image"; content = msg.imageMessage.caption || "[Imagem]";
     } else if (msg.videoMessage) {
-      type = "video";
-      content = msg.videoMessage.caption || "[Vídeo]";
+      type = "video"; content = msg.videoMessage.caption || "[Vídeo]";
     } else if (msg.audioMessage) {
-      type = "audio";
-      content = "[Áudio]";
+      type = "audio"; content = "[Áudio]";
     } else if (msg.documentMessage) {
-      type = "document";
-      content = msg.documentMessage.fileName || "[Documento]";
+      type = "document"; content = msg.documentMessage.fileName || "[Documento]";
     } else if (msg.locationMessage) {
       type = "location";
       location = {
@@ -270,7 +276,12 @@ function normalizeWapi(body: any): NormalizedMessage[] {
       content = data.body || data.text || "";
     }
 
-    messages.push({ id: msgId, from: phone, contactName: pushName, type, content, raw: body, interactive, location });
+    if (!content && type === "text") {
+      console.log("[WAPI] Empty text content, skipping");
+      return messages;
+    }
+
+    messages.push({ id: msgId, from: phone, contactName: pushName || phone, type, content, raw: body, interactive, location });
   }
 
   return messages;
@@ -291,16 +302,11 @@ function normalizeMeta(body: any): NormalizedMessage[] {
       else if (msg.type === "interactive") content = msg.interactive?.button_reply?.title || msg.interactive?.list_reply?.title || "";
       else if (msg.type === "button") content = msg.button?.text || "";
       else if (msg.type === "location") content = `${msg.location?.latitude},${msg.location?.longitude}`;
-
       messages.push({
-        id: msg.id,
-        from: msg.from,
+        id: msg.id, from: msg.from,
         contactName: contact?.profile?.name || msg.from,
-        type: msg.type,
-        content,
-        raw: msg,
-        interactive: msg.interactive,
-        location: msg.location,
+        type: msg.type, content, raw: msg,
+        interactive: msg.interactive, location: msg.location,
       });
     }
   }
@@ -308,14 +314,9 @@ function normalizeMeta(body: any): NormalizedMessage[] {
   if (changes.statuses?.length) {
     for (const s of changes.statuses) {
       messages.push({
-        id: s.id,
-        from: s.recipient_id || "",
-        contactName: "",
-        type: "status",
-        content: "",
-        raw: s,
-        isStatus: true,
-        statusValue: s.status,
+        id: s.id, from: s.recipient_id || "", contactName: "",
+        type: "status", content: "", raw: s,
+        isStatus: true, statusValue: s.status,
       });
     }
   }
@@ -328,13 +329,15 @@ function normalizeMeta(body: any): NormalizedMessage[] {
 async function processState(supabase: any, conversa: any, nm: NormalizedMessage, provider: Provider) {
   const text = nm.content.trim();
   const textLower = text.toLowerCase();
-  const phone = nm.from;
+  const phone = nm.from.replace(/\D/g, "");
   const contactName = nm.contactName;
   const conversationId = conversa.id;
-  let currentState = conversa.state;
+  const currentState = conversa.state;
   let data = conversa.data || {};
 
-  // Cancel check
+  console.log(`[STATE] conv=${conversationId} current="${currentState}" input="${text.slice(0, 50)}"`);
+
+  // Cancel
   if (textLower.includes("cancelar") && currentState !== "novo_contato") {
     await updateConv(supabase, conversationId, "cancelado", data);
     await reply(supabase, phone, conversationId, "❌ Solicitação cancelada. Se precisar, envie uma nova mensagem!", provider);
@@ -346,7 +349,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
   switch (currentState) {
     case "novo_contato": {
-      const firstName = contactName ? contactName.split(" ")[0] : "";
+      const firstName = contactName && contactName !== phone ? contactName.split(" ")[0] : "";
       responseText =
         `Olá${firstName ? ", " + firstName : ""}! 👋\n\n` +
         `Sou o assistente da *OpGrid Assistência Veicular*.\n\n` +
@@ -416,7 +419,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       }
       data.observacoes = isSemObs ? "" : text;
 
-      // Calculate estimate
       const distanciaKm = Math.floor(Math.random() * 30) + 5;
       const valorTotal = Math.round((120 + distanciaKm * 4.5) * 100) / 100;
       data.distanciaKm = distanciaKm;
@@ -430,7 +432,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*`;
 
       await reply(supabase, phone, conversationId, resumo, provider);
-
       nextState = "aguardando_aceite";
       responseText = "Deseja *confirmar* este atendimento?\n\n1️⃣ ✅ Aceitar\n2️⃣ ❌ Recusar";
       break;
@@ -468,7 +469,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       responseText = '✅ Este atendimento já foi concluído. Para uma nova solicitação, envie "Oi".';
       break;
     case "humano":
-      // Human takeover — no auto-response
       break;
     default:
       responseText = "Desculpe, não entendi. Pode repetir?";
@@ -477,7 +477,19 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
   if (responseText) {
     await reply(supabase, phone, conversationId, responseText, provider);
   }
-  await updateConv(supabase, conversationId, nextState, data);
+
+  // ── CRITICAL: Update state and verify ──
+  const { error: updateErr } = await supabase.from("conversations").update({
+    state: nextState,
+    data,
+    updated_at: new Date().toISOString(),
+  }).eq("id", conversationId);
+
+  if (updateErr) {
+    console.error(`[STATE] ❌ FAILED to update state ${currentState} → ${nextState}:`, updateErr);
+  } else {
+    console.log(`[STATE] ✅ Updated ${currentState} → ${nextState} for conv ${conversationId}`);
+  }
 }
 
 // ── Helpers ──
@@ -490,20 +502,21 @@ function jsonOk(data: Record<string, unknown>) {
 }
 
 async function updateConv(supabase: any, id: string, state: string, data: any) {
-  await supabase.from("conversations").update({
-    state,
-    data,
-    updated_at: new Date().toISOString(),
+  const { error } = await supabase.from("conversations").update({
+    state, data, updated_at: new Date().toISOString(),
   }).eq("id", id);
+  if (error) console.error(`[UPDATE] Failed:`, error);
+  else console.log(`[UPDATE] State → "${state}" for ${id}`);
 }
 
-// ── Send message via W-API or Meta ──
+// ── Send message ──
 
 async function reply(supabase: any, to: string, conversationId: string, text: string, provider: Provider) {
+  const phone = to.replace(/@s\.whatsapp\.net|@c\.us/g, "").replace(/\D/g, "");
   if (provider === "wapi") {
-    return sendWapi(supabase, to, conversationId, text);
+    return sendWapi(supabase, phone, conversationId, text);
   }
-  return sendMeta(supabase, to, conversationId, text);
+  return sendMeta(supabase, phone, conversationId, text);
 }
 
 async function sendWapi(supabase: any, to: string, conversationId: string, text: string) {
@@ -516,18 +529,13 @@ async function sendWapi(supabase: any, to: string, conversationId: string, text:
     return;
   }
 
-  const phone = to.replace(/@s\.whatsapp\.net|@c\.us/g, "").replace(/\D/g, "");
-
   try {
     const res = await fetch(
       `https://api.w-api.app/v1/message/send-text?instanceId=${INSTANCE_ID}`,
       {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${TOKEN}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ phone, message: text.replace(/\\n/g, "\n") }),
+        headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: to, message: text }),
       }
     );
     const resBody = await res.text();
@@ -574,18 +582,13 @@ async function sendMeta(supabase: any, to: string, conversationId: string, text:
 
 async function storeOutbound(supabase: any, conversationId: string, to: string, content: string, waMessageId: string | null) {
   await supabase.from("messages").insert({
-    conversation_id: conversationId,
-    direction: "outbound",
-    wa_message_id: waMessageId,
-    message_type: "text",
-    content,
-    status: waMessageId ? "sent" : "pending",
+    conversation_id: conversationId, direction: "outbound",
+    wa_message_id: waMessageId, message_type: "text",
+    content, status: waMessageId ? "sent" : "pending",
   });
   await supabase.from("message_logs").insert({
-    conversation_id: conversationId,
-    provider_message_id: waMessageId,
-    direction: "outbound",
-    status: waMessageId ? "sent" : "pending",
+    conversation_id: conversationId, provider_message_id: waMessageId,
+    direction: "outbound", status: waMessageId ? "sent" : "pending",
   });
 }
 
@@ -594,26 +597,18 @@ async function storeOutbound(supabase: any, conversationId: string, to: string, 
 async function enqueueAutomation(supabase: any, triggerEvent: string, phone: string, conversationId: string, payload?: Record<string, unknown>) {
   try {
     const { data: automations } = await supabase
-      .from("message_automations")
-      .select("*")
-      .eq("trigger_event", triggerEvent)
-      .eq("is_active", true);
-
+      .from("message_automations").select("*")
+      .eq("trigger_event", triggerEvent).eq("is_active", true);
     if (!automations?.length) return;
-
     const queueItems = automations.map((auto: any) => ({
-      conversation_id: conversationId,
-      automation_id: auto.id,
-      recipient_phone: phone,
-      channel: auto.channel,
+      conversation_id: conversationId, automation_id: auto.id,
+      recipient_phone: phone, channel: auto.channel,
       template_key: auto.template_key,
-      payload_json: { phone, ...payload },
-      status: "pending",
+      payload_json: { phone, ...payload }, status: "pending",
       scheduled_at: auto.delay_seconds > 0
         ? new Date(Date.now() + auto.delay_seconds * 1000).toISOString()
         : new Date().toISOString(),
     }));
-
     await supabase.from("message_queue").insert(queueItems);
   } catch (err) {
     console.error("[AUTOMATION] enqueue error:", triggerEvent, err);
@@ -622,65 +617,46 @@ async function enqueueAutomation(supabase: any, triggerEvent: string, phone: str
 
 // ── Create Solicitação + Dispatch ──
 
-async function createSolicitacaoAndDispatch(
-  supabase: any,
-  conversationId: string,
-  data: any,
-  phone: string,
-  provider: Provider
-) {
+async function createSolicitacaoAndDispatch(supabase: any, conversationId: string, data: any, phone: string, provider: Provider) {
+  const cleanPhone = phone.replace(/@c\.us|@s\.whatsapp\.net/g, "").replace(/\D/g, "");
   const now = new Date().toISOString();
 
   const { data: sol, error: solErr } = await supabase.from("solicitacoes").insert({
-    data_hora: now,
-    canal: "WhatsApp",
+    data_hora: now, canal: "WhatsApp",
     cliente_nome: data.nome || null,
-    cliente_telefone: phone.replace(/@c\.us|@s\.whatsapp\.net/g, ""),
-    cliente_whatsapp: phone.replace(/@c\.us|@s\.whatsapp\.net/g, ""),
+    cliente_telefone: cleanPhone, cliente_whatsapp: cleanPhone,
     placa: data.placa || null,
     tipo_veiculo: data.modelo || "Veículo não informado",
-    origem_endereco: data.origem || null,
-    destino_endereco: data.destino || null,
-    motivo: data.motivo || "Outro",
-    observacoes: data.observacoes || "",
+    origem_endereco: data.origem || null, destino_endereco: data.destino || null,
+    motivo: data.motivo || "Outro", observacoes: data.observacoes || "",
     distancia_estimada_km: data.distanciaKm || null,
-    valor: data.valorEstimado || null,
-    valor_estimado: data.valorEstimado || null,
-    status: "pendente",
-    status_proposta: "Aceita",
+    valor: data.valorEstimado || null, valor_estimado: data.valorEstimado || null,
+    status: "pendente", status_proposta: "Aceita",
   }).select().single();
 
   if (solErr) {
     console.error("[DISPATCH] Error creating solicitacao:", solErr);
-    await reply(supabase, phone, conversationId,
-      "⚠️ Ocorreu um erro ao criar sua OS. Nossa equipe foi notificada e entrará em contato.", provider);
+    await reply(supabase, cleanPhone, conversationId,
+      "⚠️ Ocorreu um erro ao criar sua OS. Nossa equipe foi notificada.", provider);
     return;
   }
 
   const protocolo = sol.protocolo || `OS-${sol.id}`;
-
-  // Link conversation to solicitacao
   await supabase.from("conversations").update({ solicitacao_id: sol.id }).eq("id", conversationId);
 
-  // Confirmation to client
   const osMsg =
     `📄 *Ordem de Serviço Criada!*\n\n` +
     `📋 Protocolo: *${protocolo}*\n` +
-    `👤 Cliente: ${data.nome || "N/I"}\n` +
-    `🚗 Placa: ${data.placa || "N/I"}\n` +
-    `🔧 Motivo: ${data.motivo || "Outro"}\n` +
-    `📍 Origem: ${data.origem || "N/I"}\n` +
+    `👤 Cliente: ${data.nome || "N/I"}\n🚗 Placa: ${data.placa || "N/I"}\n` +
+    `🔧 Motivo: ${data.motivo || "Outro"}\n📍 Origem: ${data.origem || "N/I"}\n` +
     `🏁 Destino: ${data.destino || "N/I"}\n` +
     `💰 Valor: R$ ${(Number(data.valorEstimado || 0)).toFixed(2)}\n\n` +
-    `⏳ Estamos acionando os prestadores próximos. Você receberá atualizações aqui!`;
+    `⏳ Estamos acionando os prestadores próximos!`;
 
-  await reply(supabase, phone, conversationId, osMsg, provider);
+  await reply(supabase, cleanPhone, conversationId, osMsg, provider);
+  await enqueueAutomation(supabase, "order_created", cleanPhone, conversationId, { protocolo, solicitacaoId: sol.id });
+  await enqueueAutomation(supabase, "new_request", cleanPhone, conversationId, { protocolo });
 
-  // Enqueue automations
-  await enqueueAutomation(supabase, "order_created", phone, conversationId, { protocolo, solicitacaoId: sol.id });
-  await enqueueAutomation(supabase, "new_request", phone, conversationId, { protocolo });
-
-  // Call dispatch-start
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
@@ -688,14 +664,13 @@ async function createSolicitacaoAndDispatch(
     const res = await fetch(`${supabaseUrl}/functions/v1/dispatch-start`, {
       method: "POST",
       headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ solicitacao_id: sol.id, conversation_id: conversationId, contact_phone: phone }),
+      body: JSON.stringify({ solicitacao_id: sol.id, conversation_id: conversationId, contact_phone: cleanPhone }),
     });
     if (!res.ok) console.error("[DISPATCH] dispatch-start error:", await res.text());
   } catch (err) {
     console.error("[DISPATCH] Error calling dispatch-start:", err);
   }
 
-  // Trigger process-queue
   try {
     await fetch(`${supabaseUrl}/functions/v1/process-queue`, {
       method: "POST",
