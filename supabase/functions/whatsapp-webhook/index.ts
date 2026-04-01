@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
         continue;
       }
 
-      const contactPhone = nm.from;
+      const contactPhone = nm.from.replace(/\D/g, "");
       const contactName = nm.contactName;
       console.log(`[WEBHOOK] Msg from ${contactName} (${contactPhone}): ${nm.content.slice(0, 80)}`);
 
@@ -78,7 +78,7 @@ Deno.serve(async (req: Request) => {
         .from("conversations")
         .select("*")
         .eq("contact_phone", contactPhone)
-        .not("state", "in", '("cancelado","concluido")')
+        .not("state", "in", "(cancelado,concluido)")
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
