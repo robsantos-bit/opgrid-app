@@ -620,29 +620,98 @@ async function enqueueAutomation(supabase: any, triggerEvent: string, phone: str
 async function createSolicitacaoAndDispatch(supabase: any, conversationId: string, data: any, phone: string, provider: Provider) {
   const cleanPhone = phone.replace(/@c\.us|@s\.whatsapp\.net/g, "").replace(/\D/g, "");
   const now = new Date().toISOString();
+  const fallbackProtocol = buildFallbackProtocol(new Date(now));
 
-  const { data: sol, error: solErr } = await supabase.from("solicitacoes").insert({
-    data_hora: now, canal: "WhatsApp",
-    cliente_nome: data.nome || null,
-    cliente_telefone: cleanPhone, cliente_whatsapp: cleanPhone,
-    placa: data.placa || null,
-    tipo_veiculo: data.modelo || "Veículo não informado",
-    origem_endereco: data.origem || null, destino_endereco: data.destino || null,
-    motivo: data.motivo || "Outro", observacoes: data.observacoes || "",
-    distancia_estimada_km: data.distanciaKm || null,
-    valor: data.valorEstimado || null, valor_estimado: data.valorEstimado || null,
-    status: "pendente", status_proposta: "Aceita",
-  }).select().single();
+  const { data: sol, error: solErr, payload: solicitacaoPayloadFinal } = await insertWithSchemaFallback(
+    supabase,
+    "solicitacoes",
+    {
+      protocolo: fallbackProtocol,
+      created_at: now,
+      updated_at: now,
+      data_hora: now,
+      canal: "WhatsApp",
+      cliente_nome: data.nome || "Cliente não informado",
+      cliente_telefone: cleanPhone,
+      cliente_whatsapp: cleanPhone,
+      placa: data.placa || null,
+      tipo_veiculo: data.modelo || "Veículo não informado",
+      origem_endereco: data.origem || null,
+      destino_endereco: data.destino || null,
+      motivo: data.motivo || "Outro",
+      observacoes: data.observacoes || "",
+      distancia_estimada_km: toNullableNumber(data.distanciaKm),
+      valor: toNullableNumber(data.valorEstimado),
+      valor_estimado: toNullableNumber(data.valorEstimado),
+      status: "pendente",
+      prioridade: "normal",
+      status_proposta: "Aceita",
+    },
+    "*"
+  );
 
-  if (solErr) {
-    console.error("[DISPATCH] Error creating solicitacao:", solErr);
+  if (solErr || !sol) {
+    console.error("[DISPATCH] Error creating solicitacao:", {
+      error: solErr,
+      payload: solicitacaoPayloadFinal,
+      conversationId,
+      phone: cleanPhone,
+    });
     await reply(supabase, cleanPhone, conversationId,
       "⚠️ Ocorreu um erro ao criar sua OS. Nossa equipe foi notificada.", provider);
     return;
   }
 
-  const protocolo = sol.protocolo || `OS-${sol.id}`;
-  await supabase.from("conversations").update({ solicitacao_id: sol.id }).eq("id", conversationId);
+  const protocolo = sol.protocolo || fallbackProtocol || `OS-${sol.id}`;
+  const atendimentoNotas = [
+    `OS criada via WhatsApp (${protocolo})`,
+    data.motivo ? `Motivo: ${data.motivo}` : null,
+    data.origem ? `Origem: ${data.origem}` : null,
+    data.destino ? `Destino: ${data.destino}` : null,
+  ].filter(Boolean).join(" • ");
+
+  const { data: atendimento, error: atendimentoErr, payload: atendimentoPayloadFinal } = await insertWithSchemaFallback(
+    supabase,
+    "atendimentos",
+    {
+      solicitacao_id: sol.id,
+      status: "aberto",
+      notas: atendimentoNotas || `OS criada via WhatsApp (${protocolo})`,
+      created_at: now,
+    },
+    "id"
+  );
+
+  if (atendimentoErr) {
+    console.error("[DISPATCH] Error creating atendimento:", {
+      error: atendimentoErr,
+      payload: atendimentoPayloadFinal,
+      solicitacaoId: sol.id,
+    });
+  }
+
+  const atendimentoId = atendimento?.id || null;
+
+  await updateWithSchemaFallback(
+    supabase,
+    "conversations",
+    {
+      solicitacao_id: sol.id,
+      ...(atendimentoId ? { atendimento_id: atendimentoId } : {}),
+    },
+    "id",
+    conversationId
+  );
+
+  if (atendimentoId) {
+    await updateWithSchemaFallback(
+      supabase,
+      "solicitacoes",
+      { atendimento_id: atendimentoId },
+      "id",
+      sol.id
+    );
+  }
 
   const osMsg =
     `📄 *Ordem de Serviço Criada!*\n\n` +
@@ -654,7 +723,7 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
     `⏳ Estamos acionando os prestadores próximos!`;
 
   await reply(supabase, cleanPhone, conversationId, osMsg, provider);
-  await enqueueAutomation(supabase, "order_created", cleanPhone, conversationId, { protocolo, solicitacaoId: sol.id });
+  await enqueueAutomation(supabase, "order_created", cleanPhone, conversationId, { protocolo, solicitacaoId: sol.id, atendimentoId });
   await enqueueAutomation(supabase, "new_request", cleanPhone, conversationId, { protocolo });
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -664,7 +733,7 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
     const res = await fetch(`${supabaseUrl}/functions/v1/dispatch-start`, {
       method: "POST",
       headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ solicitacao_id: sol.id, conversation_id: conversationId, contact_phone: cleanPhone }),
+      body: JSON.stringify({ solicitacao_id: sol.id, atendimento_id: atendimentoId, conversation_id: conversationId, contact_phone: cleanPhone }),
     });
     if (!res.ok) console.error("[DISPATCH] dispatch-start error:", await res.text());
   } catch (err) {
@@ -680,4 +749,121 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
   } catch (err) {
     console.error("[DISPATCH] Error triggering process-queue:", err);
   }
+}
+
+async function insertWithSchemaFallback(
+  supabase: any,
+  table: string,
+  fields: Record<string, unknown>,
+  selectClause = "*"
+) {
+  let payload = Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  );
+  let lastError: any = null;
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const { data, error } = await supabase.from(table).insert(payload).select(selectClause).maybeSingle();
+
+    if (!error) {
+      return { data, error: null, payload };
+    }
+
+    lastError = error;
+    const unknownColumn = extractUnknownColumn(error, table);
+
+    if (!unknownColumn || !(unknownColumn in payload)) {
+      break;
+    }
+
+    const { [unknownColumn]: _removed, ...nextPayload } = payload;
+    console.warn(`[DB] Removing unsupported column ${table}.${unknownColumn} and retrying`, {
+      attempt: attempt + 1,
+      nextPayload,
+    });
+
+    if (!Object.keys(nextPayload).length) {
+      break;
+    }
+
+    payload = nextPayload;
+  }
+
+  return { data: null, error: lastError, payload };
+}
+
+async function updateWithSchemaFallback(
+  supabase: any,
+  table: string,
+  fields: Record<string, unknown>,
+  matchColumn: string,
+  matchValue: string,
+) {
+  let payload = Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  );
+  let lastError: any = null;
+
+  if (!Object.keys(payload).length) {
+    return { data: null, error: null, payload };
+  }
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const { data, error } = await supabase
+      .from(table)
+      .update(payload)
+      .eq(matchColumn, matchValue)
+      .select(matchColumn)
+      .maybeSingle();
+
+    if (!error) {
+      return { data, error: null, payload };
+    }
+
+    lastError = error;
+    const unknownColumn = extractUnknownColumn(error, table);
+
+    if (!unknownColumn || !(unknownColumn in payload)) {
+      console.warn(`[DB] Update failed for ${table}:`, error);
+      break;
+    }
+
+    const { [unknownColumn]: _removed, ...nextPayload } = payload;
+    console.warn(`[DB] Removing unsupported update column ${table}.${unknownColumn} and retrying`, {
+      attempt: attempt + 1,
+      nextPayload,
+    });
+
+    if (!Object.keys(nextPayload).length) {
+      break;
+    }
+
+    payload = nextPayload;
+  }
+
+  return { data: null, error: lastError, payload };
+}
+
+function extractUnknownColumn(error: any, table: string) {
+  const message = String(error?.message || "");
+  const schemaCacheMatch = message.match(new RegExp(`Could not find the '([^']+)' column of '${table}'`, "i"));
+  if (schemaCacheMatch?.[1]) return schemaCacheMatch[1];
+
+  const postgresMatch = message.match(new RegExp(`column[\s\"']+([^\"'\s]+)[\s\"']+of relation[\s\"']+${table}[\s\"']+does not exist`, "i"));
+  if (postgresMatch?.[1]) return postgresMatch[1];
+
+  return null;
+}
+
+function toNullableNumber(value: unknown) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+function buildFallbackProtocol(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const suffix = String(date.getTime() % 10000).padStart(4, "0");
+  return `OS-${year}${month}${day}-${suffix}`;
 }
