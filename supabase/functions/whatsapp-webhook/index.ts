@@ -443,10 +443,10 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       const recusa = buttonId === "recusar" || textLower === "2" || textLower.includes("não") || textLower.includes("cancelar");
 
       if (aceite) {
-        nextState = "solicitado";
         await reply(supabase, phone, conversationId,
           "✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...", provider);
-        await createSolicitacaoAndDispatch(supabase, conversationId, data, phone, provider);
+        const created = await createSolicitacaoAndDispatch(supabase, conversationId, data, phone, provider);
+        nextState = created ? "solicitado" : "aguardando_aceite";
       } else if (recusa) {
         nextState = "cancelado";
         responseText = "❌ Orçamento recusado. Se mudar de ideia, é só enviar uma nova mensagem!";
@@ -659,7 +659,7 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
     });
     await reply(supabase, cleanPhone, conversationId,
       "⚠️ Ocorreu um erro ao criar sua OS. Nossa equipe foi notificada.", provider);
-    return;
+    return false;
   }
 
   const protocolo = sol.protocolo || fallbackProtocol || `OS-${sol.id}`;
@@ -749,6 +749,8 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
   } catch (err) {
     console.error("[DISPATCH] Error triggering process-queue:", err);
   }
+
+  return true;
 }
 
 async function insertWithSchemaFallback(
