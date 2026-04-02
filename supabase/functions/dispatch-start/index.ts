@@ -32,13 +32,13 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    console.log(`[DISPATCH] Iniciando para solicitação ${novaSolicitacao.id}`);
+    console.log(`[DISPATCH] Iniciando para solicitação ${solicitacaoId}`);
 
     // 1. Busca dados completos da solicitação
     const { data: sol, error: solErr } = await supabase
       .from("solicitacoes")
       .select("*")
-      .eq("id", novaSolicitacao.id)
+      .eq("id", solicitacaoId)
       .maybeSingle();
 
     if (solErr || !sol) {
