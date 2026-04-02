@@ -17,10 +17,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     const payload = await req.json();
-    // Suporta chamada direta (solicitacao_id) ou webhook (record)
-    const novaSolicitacao = payload.record || payload;
+    // Suporta chamada direta (solicitacao_id), webhook (record.id), ou campo id direto
+    const solicitacaoId = payload.solicitacao_id || payload.record?.id || payload.id;
 
-    if (!novaSolicitacao?.id) {
+    if (!solicitacaoId) {
       return new Response(JSON.stringify({ error: "solicitacao_id ou record.id obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
