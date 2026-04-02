@@ -17,10 +17,10 @@ Deno.serve(async (req: Request) => {
 
   try {
     const payload = await req.json();
-    // Suporta chamada direta (solicitacao_id) ou webhook (record)
-    const novaSolicitacao = payload.record || payload;
+    // Suporta chamada direta (solicitacao_id), webhook (record.id), ou campo id direto
+    const solicitacaoId = payload.solicitacao_id || payload.record?.id || payload.id;
 
-    if (!novaSolicitacao?.id) {
+    if (!solicitacaoId) {
       return new Response(JSON.stringify({ error: "solicitacao_id ou record.id obrigatório" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -32,13 +32,13 @@ Deno.serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    console.log(`[DISPATCH] Iniciando para solicitação ${novaSolicitacao.id}`);
+    console.log(`[DISPATCH] Iniciando para solicitação ${solicitacaoId}`);
 
     // 1. Busca dados completos da solicitação
     const { data: sol, error: solErr } = await supabase
       .from("solicitacoes")
       .select("*")
-      .eq("id", novaSolicitacao.id)
+      .eq("id", solicitacaoId)
       .maybeSingle();
 
     if (solErr || !sol) {
@@ -50,10 +50,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // 2. Busca prestador ativo (maybeSingle evita crash se não houver)
+    // Busca prestador ativo (case-insensitive)
     const { data: prestador, error: prestadorErr } = await supabase
       .from("prestadores")
       .select("id, nome, telefone, status")
-      .eq("status", "Ativo")
+      .or("status.eq.Ativo,status.eq.ativo,status.ilike.ativo")
       .limit(1)
       .maybeSingle();
 
