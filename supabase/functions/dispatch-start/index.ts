@@ -50,10 +50,11 @@ Deno.serve(async (req: Request) => {
     }
 
     // 2. Busca prestador ativo (maybeSingle evita crash se não houver)
+    // Busca prestador ativo (case-insensitive)
     const { data: prestador, error: prestadorErr } = await supabase
       .from("prestadores")
       .select("id, nome, telefone, status")
-      .eq("status", "Ativo")
+      .or("status.eq.Ativo,status.eq.ativo,status.ilike.ativo")
       .limit(1)
       .maybeSingle();
 
