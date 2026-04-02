@@ -82,18 +82,25 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── Find or create conversation ──
-      const { data: found, error: findErr } = await supabase
+      // Busca conversa ativa SEM filtro de enum (evita crash se enum values não existem)
+      let conversa: any = null;
+      const { data: allConvs, error: findErr } = await supabase
         .from("conversations")
         .select("*")
         .eq("contact_phone", contactPhone)
-        .not("state", "in", "(cancelado,concluido)")
         .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(5);
 
-      if (findErr) console.error("[WEBHOOK] Find error:", findErr);
-
-      let conversa = found;
+      if (findErr) {
+        console.error("[WEBHOOK] Find error:", findErr);
+      } else if (allConvs?.length) {
+        // Filtra em JS para evitar crash com enum values inexistentes
+        const terminalStates = ["cancelado", "concluido"];
+        conversa = allConvs.find((c: any) => !terminalStates.includes(c.state)) || null;
+        if (!conversa) {
+          console.log("[WEBHOOK] All conversations are terminal, creating new one");
+        }
+      }
       if (!conversa) {
         console.log("[WEBHOOK] Creating new conversation for", contactPhone);
         const now = new Date();
