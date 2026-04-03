@@ -452,6 +452,7 @@ function PricingConfigPanel() {
           <TabsTrigger value="parametros" className="text-xs">Parâmetros</TabsTrigger>
           <TabsTrigger value="perfil" className="text-xs">Meu Perfil</TabsTrigger>
           
+          {isAdmin && <TabsTrigger value="tarifas" className="text-xs">Tarifas</TabsTrigger>}
           {isAdmin && <TabsTrigger value="webhooks" className="text-xs">Webhooks</TabsTrigger>}
           {isAdmin && <TabsTrigger value="permissoes" className="text-xs">Permissões</TabsTrigger>}
           {isAdmin && <TabsTrigger value="sistema" className="text-xs">Sistema</TabsTrigger>}
