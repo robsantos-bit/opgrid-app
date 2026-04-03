@@ -249,12 +249,16 @@ Deno.serve(async (req: Request) => {
     }
 
     // ── 6) Enqueue messages — fallback to direct send ──
-    const { error: queueErr } = await supabase
+    const { data: queuedRows, error: queueErr } = await supabase
       .from("message_queue")
-      .insert(queueItems);
+      .insert(queueItems)
+      .select("id, recipient_phone, payload_json, status");
+
+    let directFallbackUsed = false;
     if (queueErr) {
       console.error("[DISPATCH] Fila falhou, enviando direto:", queueErr);
       await sendQueuedDirectly(queueItems);
+      directFallbackUsed = true;
     }
 
     // ── 7) Update solicitação ──
@@ -284,10 +288,50 @@ Deno.serve(async (req: Request) => {
       `🔔 *${created.length} prestador(es) acionado(s)!*\n\nAguarde a confirmação. Você será notificado assim que um aceitar o serviço.`);
 
     // ── 10) Trigger queue processing ──
-    await triggerProcessQueue();
+    const queueTriggered = queueErr ? false : await triggerProcessQueue();
+
+    if (!queueErr && !queueTriggered && queuedRows?.length) {
+      const queuedIds = queuedRows
+        .map((row: any) => row.id)
+        .filter(Boolean);
+
+      if (queuedIds.length) {
+        const { data: unsentRows } = await supabase
+          .from("message_queue")
+          .select("id, recipient_phone, payload_json")
+          .in("id", queuedIds)
+          .in("status", ["pending", "scheduled", "sending"]);
+
+        if (unsentRows?.length) {
+          console.warn(
+            "[DISPATCH] process-queue indisponível, usando fallback direto para ofertas pendentes"
+          );
+          await sendQueuedDirectly(
+            unsentRows as Array<Record<string, unknown>>
+          );
+          await supabase
+            .from("message_queue")
+            .update({
+              status: "sent",
+              sent_at: new Date().toISOString(),
+              error_message:
+                "fallback_direct_send_after_process_queue_failure",
+            })
+            .in(
+              "id",
+              unsentRows.map((row: any) => row.id)
+            );
+          directFallbackUsed = true;
+        }
+      }
+    }
 
     return jsonResponse({
-      status: queueErr ? "offers_created_queue_failed" : "queued",
+      status: queueErr
+        ? "offers_created_queue_failed"
+        : directFallbackUsed
+          ? "offers_created_direct_fallback"
+          : "queued",
       ofertas: created.length,
       round,
       prestadores: created.map((o) => o.name),
@@ -524,10 +568,10 @@ async function sendQueuedDirectly(items: Array<Record<string, unknown>>) {
 
 // ── Process queue trigger ──
 
-async function triggerProcessQueue() {
+async function triggerProcessQueue(): Promise<boolean> {
   const url = Deno.env.get("SUPABASE_URL") || "";
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-  if (!url || !key) return;
+  if (!url || !key) return false;
   try {
     const res = await fetchWithTimeout(
       `${url}/functions/v1/process-queue`,
@@ -542,9 +586,15 @@ async function triggerProcessQueue() {
       PROCESS_QUEUE_TRIGGER_TIMEOUT_MS
     );
     await res.text();
+    if (!res.ok) {
+      console.warn(`[DISPATCH] process-queue retornou ${res.status}`);
+      return false;
+    }
     console.log(`[DISPATCH] process-queue disparado (${res.status})`);
+    return true;
   } catch (err) {
     console.warn("[DISPATCH] process-queue falhou (não-bloqueante):", err);
+    return false;
   }
 }
 

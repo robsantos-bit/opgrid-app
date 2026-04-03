@@ -38,7 +38,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: items, error: fetchErr } = await supabase
       .from('message_queue')
-      .select('*, message_templates!message_queue_template_key_fkey(*)')
+      .select('*')
       .in('status', ['pending', 'scheduled'])
       .lte('scheduled_at', now)
       .order('scheduled_at', { ascending: true })
@@ -47,6 +47,31 @@ Deno.serve(async (req: Request) => {
     if (fetchErr) throw fetchErr;
     if (!items?.length) {
       return jsonResponse({ status: 'empty', processed: 0 });
+    }
+
+    const templateKeys = Array.from(
+      new Set(
+        items
+          .map((item) => item.template_key)
+          .filter((value): value is string => typeof value === 'string' && value.trim().length > 0)
+      )
+    );
+
+    const templateMap = new Map<string, string>();
+    if (templateKeys.length) {
+      const { data: templates, error: templateErr } = await supabase
+        .from('message_templates')
+        .select('key, content')
+        .in('key', templateKeys)
+        .eq('is_active', true);
+
+      if (templateErr) {
+        console.error('[QUEUE] Template lookup error:', formatError(templateErr));
+      } else {
+        for (const template of templates || []) {
+          templateMap.set(String(template.key), String(template.content || ''));
+        }
+      }
     }
 
     console.log(`[QUEUE] Processing ${items.length} items`);
@@ -60,16 +85,12 @@ Deno.serve(async (req: Request) => {
       const payload = item.payload_json && typeof item.payload_json === 'object' ? item.payload_json : {};
       let content = '';
 
-      if (item.message_templates?.content) {
-        content = resolveTemplate(item.message_templates.content, payload);
-      } else if (item.template_key) {
-        const { data: tmpl } = await supabase
-          .from('message_templates')
-          .select('content')
-          .eq('key', item.template_key)
-          .eq('is_active', true)
-          .single();
-        content = tmpl ? resolveTemplate(tmpl.content, payload) : '';
+      const templateContent = item.template_key
+        ? templateMap.get(String(item.template_key))
+        : '';
+
+      if (templateContent) {
+        content = resolveTemplate(templateContent, payload);
       }
 
       if (!content) {
@@ -232,13 +253,29 @@ Deno.serve(async (req: Request) => {
 
     return jsonResponse({ status: 'ok', processed: items.length, sent, failed });
   } catch (err) {
-    console.error('[QUEUE] Error:', err);
-    return new Response(JSON.stringify({ error: String(err) }), {
+    const formattedError = formatError(err);
+    console.error('[QUEUE] Error:', formattedError);
+    return new Response(JSON.stringify({ error: formattedError }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });
+
+function formatError(err: unknown) {
+  if (err instanceof Error) {
+    return {
+      message: err.message,
+      stack: err.stack,
+    };
+  }
+
+  if (typeof err === 'object' && err !== null) {
+    return err;
+  }
+
+  return String(err);
+}
 
 function resolveTemplate(content: string, payload: Record<string, unknown>): string {
   return content.replace(/\{\{(\w+)\}\}/g, (_, key) => {
