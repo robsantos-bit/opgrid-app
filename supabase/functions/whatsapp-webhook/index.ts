@@ -385,14 +385,34 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
     case "aguardando_origem": {
       if (nm.type === "location" && nm.location) {
-        data.origem = nm.location.address || `${nm.location.latitude}, ${nm.location.longitude}`;
         data.coordenadas = { lat: nm.location.latitude, lng: nm.location.longitude };
+        // Reverse geocode to get a readable address
+        let endereco = nm.location.address || "";
+        if (!endereco || endereco.length < 5) {
+          try {
+            const geoRes = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${nm.location.latitude}&lon=${nm.location.longitude}&format=json&addressdetails=1`,
+              { headers: { "User-Agent": "OpGrid/1.0" } }
+            );
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              endereco = geoData.display_name || `${nm.location.latitude}, ${nm.location.longitude}`;
+              console.log(`[STATE] Reverse geocode: ${endereco}`);
+            }
+          } catch (geoErr) {
+            console.warn("[STATE] Reverse geocode failed:", geoErr);
+          }
+        }
+        if (!endereco || endereco.length < 3) {
+          endereco = `${nm.location.latitude}, ${nm.location.longitude}`;
+        }
+        data.origem = endereco;
       } else {
         if (text.length < 5) { responseText = "📍 Por favor, envie um endereço mais detalhado ou compartilhe sua localização:"; break; }
         data.origem = text;
       }
       nextState = "aguardando_motivo";
-      responseText = "🔧 Qual o *motivo do atendimento*?\n\n1️⃣ Pane mecânica\n2️⃣ Pneu furado\n3️⃣ Outro motivo\n\n_Responda com o número ou digite o motivo:_";
+      responseText = `📍 Localização registrada:\n*${data.origem}*\n\n🔧 Qual o *motivo do atendimento*?\n\n1️⃣ Pane mecânica\n2️⃣ Pneu furado\n3️⃣ Outro motivo\n\n_Responda com o número ou digite o motivo:_`;
       break;
     }
 
@@ -402,13 +422,32 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       const motivoFromBtn: Record<string, string> = { pane_mecanica: "Pane mecânica", pneu_furado: "Pneu furado", outro_motivo: "Outro" };
       data.motivo = buttonId ? (motivoFromBtn[buttonId] || "Outro") : (motivoMap[textLower] || text || "Outro");
       nextState = "aguardando_destino";
-      responseText = `✅ Motivo: *${data.motivo}*\n\nAgora informe o *endereço de destino*:\n_(Para onde o veículo deve ser levado)_`;
+      responseText = `✅ Motivo: *${data.motivo}*\n\nAgora informe o *endereço de destino*:\n_(Para onde o veículo deve ser levado)_\n\nVocê também pode compartilhar a localização 📍`;
       break;
     }
 
     case "aguardando_destino": {
-      if (text.length < 5) { responseText = "🏁 Por favor, informe o endereço de destino com mais detalhes:"; break; }
-      data.destino = text;
+      // Accept location pin for destination too
+      if (nm.type === "location" && nm.location) {
+        data.coordenadas_destino = { lat: nm.location.latitude, lng: nm.location.longitude };
+        let endDest = nm.location.address || "";
+        if (!endDest || endDest.length < 5) {
+          try {
+            const geoRes = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${nm.location.latitude}&lon=${nm.location.longitude}&format=json&addressdetails=1`,
+              { headers: { "User-Agent": "OpGrid/1.0" } }
+            );
+            if (geoRes.ok) {
+              const geoData = await geoRes.json();
+              endDest = geoData.display_name || `${nm.location.latitude}, ${nm.location.longitude}`;
+            }
+          } catch (e) { console.warn("[STATE] Reverse geocode dest failed:", e); }
+        }
+        data.destino = endDest || `${nm.location.latitude}, ${nm.location.longitude}`;
+      } else {
+        if (text.length < 5) { responseText = "🏁 Por favor, informe o endereço de destino com mais detalhes:"; break; }
+        data.destino = text;
+      }
       nextState = "aguardando_observacoes";
       responseText = "📝 Deseja adicionar alguma *observação*?\n_(Ex: veículo rebaixado, rua estreita, etc.)_\n\n1️⃣ Sem observações\n2️⃣ Sim, quero informar\n\n_Responda com o número:_";
       break;
@@ -426,8 +465,24 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       }
       data.observacoes = isSemObs ? "" : text;
 
-      const distanciaKm = Math.floor(Math.random() * 30) + 5;
-      const valorTotal = Math.round((120 + distanciaKm * 4.5) * 100) / 100;
+      // Calculate distance: Haversine if both coords available, else estimate
+      let distanciaKm = 15; // default fallback
+      if (data.coordenadas && data.coordenadas_destino) {
+        distanciaKm = haversineKm(
+          data.coordenadas.lat, data.coordenadas.lng,
+          data.coordenadas_destino.lat, data.coordenadas_destino.lng
+        );
+        distanciaKm = Math.max(Math.round(distanciaKm), 1);
+        console.log(`[STATE] Haversine distance: ${distanciaKm} km`);
+      } else if (data.coordenadas || data.coordenadas_destino) {
+        // Only one set of coords — try geocoding the text address
+        distanciaKm = 20; // reasonable urban estimate
+        console.log("[STATE] Only one coord set, using estimate: 20 km");
+      }
+
+      const valorBase = 120;
+      const valorKm = distanciaKm * 4.5;
+      const valorTotal = Math.round((valorBase + valorKm) * 100) / 100;
       data.distanciaKm = distanciaKm;
       data.valorEstimado = valorTotal;
 
@@ -436,7 +491,9 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         `👤 ${data.nome}\n🚗 Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
         `📍 ${data.origem}\n🏁 ${data.destino}\n📏 Distância: ~${distanciaKm} km\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
-        `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*`;
+        `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*\n` +
+        `  ├ Taxa base: R$ ${valorBase.toFixed(2)}\n` +
+        `  └ Km (${distanciaKm} × R$ 4,50): R$ ${valorKm.toFixed(2)}`;
 
       await reply(supabase, phone, conversationId, resumo, provider);
       nextState = "aguardando_aceite";
