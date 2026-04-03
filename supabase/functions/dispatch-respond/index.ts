@@ -154,6 +154,16 @@ Deno.serve(async (req: Request) => {
         });
       }
 
+      // ── NOW update atendimento (AFTER conversation is set to prestador_aceito) ──
+      // The SQL trigger will see aceito_prestador and map to prestador_aceito
+      await supabase
+        .from('atendimentos')
+        .update({
+          prestador_id: offer.prestador_id,
+          status: 'aceito_prestador',
+        })
+        .eq('id', atendimentoId);
+
       const providerPhone = offer.prestadores?.telefone?.replace(/\D/g, '');
       if (providerPhone) {
         await enqueueAutomation(supabase, 'order_assigned', providerPhone, conv?.id || '', {
