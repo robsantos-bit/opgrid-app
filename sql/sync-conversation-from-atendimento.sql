@@ -2,32 +2,59 @@
 -- Trigger: Sincroniza conversation.state automaticamente
 -- quando o status do atendimento muda.
 --
--- Fluxo correto:
---   aceito_prestador → conversation prestador_aceito
---   em_andamento     → conversation em_andamento
---   concluido        → conversation concluido
---   cancelado        → conversation cancelado
+-- Fluxo completo:
+--   aceito_prestador  → conversation prestador_aceito
+--   em_deslocamento   → conversation em_deslocamento
+--   no_local          → conversation no_local
+--   em_transito       → conversation em_transito
+--   finalizado        → conversation finalizado
+--   cancelado         → conversation cancelado
 -- =====================================================
 
 -- 1. Garantir que os enum values existem
-DO $$
-BEGIN
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'prestador_aceito' AND enumtypid = 'public.conversation_state'::regtype) THEN
     ALTER TYPE public.conversation_state ADD VALUE 'prestador_aceito';
   END IF;
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
-DO $$
-BEGIN
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'em_andamento' AND enumtypid = 'public.conversation_state'::regtype) THEN
     ALTER TYPE public.conversation_state ADD VALUE 'em_andamento';
   END IF;
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
-DO $$
-BEGIN
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'em_deslocamento' AND enumtypid = 'public.conversation_state'::regtype) THEN
+    ALTER TYPE public.conversation_state ADD VALUE 'em_deslocamento';
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'no_local' AND enumtypid = 'public.conversation_state'::regtype) THEN
+    ALTER TYPE public.conversation_state ADD VALUE 'no_local';
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'em_transito' AND enumtypid = 'public.conversation_state'::regtype) THEN
+    ALTER TYPE public.conversation_state ADD VALUE 'em_transito';
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'finalizado' AND enumtypid = 'public.conversation_state'::regtype) THEN
+    ALTER TYPE public.conversation_state ADD VALUE 'finalizado';
+  END IF;
+EXCEPTION WHEN others THEN NULL;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'concluido' AND enumtypid = 'public.conversation_state'::regtype) THEN
     ALTER TYPE public.conversation_state ADD VALUE 'concluido';
   END IF;
@@ -45,35 +72,37 @@ DECLARE
   _conv_id uuid;
   _new_state text;
 BEGIN
-  -- Determina o novo estado da conversa baseado no status do atendimento
   CASE
     WHEN NEW.status IN ('aceito_prestador', 'accepted', 'provider_accepted') THEN
       _new_state := 'prestador_aceito';
+    WHEN NEW.status IN ('em_deslocamento', 'dispatched', 'en_route') THEN
+      _new_state := 'em_deslocamento';
+    WHEN NEW.status IN ('no_local', 'on_site', 'arrived') THEN
+      _new_state := 'no_local';
+    WHEN NEW.status IN ('em_transito', 'in_transit', 'transporting') THEN
+      _new_state := 'em_transito';
+    WHEN NEW.status IN ('finalizado', 'concluido', 'completed', 'finished') THEN
+      _new_state := 'finalizado';
     WHEN NEW.status IN ('em_andamento', 'in_progress') THEN
       _new_state := 'em_andamento';
-    WHEN NEW.status IN ('concluido', 'completed', 'finalizado', 'finished') THEN
-      _new_state := 'concluido';
     WHEN NEW.status IN ('cancelado', 'canceled') THEN
       _new_state := 'cancelado';
     ELSE
-      -- Status não mapeado, não faz nada
       RETURN NEW;
   END CASE;
 
-  -- Busca a conversation vinculada via solicitacao_id do atendimento
   SELECT c.id INTO _conv_id
   FROM public.conversations c
   WHERE c.solicitacao_id = NEW.solicitacao_id
-    AND c.state NOT IN ('cancelado', 'concluido')
+    AND c.state NOT IN ('cancelado', 'finalizado', 'concluido')
   ORDER BY c.updated_at DESC
   LIMIT 1;
 
-  -- Se não achou por solicitacao_id, tenta por atendimento_id
   IF _conv_id IS NULL THEN
     SELECT c.id INTO _conv_id
     FROM public.conversations c
     WHERE c.atendimento_id = NEW.id
-      AND c.state NOT IN ('cancelado', 'concluido')
+      AND c.state NOT IN ('cancelado', 'finalizado', 'concluido')
     ORDER BY c.updated_at DESC
     LIMIT 1;
   END IF;
