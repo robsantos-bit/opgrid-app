@@ -400,17 +400,75 @@ export default function OsView({ atendimentoId }: OsViewProps) {
       {/* Checklist veicular */}
       <div className="px-4 pt-5">
         <SectionHeader title="Checklist Veicular" />
-        {isChecklistAvailable ? (
-          <Card className="p-4">
-            <p className="text-sm text-muted-foreground">Checklist disponível para preenchimento.</p>
-          </Card>
-        ) : (
+        {!isChecklistAvailable ? (
           <div className="rounded-lg border border-dashed border-warning bg-warning/5 p-4 text-center">
             <div className="flex items-center justify-center gap-2 text-warning">
               <AlertTriangle className="h-4 w-4" />
               <span className="text-sm font-medium">Disponível ao chegar no local</span>
             </div>
           </div>
+        ) : !placaValidada ? (
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Car className="h-4 w-4 text-primary" />
+              <span>Confirme a placa do veículo para liberar o checklist</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Digite os <strong>3 primeiros caracteres</strong> da placa do veículo no local para confirmar sua chegada.
+            </p>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Ex: ABC"
+                maxLength={3}
+                value={placaInput}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                  setPlacaInput(val);
+                  setPlacaError('');
+                }}
+                className="w-28 h-10 text-center font-mono text-lg uppercase tracking-widest"
+              />
+              <Button
+                onClick={() => {
+                  const placaReal = (solicitacao?.placa || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+                  const input = placaInput.toUpperCase();
+                  if (input.length < 3) {
+                    setPlacaError('Digite 3 caracteres');
+                    return;
+                  }
+                  if (placaReal.substring(0, 3) === input) {
+                    setPlacaValidada(true);
+                    setPlacaError('');
+                    toast.success('Placa confirmada! Checklist liberado.');
+                  } else {
+                    setPlacaError('Placa não confere. Verifique o veículo.');
+                  }
+                }}
+                className="h-10"
+                disabled={placaInput.length < 3}
+              >
+                <CheckCircle2 className="h-4 w-4 mr-1.5" />Confirmar
+              </Button>
+            </div>
+            {placaError && (
+              <p className="text-xs text-destructive font-medium">{placaError}</p>
+            )}
+            <p className="text-[10px] text-muted-foreground">
+              Placa cadastrada: <span className="font-mono">{(solicitacao?.placa || 'N/D').substring(0, 3)}***</span>
+            </p>
+          </Card>
+        ) : (
+          <Card className="p-4 space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-[hsl(160,60%,38%)]">
+              <CheckCircle2 className="h-4 w-4" />
+              <span>Placa confirmada — Checklist liberado</span>
+            </div>
+            <p className="text-xs text-muted-foreground">Preencha o checklist de coleta abaixo.</p>
+            {/* TODO: Integrar ChecklistExecucao completo aqui */}
+            <div className="rounded-lg border border-[hsl(160,60%,38%)]/20 bg-[hsl(160,60%,38%)]/5 p-3 text-sm text-muted-foreground">
+              Checklist de coleta disponível para preenchimento.
+            </div>
+          </Card>
         )}
       </div>
 
