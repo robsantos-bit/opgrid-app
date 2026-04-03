@@ -158,6 +158,12 @@ interface NormalizedMessage {
 
 type Provider = "meta" | "wapi";
 
+interface CreateSolicitacaoResult {
+  ok: boolean;
+  dispatchStarted: boolean;
+  dataPatch?: Record<string, unknown>;
+}
+
 // ══════════════════════════════════════════════════════
 // Provider detection & normalization
 // ══════════════════════════════════════════════════════
@@ -469,7 +475,8 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         await reply(supabase, phone, conversationId,
           "✅ *Solicitação confirmada!*\n\nEstamos criando sua OS e localizando o prestador mais próximo...", provider);
         const created = await createSolicitacaoAndDispatch(supabase, conversationId, data, phone, provider);
-        nextState = created ? "solicitado" : "aguardando_aceite";
+        data = { ...data, ...(created.dataPatch || {}) };
+        nextState = created.ok ? "solicitado" : "aguardando_aceite";
       } else if (recusa) {
         nextState = "cancelado";
         responseText = "❌ Orçamento recusado. Se mudar de ideia, é só enviar uma nova mensagem!";
@@ -481,6 +488,17 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
     // ─────────── 9. SOLICITADO (aguardando prestador) ───────────
     case "solicitado": {
+      if (data._dispatch_manual_required) {
+        const lastManualReply = data._last_manual_dispatch_reply
+          ? new Date(data._last_manual_dispatch_reply).getTime()
+          : 0;
+        if (Date.now() - lastManualReply > 60000) {
+          responseText = "⚠️ Sua OS já foi criada, mas o acionamento automático está indisponível no momento. Nossa central está seguindo com o despacho manual e vai te atualizar por aqui.";
+          data._last_manual_dispatch_reply = new Date().toISOString();
+        }
+        break;
+      }
+
       // Check if dispatch offers exist and their status
       const solId = conversa.solicitacao_id;
       let hasActiveOffer = false;
@@ -775,7 +793,13 @@ async function enqueueAutomation(supabase: any, triggerEvent: string, phone: str
 
 // ── Create Solicitação + Dispatch ──
 
-async function createSolicitacaoAndDispatch(supabase: any, conversationId: string, data: any, phone: string, provider: Provider) {
+async function createSolicitacaoAndDispatch(
+  supabase: any,
+  conversationId: string,
+  data: any,
+  phone: string,
+  provider: Provider
+): Promise<CreateSolicitacaoResult> {
   const cleanPhone = phone.replace(/@c\.us|@s\.whatsapp\.net/g, "").replace(/\D/g, "");
   const now = new Date().toISOString();
   const fallbackProtocol = buildFallbackProtocol(new Date(now));
@@ -796,7 +820,7 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
   if (solErr || !sol) {
     console.error("[DISPATCH] Error creating solicitacao:", solErr);
     await reply(supabase, cleanPhone, conversationId, "⚠️ Ocorreu um erro ao criar sua OS. Nossa equipe foi notificada.", provider);
-    return false;
+    return { ok: false, dispatchStarted: false };
   }
 
   const protocolo = sol.protocolo || fallbackProtocol;
@@ -809,6 +833,16 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
 
   const atendimentoId = atendimento?.id || null;
   if (atErr) console.error("[DISPATCH] Atendimento error:", atErr);
+
+  const resultPatch: Record<string, unknown> = {
+    protocolo,
+    solicitacao_id: sol.id,
+    ...(atendimentoId ? { atendimento_id: atendimentoId } : {}),
+    _dispatch_started: false,
+    _dispatch_manual_required: false,
+    _dispatch_error: null,
+    _dispatch_last_attempt_at: now,
+  };
 
   // Link conversation → solicitação + atendimento
   await supabase.from("conversations").update({
@@ -827,7 +861,7 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
     `🔧 Motivo: ${data.motivo || "Outro"}\n📍 Origem: ${data.origem || "N/I"}\n` +
     `🏁 Destino: ${data.destino || "N/I"}\n` +
     `💰 Valor: R$ ${(Number(data.valorEstimado || 0)).toFixed(2)}\n\n` +
-    `⏳ Estamos acionando os prestadores próximos!`;
+    `⏳ Sua OS foi criada. Vou te avisar assim que o acionamento for confirmado.`;
 
   await reply(supabase, cleanPhone, conversationId, osMsg, provider);
   await enqueueAutomation(supabase, "order_created", cleanPhone, conversationId, { protocolo, solicitacaoId: sol.id, atendimentoId });
@@ -836,14 +870,36 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+  let dispatchStarted = false;
+  let dispatchError: string | null = null;
+
   try {
     const res = await fetch(`${supabaseUrl}/functions/v1/dispatch-start`, {
       method: "POST",
       headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ solicitacao_id: sol.id, atendimento_id: atendimentoId, conversation_id: conversationId, contact_phone: cleanPhone }),
     });
-    if (!res.ok) console.error("[DISPATCH] dispatch-start error:", await res.text());
-  } catch (err) { console.error("[DISPATCH] dispatch-start call error:", err); }
+    const dispatchBody = await res.text();
+    if (!res.ok) {
+      dispatchError = `dispatch-start ${res.status}: ${dispatchBody.slice(0, 300)}`;
+      console.error("[DISPATCH] dispatch-start error:", dispatchError);
+    } else {
+      dispatchStarted = true;
+    }
+  } catch (err) {
+    dispatchError = String(err);
+    console.error("[DISPATCH] dispatch-start call error:", err);
+  }
+
+  if (!dispatchStarted) {
+    await reply(
+      supabase,
+      cleanPhone,
+      conversationId,
+      "⚠️ Sua OS foi criada, mas o acionamento automático está indisponível agora. Nossa central seguirá com o despacho manual e te atualizará por aqui.",
+      provider
+    );
+  }
 
   try {
     await fetch(`${supabaseUrl}/functions/v1/process-queue`, {
@@ -853,7 +909,16 @@ async function createSolicitacaoAndDispatch(supabase: any, conversationId: strin
     });
   } catch (err) { console.error("[DISPATCH] process-queue error:", err); }
 
-  return true;
+  return {
+    ok: true,
+    dispatchStarted,
+    dataPatch: {
+      ...resultPatch,
+      _dispatch_started: dispatchStarted,
+      _dispatch_manual_required: !dispatchStarted,
+      _dispatch_error: dispatchError,
+    },
+  };
 }
 
 // ── Schema-resilient insert/update ──
