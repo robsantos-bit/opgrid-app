@@ -2,10 +2,11 @@
 -- Trigger: Sincroniza conversation.state automaticamente
 -- quando o status do atendimento muda.
 --
--- Garante continuidade do fluxo WhatsApp:
---   aceito/em_andamento → conversation em_andamento
---   concluido/finalizado → conversation concluido
---   cancelado → conversation cancelado
+-- Fluxo correto:
+--   aceito_prestador → conversation prestador_aceito
+--   em_andamento     → conversation em_andamento
+--   concluido        → conversation concluido
+--   cancelado        → conversation cancelado
 -- =====================================================
 
 -- 1. Garantir que os enum values existem
@@ -46,7 +47,9 @@ DECLARE
 BEGIN
   -- Determina o novo estado da conversa baseado no status do atendimento
   CASE
-    WHEN NEW.status IN ('aceito_prestador', 'accepted', 'em_andamento', 'in_progress', 'provider_accepted') THEN
+    WHEN NEW.status IN ('aceito_prestador', 'accepted', 'provider_accepted') THEN
+      _new_state := 'prestador_aceito';
+    WHEN NEW.status IN ('em_andamento', 'in_progress') THEN
       _new_state := 'em_andamento';
     WHEN NEW.status IN ('concluido', 'completed', 'finalizado', 'finished') THEN
       _new_state := 'concluido';

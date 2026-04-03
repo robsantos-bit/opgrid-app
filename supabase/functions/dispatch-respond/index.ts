@@ -69,6 +69,7 @@ Deno.serve(async (req: Request) => {
         return jsonResponse({ error: 'Falha ao aceitar — tente novamente' }, acceptError ? 500 : 409);
       }
 
+      // Cancel other pending offers for same solicitação
       await supabase
         .from('dispatch_offers')
         .update({ status: 'cancelled', responded_at: now })
@@ -76,14 +77,7 @@ Deno.serve(async (req: Request) => {
         .neq('id', offer_id)
         .eq('status', 'pending');
 
-      await supabase
-        .from('atendimentos')
-        .update({
-          prestador_id: offer.prestador_id,
-          status: 'em_andamento',
-        })
-        .eq('id', atendimentoId);
-
+      // Update solicitação status
       await supabase
         .from('solicitacoes')
         .update({
@@ -92,6 +86,8 @@ Deno.serve(async (req: Request) => {
         })
         .eq('id', offer.solicitacao_id);
 
+      // ── IMPORTANT: Update conversation FIRST (before atendimento) ──
+      // This prevents the SQL trigger from overwriting prestador_aceito
       const { data: conv } = await supabase
         .from('conversations')
         .select('id, contact_phone, data')
@@ -108,6 +104,7 @@ Deno.serve(async (req: Request) => {
           prestador_telefone: prestadorTel,
           atendimento_id: atendimentoId,
           prestador_id: offer.prestador_id,
+          _notified_prestador_aceito: false,
         };
 
         const { error: conversationError } = await supabase
@@ -156,6 +153,16 @@ Deno.serve(async (req: Request) => {
           atendimentoId: atendimentoId,
         });
       }
+
+      // ── NOW update atendimento (AFTER conversation is set to prestador_aceito) ──
+      // The SQL trigger will see aceito_prestador and map to prestador_aceito
+      await supabase
+        .from('atendimentos')
+        .update({
+          prestador_id: offer.prestador_id,
+          status: 'aceito_prestador',
+        })
+        .eq('id', atendimentoId);
 
       const providerPhone = offer.prestadores?.telefone?.replace(/\D/g, '');
       if (providerPhone) {
