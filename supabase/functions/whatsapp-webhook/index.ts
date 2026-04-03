@@ -524,12 +524,18 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
     }
 
     case "solicitado": {
-      // Only reply if client hasn't been notified yet (check data flag)
+      // Client already notified by dispatch-start. Only respond if they message again.
       if (!data._notified_solicitado) {
         responseText = "⏳ Sua OS já está sendo processada! Estamos localizando o prestador mais próximo. Aguarde...";
         data._notified_solicitado = true;
+      } else {
+        // Don't spam — only reply if it's been more than 60s since last notification
+        const lastNotif = data._last_solicitado_reply ? new Date(data._last_solicitado_reply).getTime() : 0;
+        if (Date.now() - lastNotif > 60000) {
+          responseText = "⏳ Aguarde, estamos buscando um prestador para você...";
+          data._last_solicitado_reply = new Date().toISOString();
+        }
       }
-      // Don't reply again on subsequent messages — avoid loop
       break;
     }
     case "prestador_aceito": {
