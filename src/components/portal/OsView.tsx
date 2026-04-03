@@ -176,6 +176,10 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const [etaMinutos, setEtaMinutos] = useState('');
   const [complemento, setComplemento] = useState('');
   const [compartilhar, setCompartilhar] = useState(false);
+  const [placaInput, setPlacaInput] = useState('');
+  const [placaValidada, setPlacaValidada] = useState(false);
+  const [placaError, setPlacaError] = useState('');
+  const [compartilhar, setCompartilhar] = useState(false);
 
   const fetchData = useCallback(async () => {
     try {
