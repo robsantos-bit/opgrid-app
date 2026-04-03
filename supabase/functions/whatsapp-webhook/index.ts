@@ -523,15 +523,30 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       break;
     }
 
-    case "solicitado":
-      responseText = "⏳ Sua OS já está sendo processada! Estamos localizando o prestador mais próximo. Aguarde...";
+    case "solicitado": {
+      // Only reply if client hasn't been notified yet (check data flag)
+      if (!data._notified_solicitado) {
+        responseText = "⏳ Sua OS já está sendo processada! Estamos localizando o prestador mais próximo. Aguarde...";
+        data._notified_solicitado = true;
+      }
+      // Don't reply again on subsequent messages — avoid loop
       break;
-    case "prestador_aceito":
-      responseText = "🚗 O prestador já está a caminho! Se precisar de algo, responda aqui.";
+    }
+    case "prestador_aceito": {
+      if (!data._notified_prestador_aceito) {
+        const pNome = data.prestador_nome || "Prestador";
+        responseText = `🚗 O prestador *${pNome}* já aceitou seu serviço e está a caminho! Se precisar de algo, responda aqui.`;
+        data._notified_prestador_aceito = true;
+      }
       break;
-    case "em_andamento":
-      responseText = "🔧 Seu atendimento está em andamento. Se tiver alguma urgência, responda aqui.";
+    }
+    case "em_andamento": {
+      if (!data._notified_em_andamento) {
+        responseText = "🔧 Seu atendimento está em andamento. Se tiver alguma urgência, responda aqui.";
+        data._notified_em_andamento = true;
+      }
       break;
+    }
     case "concluido":
       responseText = '✅ Este atendimento já foi concluído. Para uma nova solicitação, envie "Oi".';
       break;
