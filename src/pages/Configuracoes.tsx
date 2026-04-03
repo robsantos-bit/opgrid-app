@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { getConfig, saveConfig, resetAllData } from '@/data/store';
 import { supabase } from '@/integrations/supabase/client';
 import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2, Send, Zap } from 'lucide-react';
+import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2, Send, Zap, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
