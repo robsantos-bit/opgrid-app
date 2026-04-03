@@ -100,10 +100,12 @@ Deno.serve(async (req: Request) => {
 
       if (conv) {
         const prestadorNome = offer.prestadores?.nome || 'Prestador';
+        const prestadorTel = offer.prestadores?.telefone || '';
+        const protocolo = offer.solicitacoes?.protocolo || '';
         const mergedData = {
           ...(conv.data || {}),
           prestador_nome: prestadorNome,
-          prestador_telefone: offer.prestadores?.telefone || null,
+          prestador_telefone: prestadorTel,
           atendimento_id: atendimentoId,
           prestador_id: offer.prestador_id,
         };
@@ -129,14 +131,27 @@ Deno.serve(async (req: Request) => {
             .eq('id', conv.id);
         }
 
+        // ── DIRECT WhatsApp notification to client ──
+        const clientPhone = conv.contact_phone?.replace(/\D/g, '') || '';
+        if (clientPhone) {
+          const clientMsg =
+            `🎉 *Prestador confirmado!*\n\n` +
+            `🚗 O prestador *${prestadorNome}* aceitou seu serviço e está a caminho!\n\n` +
+            (protocolo ? `📋 Protocolo: *${protocolo}*\n` : '') +
+            (prestadorTel ? `📞 Contato do prestador: ${prestadorTel}\n` : '') +
+            `\n⏳ Você será notificado quando ele chegar no local.`;
+
+          await sendWhatsAppDirect(supabase, clientPhone, conv.id, clientMsg);
+        }
+
         await enqueueAutomation(supabase, 'provider_assigned', conv.contact_phone, conv.id, {
-          protocolo: offer.solicitacoes?.protocolo,
+          protocolo,
           prestadorNome,
           atendimentoId: atendimentoId,
         });
 
         await enqueueAutomation(supabase, 'cliente_prestador_confirmado', conv.contact_phone, conv.id, {
-          protocolo: offer.solicitacoes?.protocolo,
+          protocolo,
           prestadorNome,
           atendimentoId: atendimentoId,
         });
@@ -308,6 +323,49 @@ async function enqueueAutomation(
     await supabase.from('message_queue').insert(queueItems);
   } catch (err) {
     console.error('[AUTOMATION] enqueue error:', err);
+  }
+}
+
+async function sendWhatsAppDirect(supabase: any, phone: string, conversationId: string, text: string) {
+  const INSTANCE_ID = Deno.env.get('WAPI_INSTANCE_ID') || '';
+  const TOKEN = Deno.env.get('WAPI_TOKEN') || '';
+
+  try {
+    if (INSTANCE_ID && TOKEN) {
+      // Send via W-API
+      const res = await fetch(
+        `https://api.w-api.app/v1/message/send-text?instanceId=${INSTANCE_ID}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, message: text }),
+        }
+      );
+      const resBody = await res.text();
+      console.log('[DISPATCH-RESPOND] W-API send:', res.status, resBody.slice(0, 200));
+
+      let messageId: string | null = null;
+      if (res.ok) {
+        try { const p = JSON.parse(resBody); messageId = p.id || p.key?.id || p.messageId || null; } catch {}
+      }
+
+      await supabase.from('messages').insert({
+        conversation_id: conversationId, direction: 'outbound',
+        wa_message_id: messageId, message_type: 'text',
+        content: text, status: messageId ? 'sent' : 'pending',
+      });
+    } else {
+      // Fallback: try via whatsapp-send edge function
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message: text, conversation_id: conversationId }),
+      });
+    }
+  } catch (err) {
+    console.error('[DISPATCH-RESPOND] sendWhatsAppDirect error:', err);
   }
 }
 
