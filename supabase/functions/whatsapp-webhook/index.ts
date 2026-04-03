@@ -481,10 +481,73 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
     // ─────────── 9. SOLICITADO (aguardando prestador) ───────────
     case "solicitado": {
-      const lastNotif = data._last_solicitado_reply ? new Date(data._last_solicitado_reply).getTime() : 0;
-      if (Date.now() - lastNotif > 60000) {
-        responseText = "⏳ Aguarde, estamos buscando um prestador para você...";
-        data._last_solicitado_reply = new Date().toISOString();
+      // Check if dispatch offers exist and their status
+      const solId = conversa.solicitacao_id;
+      let hasActiveOffer = false;
+      let allExpired = false;
+
+      if (solId) {
+        const { data: offers } = await supabase
+          .from("dispatch_offers")
+          .select("id, status, expires_at")
+          .eq("solicitacao_id", solId);
+
+        if (offers?.length) {
+          const accepted = offers.find((o: any) => o.status === "accepted");
+          if (accepted) {
+            // Dispatch already accepted — this shouldn't be "solicitado" but handle gracefully
+            hasActiveOffer = true;
+          } else {
+            const pending = offers.filter((o: any) => o.status === "pending");
+            const validPending = pending.filter(
+              (o: any) => !o.expires_at || new Date(o.expires_at).getTime() > Date.now()
+            );
+            hasActiveOffer = validPending.length > 0;
+            allExpired = pending.length === 0 && offers.every(
+              (o: any) => ["expired", "rejected", "cancelled"].includes(o.status)
+            );
+          }
+        }
+      }
+
+      if (allExpired && solId) {
+        // All offers expired/rejected — trigger new round
+        const lastRedispatch = data._last_redispatch ? new Date(data._last_redispatch).getTime() : 0;
+        if (Date.now() - lastRedispatch > 120000) {
+          data._last_redispatch = new Date().toISOString();
+          responseText = "⏳ Os prestadores anteriores não responderam. Estamos acionando novos prestadores...";
+
+          // Trigger new dispatch round
+          try {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            await fetch(`${supabaseUrl}/functions/v1/dispatch-start`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+              body: JSON.stringify({
+                solicitacao_id: solId,
+                conversation_id: conversationId,
+                contact_phone: phone,
+              }),
+            });
+          } catch (err) {
+            console.error("[STATE] Re-dispatch failed:", err);
+          }
+        } else {
+          responseText = "⏳ Estamos buscando novos prestadores. Aguarde...";
+        }
+      } else if (hasActiveOffer) {
+        const lastNotif = data._last_solicitado_reply ? new Date(data._last_solicitado_reply).getTime() : 0;
+        if (Date.now() - lastNotif > 60000) {
+          responseText = "⏳ Aguarde, estamos aguardando a resposta dos prestadores acionados...";
+          data._last_solicitado_reply = new Date().toISOString();
+        }
+      } else {
+        const lastNotif = data._last_solicitado_reply ? new Date(data._last_solicitado_reply).getTime() : 0;
+        if (Date.now() - lastNotif > 60000) {
+          responseText = "⏳ Sua solicitação está sendo processada. Aguarde...";
+          data._last_solicitado_reply = new Date().toISOString();
+        }
       }
       break;
     }
