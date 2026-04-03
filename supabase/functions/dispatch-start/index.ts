@@ -156,15 +156,22 @@ Deno.serve(async (req: Request) => {
       await notifyClient(supabase, contactPhone, conversationId,
         `🔔 *${ofertasCriadas.length} prestador(es) acionado(s)!*\n\nAguarde a confirmação. Você será notificado assim que um aceitar o serviço.`);
 
-      // Atualiza dados da conversa com info do despacho
+      // Merge dispatch info into existing conversation data (don't overwrite)
       if (conversationId) {
+        const { data: conv } = await supabase
+          .from("conversations")
+          .select("data")
+          .eq("id", conversationId)
+          .maybeSingle();
+        const mergedData = {
+          ...(conv?.data || {}),
+          _dispatch_sent: true,
+          _dispatch_count: ofertasCriadas.length,
+          _dispatch_at: new Date().toISOString(),
+          _notified_solicitado: true,
+        };
         await supabase.from("conversations").update({
-          data: {
-            _dispatch_sent: true,
-            _dispatch_count: ofertasCriadas.length,
-            _dispatch_at: new Date().toISOString(),
-            _notified_solicitado: true, // evitar loop de notificação
-          },
+          data: mergedData,
           updated_at: new Date().toISOString(),
         }).eq("id", conversationId);
       }
