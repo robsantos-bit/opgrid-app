@@ -1,7 +1,3 @@
-// Edge Function: Process Message Queue
-// Picks pending/scheduled items from message_queue and sends via WhatsApp
-// Designed to be called by a cron job or manually
-
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
@@ -9,6 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   'Content-Type': 'application/json',
 };
+
+const WHATSAPP_REQUEST_TIMEOUT_MS = 12000;
 
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -38,7 +36,6 @@ Deno.serve(async (req: Request) => {
   try {
     const now = new Date().toISOString();
 
-    // Fetch pending items whose scheduled_at has passed
     const { data: items, error: fetchErr } = await supabase
       .from('message_queue')
       .select('*, message_templates!message_queue_template_key_fkey(*)')
@@ -58,36 +55,36 @@ Deno.serve(async (req: Request) => {
     let failed = 0;
 
     for (const item of items) {
-      // Mark as sending
-      await supabase.from('message_queue')
-        .update({ status: 'sending' })
-        .eq('id', item.id);
+      await supabase.from('message_queue').update({ status: 'sending' }).eq('id', item.id);
 
-      // Resolve template content
+      const payload = item.payload_json && typeof item.payload_json === 'object' ? item.payload_json : {};
       let content = '';
-      if (item.message_templates) {
-        content = resolveTemplate(item.message_templates.content, item.payload_json || {});
+
+      if (item.message_templates?.content) {
+        content = resolveTemplate(item.message_templates.content, payload);
       } else if (item.template_key) {
-        // Lookup template by key
         const { data: tmpl } = await supabase
           .from('message_templates')
           .select('content')
           .eq('key', item.template_key)
           .eq('is_active', true)
           .single();
-        content = tmpl ? resolveTemplate(tmpl.content, item.payload_json || {}) : '';
+        content = tmpl ? resolveTemplate(tmpl.content, payload) : '';
+      }
+
+      if (!content) {
+        content = String(payload.message || payload.content || '').trim();
       }
 
       if (!content || !item.recipient_phone) {
         await supabase.from('message_queue').update({
           status: 'failed',
-          error_message: !content ? 'Template not found or empty' : 'No recipient phone',
+          error_message: !content ? 'Template/payload vazio' : 'No recipient phone',
         }).eq('id', item.id);
         failed++;
         continue;
       }
 
-      // No credentials — mark as sent (simulation mode)
       if (!useMeta && !useWapi) {
         await supabase.from('message_queue').update({
           status: 'sent',
@@ -112,7 +109,7 @@ Deno.serve(async (req: Request) => {
         let responsePayload: Record<string, unknown> = {};
 
         if (useWapi) {
-          const res = await fetch(
+          const res = await fetchWithTimeout(
             `https://api.w-api.app/v1/message/send-text?instanceId=${WAPI_INSTANCE_ID}`,
             {
               method: 'POST',
@@ -124,7 +121,8 @@ Deno.serve(async (req: Request) => {
                 phone: String(item.recipient_phone).replace(/\D/g, ''),
                 message: content.replace(/\\n/g, '\n'),
               }),
-            }
+            },
+            WHATSAPP_REQUEST_TIMEOUT_MS
           );
 
           const resBody = await res.text();
@@ -141,14 +139,14 @@ Deno.serve(async (req: Request) => {
           providerMessageId = resData?.id || resData?.key?.id || resData?.messageId || null;
           responsePayload = responseOk ? resData : { error: resBody.slice(0, 500) };
         } else {
-          const payload = {
+          const payloadMeta = {
             messaging_product: 'whatsapp',
-            to: item.recipient_phone,
+            to: String(item.recipient_phone).replace(/\D/g, ''),
             type: 'text',
             text: { body: content },
           };
 
-          const res = await fetch(
+          const res = await fetchWithTimeout(
             `https://graph.facebook.com/${API_VERSION}/${PHONE_NUMBER_ID}/messages`,
             {
               method: 'POST',
@@ -156,8 +154,9 @@ Deno.serve(async (req: Request) => {
                 'Authorization': `Bearer ${ACCESS_TOKEN}`,
                 'Content-Type': 'application/json',
               },
-              body: JSON.stringify(payload),
-            }
+              body: JSON.stringify(payloadMeta),
+            },
+            WHATSAPP_REQUEST_TIMEOUT_MS
           );
 
           const resBody = await res.text();
@@ -245,6 +244,16 @@ function resolveTemplate(content: string, payload: Record<string, unknown>): str
   return content.replace(/\{\{(\w+)\}\}/g, (_, key) => {
     return String(payload[key] ?? `{{${key}}}`);
   });
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort('timeout'), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function jsonResponse(data: Record<string, unknown>) {
