@@ -430,24 +430,45 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         data.observacoes = isSemObs ? "" : text;
       }
 
+      // ── Busca tarifas dinâmicas do banco ──
+      let taxaBase = 120, custoKm = 4.5, fatorIdaVolta = 2, fatorCorrecao = 1.3;
+      let fallbackParcial = 20, fallbackTotal = 15, valorMinimo = 80;
+      try {
+        const { data: pricingRows } = await supabase
+          .from('pricing_config')
+          .select('chave, valor')
+          .eq('ativo', true);
+        if (pricingRows && pricingRows.length > 0) {
+          const pc: Record<string, number> = {};
+          for (const r of pricingRows) pc[r.chave] = Number(r.valor);
+          taxaBase = pc.taxa_base ?? taxaBase;
+          custoKm = pc.custo_km ?? custoKm;
+          fatorIdaVolta = pc.fator_ida_volta ?? fatorIdaVolta;
+          fatorCorrecao = pc.fator_correcao_rodoviario ?? fatorCorrecao;
+          fallbackParcial = pc.distancia_fallback_parcial ?? fallbackParcial;
+          fallbackTotal = pc.distancia_fallback_total ?? fallbackTotal;
+          valorMinimo = pc.valor_minimo ?? valorMinimo;
+        }
+      } catch (e) {
+        console.warn('[PRICING] Falha ao buscar pricing_config, usando defaults:', e);
+      }
+
       // ── Calcula orçamento ──
-      let distanciaIdaKm = 15;
+      let distanciaIdaKm = fallbackTotal;
       if (data.coordenadas && data.coordenadas_destino) {
         const haversine = haversineKm(
           data.coordenadas.lat, data.coordenadas.lng,
           data.coordenadas_destino.lat, data.coordenadas_destino.lng
         );
-        // Fator de correção rodoviário: Haversine é linha reta, estrada real é ~30% maior
-        distanciaIdaKm = Math.max(Math.round(haversine * 1.3), 1);
+        distanciaIdaKm = Math.max(Math.round(haversine * fatorCorrecao), 1);
       } else if (data.coordenadas || data.coordenadas_destino) {
-        distanciaIdaKm = 20;
+        distanciaIdaKm = fallbackParcial;
       }
 
-      const distanciaTotal = distanciaIdaKm * 2; // ida + volta do prestador
-      const valorBase = 120;
-      const custoKm = 4.5;
+      const distanciaTotal = distanciaIdaKm * fatorIdaVolta;
       const valorKm = distanciaTotal * custoKm;
-      const valorTotal = Math.round((valorBase + valorKm) * 100) / 100;
+      const valorBruto = taxaBase + valorKm;
+      const valorTotal = Math.max(Math.round(valorBruto * 100) / 100, valorMinimo);
       data.distanciaKm = distanciaTotal;
       data.valorEstimado = valorTotal;
 
@@ -459,7 +480,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         `🔄 Km total (ida+volta prestador): ${distanciaTotal} km\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
         `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*\n` +
-        `  ├ Taxa base: R$ ${valorBase.toFixed(2)}\n` +
+        `  ├ Taxa base: R$ ${taxaBase.toFixed(2)}\n` +
         `  └ ${distanciaTotal} km × R$ ${custoKm.toFixed(2)}/km: R$ ${valorKm.toFixed(2)}`;
 
       await reply(supabase, phone, conversationId, resumo, provider);

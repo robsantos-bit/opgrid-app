@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { getConfig, saveConfig, resetAllData } from '@/data/store';
 import { supabase } from '@/integrations/supabase/client';
 import { ConfigEmpresa } from '@/types';
 import { useAuth } from '@/contexts/AuthContext';
-import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2, Send, Zap } from 'lucide-react';
+import { Save, RotateCcw, Loader2, Webhook, Copy, CheckCircle2, Send, Zap, DollarSign } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -316,8 +316,131 @@ function WebhookConfigPanel() {
     </div>
   );
 }
+// ====== PRICING CONFIG PANEL ======
+interface PricingRow {
+  id: string;
+  chave: string;
+  valor: number;
+  descricao: string | null;
+  unidade: string | null;
+  ativo: boolean;
+}
 
+const PRICING_LABELS: Record<string, string> = {
+  taxa_base: 'Taxa Base',
+  custo_km: 'Custo por Km',
+  fator_ida_volta: 'Fator Ida+Volta',
+  fator_correcao_rodoviario: 'Correção Rodoviária',
+  distancia_fallback_parcial: 'Distância Fallback (parcial)',
+  distancia_fallback_total: 'Distância Fallback (sem GPS)',
+  valor_minimo: 'Valor Mínimo',
+  adicional_noturno: 'Adicional Noturno',
+  adicional_pesado: 'Adicional Veículo Pesado',
+};
 
+function PricingConfigPanel() {
+  const [rows, setRows] = useState<PricingRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editValues, setEditValues] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    fetchPricing();
+  }, []);
+
+  const fetchPricing = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('pricing_config')
+      .select('*')
+      .order('chave');
+    if (error) {
+      toast.error('Erro ao carregar tarifas: ' + error.message);
+    } else {
+      setRows(data || []);
+      const vals: Record<string, string> = {};
+      (data || []).forEach((r: PricingRow) => { vals[r.chave] = String(r.valor); });
+      setEditValues(vals);
+    }
+    setLoading(false);
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    let hasError = false;
+    for (const row of rows) {
+      const newVal = parseFloat(editValues[row.chave] || '0');
+      if (newVal !== row.valor) {
+        const { error } = await supabase
+          .from('pricing_config')
+          .update({ valor: newVal })
+          .eq('id', row.id);
+        if (error) {
+          toast.error(`Erro ao salvar ${row.chave}: ${error.message}`);
+          hasError = true;
+        }
+      }
+    }
+    if (!hasError) {
+      toast.success('Tarifas atualizadas com sucesso!');
+      fetchPricing();
+    }
+    setSaving(false);
+  };
+
+  if (loading) {
+    return (
+      <Card className="max-w-xl">
+        <CardContent className="flex items-center justify-center py-12">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="max-w-xl">
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2">
+          <DollarSign className="h-4 w-4 text-primary" />
+          <CardTitle className="text-sm">Tarifas de Precificação</CardTitle>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Valores utilizados automaticamente pelo motor de orçamento do WhatsApp
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            Nenhuma configuração encontrada. Execute o SQL de criação da tabela <code className="text-xs bg-muted px-1 rounded">pricing_config</code>.
+          </p>
+        ) : (
+          rows.map((row) => (
+            <div key={row.id} className="flex items-center gap-3 py-2 border-b border-dashed border-border/60 last:border-b-0">
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-medium">{PRICING_LABELS[row.chave] || row.chave}</p>
+                <p className="text-[11px] text-muted-foreground">{row.descricao} <span className="text-[10px] opacity-60">({row.unidade})</span></p>
+              </div>
+              <Input
+                type="number"
+                step="0.01"
+                value={editValues[row.chave] || ''}
+                onChange={(e) => setEditValues((prev) => ({ ...prev, [row.chave]: e.target.value }))}
+                className="w-24 h-8 text-sm text-right font-mono"
+              />
+            </div>
+          ))
+        )}
+        {rows.length > 0 && (
+          <Button onClick={handleSave} disabled={saving} className="mt-2">
+            {saving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}
+            Salvar Tarifas
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
   return (
     <div className="space-y-5 animate-fade-in">
@@ -329,6 +452,7 @@ function WebhookConfigPanel() {
           <TabsTrigger value="parametros" className="text-xs">Parâmetros</TabsTrigger>
           <TabsTrigger value="perfil" className="text-xs">Meu Perfil</TabsTrigger>
           
+          {isAdmin && <TabsTrigger value="tarifas" className="text-xs">Tarifas</TabsTrigger>}
           {isAdmin && <TabsTrigger value="webhooks" className="text-xs">Webhooks</TabsTrigger>}
           {isAdmin && <TabsTrigger value="permissoes" className="text-xs">Permissões</TabsTrigger>}
           {isAdmin && <TabsTrigger value="sistema" className="text-xs">Sistema</TabsTrigger>}
@@ -365,6 +489,10 @@ function WebhookConfigPanel() {
             )}
           </CardContent></Card>
         </TabsContent>
+
+        {isAdmin && <TabsContent value="tarifas" className="mt-4">
+          <PricingConfigPanel />
+        </TabsContent>}
 
         {isAdmin && <TabsContent value="webhooks" className="mt-4">
           <WebhookConfigPanel />
