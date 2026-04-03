@@ -326,6 +326,49 @@ async function enqueueAutomation(
   }
 }
 
+async function sendWhatsAppDirect(supabase: any, phone: string, conversationId: string, text: string) {
+  const INSTANCE_ID = Deno.env.get('WAPI_INSTANCE_ID') || '';
+  const TOKEN = Deno.env.get('WAPI_TOKEN') || '';
+
+  try {
+    if (INSTANCE_ID && TOKEN) {
+      // Send via W-API
+      const res = await fetch(
+        `https://api.w-api.app/v1/message/send-text?instanceId=${INSTANCE_ID}`,
+        {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone, message: text }),
+        }
+      );
+      const resBody = await res.text();
+      console.log('[DISPATCH-RESPOND] W-API send:', res.status, resBody.slice(0, 200));
+
+      let messageId: string | null = null;
+      if (res.ok) {
+        try { const p = JSON.parse(resBody); messageId = p.id || p.key?.id || p.messageId || null; } catch {}
+      }
+
+      await supabase.from('messages').insert({
+        conversation_id: conversationId, direction: 'outbound',
+        wa_message_id: messageId, message_type: 'text',
+        content: text, status: messageId ? 'sent' : 'pending',
+      });
+    } else {
+      // Fallback: try via whatsapp-send edge function
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      await fetch(`${supabaseUrl}/functions/v1/whatsapp-send`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, message: text, conversation_id: conversationId }),
+      });
+    }
+  } catch (err) {
+    console.error('[DISPATCH-RESPOND] sendWhatsAppDirect error:', err);
+  }
+}
+
 function jsonResponse(data: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
