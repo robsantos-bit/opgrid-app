@@ -433,31 +433,34 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       // ── Calcula orçamento ──
       let distanciaIdaKm = 15;
       if (data.coordenadas && data.coordenadas_destino) {
-        distanciaIdaKm = haversineKm(
+        const haversine = haversineKm(
           data.coordenadas.lat, data.coordenadas.lng,
           data.coordenadas_destino.lat, data.coordenadas_destino.lng
         );
-        distanciaIdaKm = Math.max(Math.round(distanciaIdaKm), 1);
+        // Fator de correção rodoviário: Haversine é linha reta, estrada real é ~30% maior
+        distanciaIdaKm = Math.max(Math.round(haversine * 1.3), 1);
       } else if (data.coordenadas || data.coordenadas_destino) {
         distanciaIdaKm = 20;
       }
 
-      const distanciaKm = distanciaIdaKm * 2; // ida + volta
+      const distanciaTotal = distanciaIdaKm * 2; // ida + volta do prestador
       const valorBase = 120;
-      const valorKm = distanciaKm * 4.5;
+      const custoKm = 4.5;
+      const valorKm = distanciaTotal * custoKm;
       const valorTotal = Math.round((valorBase + valorKm) * 100) / 100;
-      data.distanciaKm = distanciaKm;
+      data.distanciaKm = distanciaTotal;
       data.valorEstimado = valorTotal;
 
       const resumo =
         `📋 *Resumo do Orçamento*\n\n` +
         `👤 ${data.nome}\n🚗 ${data.modelo || "Veículo"} — Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
         `📍 ${data.origem}\n🏁 ${data.destino}\n` +
-        `📏 Distância: ~${distanciaIdaKm} km (ida e volta: ${distanciaKm} km)\n` +
+        `📏 Trecho: ~${distanciaIdaKm} km\n` +
+        `🔄 Km total (ida+volta prestador): ${distanciaTotal} km\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
         `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*\n` +
         `  ├ Taxa base: R$ ${valorBase.toFixed(2)}\n` +
-        `  └ Km ida+volta (${distanciaKm} × R$ 4,50): R$ ${valorKm.toFixed(2)}`;
+        `  └ ${distanciaTotal} km × R$ ${custoKm.toFixed(2)}/km: R$ ${valorKm.toFixed(2)}`;
 
       await reply(supabase, phone, conversationId, resumo, provider);
       nextState = "aguardando_aceite";
