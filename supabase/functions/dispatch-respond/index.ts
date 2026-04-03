@@ -100,10 +100,12 @@ Deno.serve(async (req: Request) => {
 
       if (conv) {
         const prestadorNome = offer.prestadores?.nome || 'Prestador';
+        const prestadorTel = offer.prestadores?.telefone || '';
+        const protocolo = offer.solicitacoes?.protocolo || '';
         const mergedData = {
           ...(conv.data || {}),
           prestador_nome: prestadorNome,
-          prestador_telefone: offer.prestadores?.telefone || null,
+          prestador_telefone: prestadorTel,
           atendimento_id: atendimentoId,
           prestador_id: offer.prestador_id,
         };
@@ -129,14 +131,27 @@ Deno.serve(async (req: Request) => {
             .eq('id', conv.id);
         }
 
+        // ── DIRECT WhatsApp notification to client ──
+        const clientPhone = conv.contact_phone?.replace(/\D/g, '') || '';
+        if (clientPhone) {
+          const clientMsg =
+            `🎉 *Prestador confirmado!*\n\n` +
+            `🚗 O prestador *${prestadorNome}* aceitou seu serviço e está a caminho!\n\n` +
+            (protocolo ? `📋 Protocolo: *${protocolo}*\n` : '') +
+            (prestadorTel ? `📞 Contato do prestador: ${prestadorTel}\n` : '') +
+            `\n⏳ Você será notificado quando ele chegar no local.`;
+
+          await sendWhatsAppDirect(supabase, clientPhone, conv.id, clientMsg);
+        }
+
         await enqueueAutomation(supabase, 'provider_assigned', conv.contact_phone, conv.id, {
-          protocolo: offer.solicitacoes?.protocolo,
+          protocolo,
           prestadorNome,
           atendimentoId: atendimentoId,
         });
 
         await enqueueAutomation(supabase, 'cliente_prestador_confirmado', conv.contact_phone, conv.id, {
-          protocolo: offer.solicitacoes?.protocolo,
+          protocolo,
           prestadorNome,
           atendimentoId: atendimentoId,
         });
