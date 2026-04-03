@@ -490,6 +490,10 @@ function PricingConfigPanel() {
           </CardContent></Card>
         </TabsContent>
 
+        {isAdmin && <TabsContent value="tarifas" className="mt-4">
+          <PricingConfigPanel />
+        </TabsContent>}
+
         {isAdmin && <TabsContent value="webhooks" className="mt-4">
           <WebhookConfigPanel />
         </TabsContent>}
