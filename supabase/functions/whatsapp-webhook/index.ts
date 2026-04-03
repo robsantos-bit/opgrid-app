@@ -465,20 +465,23 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       }
       data.observacoes = isSemObs ? "" : text;
 
-      // Calculate distance: Haversine if both coords available, else estimate
-      let distanciaKm = 15; // default fallback
+      // Calculate one-way distance: Haversine if both coords available, else estimate
+      let distanciaIdaKm = 15; // default fallback (one-way)
       if (data.coordenadas && data.coordenadas_destino) {
-        distanciaKm = haversineKm(
+        distanciaIdaKm = haversineKm(
           data.coordenadas.lat, data.coordenadas.lng,
           data.coordenadas_destino.lat, data.coordenadas_destino.lng
         );
-        distanciaKm = Math.max(Math.round(distanciaKm), 1);
-        console.log(`[STATE] Haversine distance: ${distanciaKm} km`);
+        distanciaIdaKm = Math.max(Math.round(distanciaIdaKm), 1);
+        console.log(`[STATE] Haversine one-way distance: ${distanciaIdaKm} km`);
       } else if (data.coordenadas || data.coordenadas_destino) {
-        // Only one set of coords — try geocoding the text address
-        distanciaKm = 20; // reasonable urban estimate
+        distanciaIdaKm = 20; // reasonable urban estimate
         console.log("[STATE] Only one coord set, using estimate: 20 km");
       }
+
+      // Cobrar ida e volta (2x a distância)
+      const distanciaKm = distanciaIdaKm * 2;
+      console.log(`[STATE] Total distance (round trip): ${distanciaKm} km`);
 
       const valorBase = 120;
       const valorKm = distanciaKm * 4.5;
@@ -489,11 +492,11 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       const resumo =
         `📋 *Resumo do Orçamento*\n\n` +
         `👤 ${data.nome}\n🚗 Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
-        `📍 ${data.origem}\n🏁 ${data.destino}\n📏 Distância: ~${distanciaKm} km\n` +
+        `📍 ${data.origem}\n🏁 ${data.destino}\n📏 Distância: ~${distanciaIdaKm} km (ida e volta: ${distanciaKm} km)\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
         `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*\n` +
         `  ├ Taxa base: R$ ${valorBase.toFixed(2)}\n` +
-        `  └ Km (${distanciaKm} × R$ 4,50): R$ ${valorKm.toFixed(2)}`;
+        `  └ Km ida+volta (${distanciaKm} × R$ 4,50): R$ ${valorKm.toFixed(2)}`;
 
       await reply(supabase, phone, conversationId, resumo, provider);
       nextState = "aguardando_aceite";
