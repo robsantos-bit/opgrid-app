@@ -15,6 +15,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from 'sonner';
 import ChecklistExecucao from '@/components/ChecklistExecucao';
+import OsView from '@/components/portal/OsView';
 import {
   Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, XCircle, AlertTriangle, Loader2,
   Navigation, Camera, FileText, Timer, Shield, Zap, ArrowRight, User, Car, DollarSign,
