@@ -20,10 +20,39 @@ Deno.serve(async (req: Request) => {
   );
 
   try {
-    const { offer_id } = await req.json();
+    const body = await req.json();
+    const { offer_id, atendimento_id } = body;
 
+    // ---- Fetch by atendimento_id (OS view) ----
+    if (atendimento_id) {
+      const { data: atData, error: atErr } = await supabase
+        .from('atendimentos')
+        .select(`
+          id, status, notas, created_at, finalizado_at, protocolo,
+          solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at ),
+          prestadores ( id, nome, telefone, latitude, longitude, cidade, uf )
+        `)
+        .eq('id', atendimento_id)
+        .maybeSingle();
+
+      if (atErr) {
+        console.error('[DISPATCH-OFFER-DETAIL] atendimento query error:', atErr);
+        return jsonResponse({ error: 'Erro ao carregar atendimento' }, 500);
+      }
+      if (!atData) {
+        return jsonResponse({ error: 'Atendimento não encontrado' }, 404);
+      }
+
+      return jsonResponse({
+        atendimento: atData,
+        solicitacao: atData.solicitacoes,
+        prestador: atData.prestadores,
+      });
+    }
+
+    // ---- Fetch by offer_id (Offer view) ----
     if (!offer_id) {
-      return jsonResponse({ error: 'offer_id required' }, 400);
+      return jsonResponse({ error: 'offer_id or atendimento_id required' }, 400);
     }
 
     const { data: offer, error } = await supabase

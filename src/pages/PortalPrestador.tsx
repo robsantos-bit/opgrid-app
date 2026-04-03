@@ -15,6 +15,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { toast } from 'sonner';
 import ChecklistExecucao from '@/components/ChecklistExecucao';
+import OsView from '@/components/portal/OsView';
 import {
   Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, XCircle, AlertTriangle, Loader2,
   Navigation, Camera, FileText, Timer, Shield, Zap, ArrowRight, User, Car, DollarSign,
@@ -432,13 +433,7 @@ export default function PortalPrestador() {
   if (tipo === 'os' && id) {
     return (
       <MobileShell>
-        <div className="flex flex-col items-center justify-center py-20 text-center px-6">
-          <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mb-4">
-            <CheckCircle2 className="h-8 w-8 text-success" />
-          </div>
-          <h2 className="text-lg font-bold mb-1">OS em andamento</h2>
-          <p className="text-sm text-muted-foreground max-w-[280px]">O atendimento está em acompanhamento pela central. Para atualizações, entre em contato com a operação.</p>
-        </div>
+        <OsView atendimentoId={id} />
       </MobileShell>
     );
   }
