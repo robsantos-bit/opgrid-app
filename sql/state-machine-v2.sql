@@ -1,31 +1,9 @@
 -- =====================================================
--- Trigger: Sincroniza conversation.state automaticamente
--- quando o status do atendimento muda.
---
--- Fluxo completo:
---   aceito_prestador  → conversation prestador_aceito
---   em_deslocamento   → conversation em_deslocamento
---   no_local          → conversation no_local
---   em_transito       → conversation em_transito
---   finalizado        → conversation finalizado
---   cancelado         → conversation cancelado
+-- State Machine V2: Novos estados para ciclo completo
+-- Executar no Supabase SQL Editor
 -- =====================================================
 
--- 1. Garantir que os enum values existem
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'prestador_aceito' AND enumtypid = 'public.conversation_state'::regtype) THEN
-    ALTER TYPE public.conversation_state ADD VALUE 'prestador_aceito';
-  END IF;
-EXCEPTION WHEN others THEN NULL;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'em_andamento' AND enumtypid = 'public.conversation_state'::regtype) THEN
-    ALTER TYPE public.conversation_state ADD VALUE 'em_andamento';
-  END IF;
-EXCEPTION WHEN others THEN NULL;
-END $$;
-
+-- 1. Adicionar novos estados ao enum conversation_state
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'em_deslocamento' AND enumtypid = 'public.conversation_state'::regtype) THEN
     ALTER TYPE public.conversation_state ADD VALUE 'em_deslocamento';
@@ -54,14 +32,7 @@ DO $$ BEGIN
 EXCEPTION WHEN others THEN NULL;
 END $$;
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_enum WHERE enumlabel = 'concluido' AND enumtypid = 'public.conversation_state'::regtype) THEN
-    ALTER TYPE public.conversation_state ADD VALUE 'concluido';
-  END IF;
-EXCEPTION WHEN others THEN NULL;
-END $$;
-
--- 2. Criar a função de sincronização
+-- 2. Atualizar trigger de sincronização para os novos estados
 CREATE OR REPLACE FUNCTION public.sync_conversation_from_atendimento()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -71,7 +42,10 @@ AS $$
 DECLARE
   _conv_id uuid;
   _new_state text;
+  _notify_msg text;
+  _client_phone text;
 BEGIN
+  -- Mapeia status do atendimento para estado da conversa
   CASE
     WHEN NEW.status IN ('aceito_prestador', 'accepted', 'provider_accepted') THEN
       _new_state := 'prestador_aceito';
@@ -83,14 +57,13 @@ BEGIN
       _new_state := 'em_transito';
     WHEN NEW.status IN ('finalizado', 'concluido', 'completed', 'finished') THEN
       _new_state := 'finalizado';
-    WHEN NEW.status IN ('em_andamento', 'in_progress') THEN
-      _new_state := 'em_andamento';
     WHEN NEW.status IN ('cancelado', 'canceled') THEN
       _new_state := 'cancelado';
     ELSE
       RETURN NEW;
   END CASE;
 
+  -- Busca conversation vinculada
   SELECT c.id INTO _conv_id
   FROM public.conversations c
   WHERE c.solicitacao_id = NEW.solicitacao_id
@@ -120,7 +93,7 @@ BEGIN
 END;
 $$;
 
--- 3. Criar o trigger
+-- 3. Recriar trigger
 DROP TRIGGER IF EXISTS trg_sync_conversation_from_atendimento ON public.atendimentos;
 CREATE TRIGGER trg_sync_conversation_from_atendimento
   AFTER INSERT OR UPDATE OF status

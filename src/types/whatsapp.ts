@@ -15,6 +15,10 @@ export type ConversationState =
   | 'aguardando_aceite'
   | 'solicitado'
   | 'prestador_aceito'
+  | 'em_deslocamento'
+  | 'no_local'
+  | 'em_transito'
+  | 'finalizado'
   | 'em_andamento'
   | 'concluido'
   | 'cancelado'
@@ -34,6 +38,14 @@ export interface ConversationData {
   motivo?: string;
   destino?: string;
   observacoes?: string;
+  coordenadas?: { lat: number; lng: number };
+  coordenadas_destino?: { lat: number; lng: number };
+  distanciaKm?: number;
+  valorEstimado?: number;
+  prestador_nome?: string;
+  prestador_telefone?: string;
+  prestador_id?: string;
+  atendimento_id?: string;
 }
 
 export interface Conversation {
