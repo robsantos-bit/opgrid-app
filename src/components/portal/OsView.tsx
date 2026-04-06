@@ -182,12 +182,13 @@ export default function OsView({ atendimentoId }: OsViewProps) {
 
   const fetchData = useCallback(async () => {
     try {
-      // Fetch via edge function to bypass RLS
+      // Fetch via edge function to bypass RLS (with fallback logic built-in)
       const { data, error } = await supabase.functions.invoke('dispatch-offer-detail', {
         body: { atendimento_id: atendimentoId },
       });
 
       if (error || !data) {
+        console.warn('dispatch-offer-detail failed, trying direct query:', error);
         // Fallback: try direct query
         const { data: atData } = await supabase
           .from('atendimentos')
@@ -201,9 +202,32 @@ export default function OsView({ atendimentoId }: OsViewProps) {
           setPrestador(atData.prestadores);
         }
       } else {
-        setAtendimento(data.atendimento || data);
-        setSolicitacao(data.solicitacao || data.atendimento?.solicitacoes);
-        setPrestador(data.prestador || data.atendimento?.prestadores);
+        const at = data.atendimento || data;
+        const sol = data.solicitacao || data.atendimento?.solicitacoes || null;
+        const prest = data.prestador || data.atendimento?.prestadores || null;
+        
+        setAtendimento(at);
+        setSolicitacao(sol);
+        setPrestador(prest);
+
+        // If still missing solicitacao, try dispatch_offers as last resort
+        if (!sol && at?.id) {
+          console.warn('Solicitacao still null, trying dispatch_offers fallback');
+          try {
+            const { data: offerData } = await supabase
+              .from('dispatch_offers')
+              .select('solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
+              .eq('atendimento_id', atendimentoId)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            
+            if (offerData?.solicitacoes) setSolicitacao(offerData.solicitacoes);
+            if (!prest && offerData?.prestadores) setPrestador(offerData.prestadores);
+          } catch (fallbackErr) {
+            console.warn('Dispatch offers fallback failed:', fallbackErr);
+          }
+        }
       }
     } catch (err) {
       console.error('Error fetching OS data:', err);
