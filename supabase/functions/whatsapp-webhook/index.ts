@@ -323,7 +323,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
     // ─────────── 3. PLACA + TIPO VEÍCULO ───────────
     case "aguardando_veiculo": {
-      // Se ainda não tem placa, espera placa
       if (!data.placa) {
         const placa = text.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
         if (placa.length < 7) { responseText = "⚠️ Placa inválida. Informe no formato *ABC1D23* ou *ABC-1234*:"; break; }
@@ -336,7 +335,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         break;
       }
 
-      // Já tem placa, espera tipo veículo
       const tipoMap: Record<string, string> = { "1": "Carro", "2": "Moto", "3": "Caminhão", "4": "Equipamento" };
       const tipo = tipoMap[textLower] || text;
       data.modelo = tipo;
@@ -414,7 +412,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       break;
     }
 
-    // ─────────── 7. OBSERVAÇÕES + ORÇAMENTO ───────────
+    // ─────────── 7. OBSERVAÇÕES + ORÇAMENTO (via calculate-quote) ───────────
     case "aguardando_observacoes": {
       const buttonId = nm.interactive?.button_reply?.id;
       const isComObs = buttonId === "com_obs" || textLower === "2";
@@ -434,63 +432,126 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         data.observacoes = isSemObs ? "" : text;
       }
 
-      // ── Busca tarifas dinâmicas do banco ──
-      let pricingRows: Array<{ chave: string; valor: number }> = [];
+      // ── Determina tipo de veículo para calculate-quote ──
+      const vehicleText = normalizeVehicleType(data.modelo);
+      const isPesado = /caminhao|equipamento|pesad/.test(vehicleText);
+      const isUtilitario = /utilitario|van|fiorino|sprinter/.test(vehicleText);
+      const tipoVeiculo = isPesado ? "pesado" : isUtilitario ? "utilitario" : "padrao";
+
+      // ── Determina se é horário noturno (20h–6h) ──
+      const horaAtual = new Date().getUTCHours() - 3; // UTC-3 (Brasília)
+      const ehNoturno = horaAtual < 0 ? (horaAtual + 24 >= 20 || horaAtual + 24 < 6) : (horaAtual >= 20 || horaAtual < 6);
+
+      // ── Chama calculate-quote Edge Function ──
+      let quoteResult: any = null;
+      let usedFallback = false;
+
       try {
-        const { data: pricingData } = await supabase
-          .from('pricing_config')
-          .select('chave, valor')
-          .eq('ativo', true);
-        pricingRows = Array.isArray(pricingData) ? pricingData : [];
-      } catch (e) {
-        console.warn('[PRICING] Falha ao buscar pricing_config, usando defaults:', e);
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const quoteRes = await fetch(`${supabaseUrl}/functions/v1/calculate-quote`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${serviceKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            origem: data.origem || "",
+            destino: data.destino || "",
+            tipo_veiculo: tipoVeiculo,
+            possui_patins: false,
+            eh_noturno: ehNoturno,
+          }),
+        });
+
+        const quoteBody = await quoteRes.json();
+        console.log("[QUOTE] Response:", JSON.stringify(quoteBody).slice(0, 500));
+
+        if (quoteBody.sucesso && quoteBody.orcamento) {
+          quoteResult = quoteBody.orcamento;
+        } else {
+          console.warn("[QUOTE] Failed:", quoteBody.erro || "Unknown error");
+          usedFallback = true;
+        }
+      } catch (err) {
+        console.error("[QUOTE] Error calling calculate-quote:", err);
+        usedFallback = true;
       }
 
-      const {
-        taxaBase,
-        custoKm,
-        fatorIdaVolta,
-        fatorCorrecao,
-        fallbackParcial,
-        fallbackTotal,
-        valorMinimo,
-        adicionalVeiculo,
-      } = resolveDynamicPricing(pricingRows, data.modelo);
+      // ── Fallback: cálculo local se calculate-quote falhar ──
+      if (usedFallback || !quoteResult) {
+        let pricingRows: Array<{ chave: string; valor: number }> = [];
+        try {
+          const { data: pricingData } = await supabase
+            .from('pricing_config')
+            .select('chave, valor')
+            .eq('ativo', true);
+          pricingRows = Array.isArray(pricingData) ? pricingData : [];
+        } catch (e) {
+          console.warn('[PRICING] Falha ao buscar pricing_config:', e);
+        }
 
-      // ── Calcula orçamento ──
-      let distanciaIdaKm = fallbackTotal;
-      if (data.coordenadas && data.coordenadas_destino) {
-        const haversine = haversineKm(
-          data.coordenadas.lat, data.coordenadas.lng,
-          data.coordenadas_destino.lat, data.coordenadas_destino.lng
-        );
-        distanciaIdaKm = Math.max(Math.round(haversine * fatorCorrecao), 1);
-      } else if (data.coordenadas || data.coordenadas_destino) {
-        distanciaIdaKm = fallbackParcial;
+        const pricing = resolveDynamicPricing(pricingRows, data.modelo);
+
+        let distanciaIdaKm = pricing.fallbackTotal;
+        if (data.coordenadas && data.coordenadas_destino) {
+          const haversine = haversineKm(
+            data.coordenadas.lat, data.coordenadas.lng,
+            data.coordenadas_destino.lat, data.coordenadas_destino.lng
+          );
+          distanciaIdaKm = Math.max(Math.round(haversine * pricing.fatorCorrecao), 1);
+        } else if (data.coordenadas || data.coordenadas_destino) {
+          distanciaIdaKm = pricing.fallbackParcial;
+        }
+
+        const distanciaTotal = distanciaIdaKm * pricing.fatorIdaVolta;
+        const valorKm = distanciaTotal * pricing.custoKm;
+        const valorBruto = pricing.taxaBase + valorKm + pricing.adicionalVeiculo;
+        const valorTotal = Math.max(Math.round(valorBruto * 100) / 100, pricing.valorMinimo);
+
+        quoteResult = {
+          total: valorTotal,
+          distancia_km: distanciaIdaKm,
+          pedagios: 0,
+          taxa_base: pricing.taxaBase,
+          custo_km: valorKm,
+          adicional_tipo: pricing.adicionalVeiculo,
+          adicional_patins: 0,
+          adicional_noturno: 0,
+          previsao_chegada: null,
+        };
       }
 
-      const distanciaTotal = distanciaIdaKm * fatorIdaVolta;
-      const valorKm = distanciaTotal * custoKm;
-      const valorBruto = taxaBase + valorKm + adicionalVeiculo;
-      const valorTotal = Math.max(Math.round(valorBruto * 100) / 100, valorMinimo);
-      data.distanciaKm = distanciaTotal;
-      data.valorEstimado = valorTotal;
+      // ── Armazena valores calculados no data ──
+      data.distanciaKm = quoteResult.distancia_km;
+      data.valorEstimado = quoteResult.total;
+      data.pedagios = quoteResult.pedagios || 0;
+      data.previsao_chegada = quoteResult.previsao_chegada || null;
 
+      // ── Monta resumo detalhado ──
       const composicaoPreco = [
-        `• Taxa base: R$ ${taxaBase.toFixed(2)}`,
-        ...(adicionalVeiculo > 0 ? [`• Adicional do veículo: R$ ${adicionalVeiculo.toFixed(2)}`] : []),
-        `• ${distanciaTotal} km × R$ ${custoKm.toFixed(2)}/km: R$ ${valorKm.toFixed(2)}`,
+        `• Taxa base: R$ ${Number(quoteResult.taxa_base || 0).toFixed(2)}`,
+        ...(quoteResult.adicional_tipo > 0 ? [`• Adicional do veículo: R$ ${Number(quoteResult.adicional_tipo).toFixed(2)}`] : []),
+        `• Custo por km: R$ ${Number(quoteResult.custo_km || 0).toFixed(2)}`,
+        ...(quoteResult.pedagios > 0 ? [`• Pedágios (ida+volta): R$ ${Number(quoteResult.pedagios).toFixed(2)}`] : []),
+        ...(quoteResult.adicional_patins > 0 ? [`• Adicional patins: R$ ${Number(quoteResult.adicional_patins).toFixed(2)}`] : []),
+        ...(quoteResult.adicional_noturno > 0 ? [`• Adicional noturno: R$ ${Number(quoteResult.adicional_noturno).toFixed(2)}`] : []),
       ].join("\n");
+
+      const previsaoTexto = quoteResult.previsao_chegada
+        ? `\n⏱️ Previsão de deslocamento: ${formatDuration(quoteResult.previsao_chegada)}`
+        : "";
 
       const resumo =
         `📋 *Resumo do Orçamento*\n\n` +
         `👤 ${data.nome}\n🚗 ${data.modelo || "Veículo"} — Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
         `📍 ${data.origem}\n🏁 ${data.destino}\n` +
-        `📏 Trecho: ~${distanciaIdaKm} km\n` +
-        `🔄 Km total (ida+volta prestador): ${distanciaTotal} km\n` +
+        `📏 Distância: ~${Number(quoteResult.distancia_km).toFixed(1)} km\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
-        `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*\n` +
-        composicaoPreco;
+        previsaoTexto +
+        `\n💰 *Valor: R$ ${Number(quoteResult.total).toFixed(2)}*\n` +
+        composicaoPreco +
+        (usedFallback ? "\n\n⚠️ _Valor estimado (sem rota Google)_" : "\n\n✅ _Valor calculado com rota e pedágios reais_");
 
       await reply(supabase, phone, conversationId, resumo, provider);
       nextState = "aguardando_aceite";
@@ -532,7 +593,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         break;
       }
 
-      // Check if dispatch offers exist and their status
       const solId = conversa.solicitacao_id;
       let hasActiveOffer = false;
       let allExpired = false;
@@ -546,7 +606,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         if (offers?.length) {
           const accepted = offers.find((o: any) => o.status === "accepted");
           if (accepted) {
-            // Dispatch already accepted — this shouldn't be "solicitado" but handle gracefully
             hasActiveOffer = true;
           } else {
             const pending = offers.filter((o: any) => o.status === "pending");
@@ -562,13 +621,11 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       }
 
       if (allExpired && solId) {
-        // All offers expired/rejected — trigger new round
         const lastRedispatch = data._last_redispatch ? new Date(data._last_redispatch).getTime() : 0;
         if (Date.now() - lastRedispatch > 120000) {
           data._last_redispatch = new Date().toISOString();
           responseText = "⏳ Os prestadores anteriores não responderam. Estamos acionando novos prestadores...";
 
-          // Trigger new dispatch round
           try {
             const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
             const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -660,12 +717,10 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
           `1️⃣ Péssima | 2️⃣ Ruim | 3️⃣ Regular | 4️⃣ Boa | 5️⃣ Excelente`;
         data._notified_finalizado = true;
       } else {
-        // Captura nota de satisfação
         const nota = parseInt(text);
         if (nota >= 1 && nota <= 5) {
           data.nota_satisfacao = nota;
           responseText = `Obrigado pela avaliação! ⭐ Nota: ${nota}/5\n\nPara uma nova solicitação, envie "Oi".`;
-          // Marca como concluído após avaliação
           nextState = "concluido";
         } else {
           responseText = 'Obrigado! Para uma nova solicitação, envie "Oi".';
@@ -684,7 +739,6 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       break;
 
     case "humano":
-      // Operador humano assumiu
       break;
 
     default:
@@ -812,6 +866,20 @@ function resolveDynamicPricing(
     valorMinimo,
     adicionalVeiculo,
   };
+}
+
+function formatDuration(duration: string | null): string {
+  if (!duration) return "";
+  // Google Routes API returns duration like "3600s"
+  const match = duration.match(/^(\d+)s$/);
+  if (match) {
+    const totalSec = parseInt(match[1]);
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    if (h > 0) return `${h}h${m > 0 ? m + "min" : ""}`;
+    return `${m} min`;
+  }
+  return duration;
 }
 
 // ── Send message ──
@@ -953,7 +1021,6 @@ async function createSolicitacaoAndDispatch(
     _dispatch_last_attempt_at: now,
   };
 
-  // Link conversation → solicitação + atendimento
   await supabase.from("conversations").update({
     solicitacao_id: sol.id,
     ...(atendimentoId ? { atendimento_id: atendimentoId } : {}),
@@ -975,7 +1042,6 @@ async function createSolicitacaoAndDispatch(
   await reply(supabase, cleanPhone, conversationId, osMsg, provider);
   await enqueueAutomation(supabase, "order_created", cleanPhone, conversationId, { protocolo, solicitacaoId: sol.id, atendimentoId });
 
-  // Trigger dispatch-start
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
