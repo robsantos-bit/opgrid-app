@@ -359,6 +359,8 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       } else {
         if (text.length < 5) { responseText = "📍 Por favor, envie um endereço mais detalhado ou compartilhe sua localização:"; break; }
         data.origem = text;
+        const coords = await forwardGeocode(text);
+        if (coords) data.coordenadas = coords;
       }
       nextState = "aguardando_motivo";
       responseText =
@@ -401,6 +403,8 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       } else {
         if (text.length < 5) { responseText = "🏁 Por favor, informe o endereço de destino com mais detalhes:"; break; }
         data.destino = text;
+        const coords = await forwardGeocode(text);
+        if (coords) data.coordenadas_destino = coords;
       }
       nextState = "aguardando_observacoes";
       responseText =
@@ -431,27 +435,27 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       }
 
       // ── Busca tarifas dinâmicas do banco ──
-      let taxaBase = 120, custoKm = 4.5, fatorIdaVolta = 2, fatorCorrecao = 1.3;
-      let fallbackParcial = 20, fallbackTotal = 15, valorMinimo = 80;
+      let pricingRows: Array<{ chave: string; valor: number }> = [];
       try {
-        const { data: pricingRows } = await supabase
+        const { data: pricingData } = await supabase
           .from('pricing_config')
           .select('chave, valor')
           .eq('ativo', true);
-        if (pricingRows && pricingRows.length > 0) {
-          const pc: Record<string, number> = {};
-          for (const r of pricingRows) pc[r.chave] = Number(r.valor);
-          taxaBase = pc.taxa_base ?? taxaBase;
-          custoKm = pc.custo_km ?? custoKm;
-          fatorIdaVolta = pc.fator_ida_volta ?? fatorIdaVolta;
-          fatorCorrecao = pc.fator_correcao_rodoviario ?? fatorCorrecao;
-          fallbackParcial = pc.distancia_fallback_parcial ?? fallbackParcial;
-          fallbackTotal = pc.distancia_fallback_total ?? fallbackTotal;
-          valorMinimo = pc.valor_minimo ?? valorMinimo;
-        }
+        pricingRows = Array.isArray(pricingData) ? pricingData : [];
       } catch (e) {
         console.warn('[PRICING] Falha ao buscar pricing_config, usando defaults:', e);
       }
+
+      const {
+        taxaBase,
+        custoKm,
+        fatorIdaVolta,
+        fatorCorrecao,
+        fallbackParcial,
+        fallbackTotal,
+        valorMinimo,
+        adicionalVeiculo,
+      } = resolveDynamicPricing(pricingRows, data.modelo);
 
       // ── Calcula orçamento ──
       let distanciaIdaKm = fallbackTotal;
@@ -467,10 +471,16 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
       const distanciaTotal = distanciaIdaKm * fatorIdaVolta;
       const valorKm = distanciaTotal * custoKm;
-      const valorBruto = taxaBase + valorKm;
+      const valorBruto = taxaBase + valorKm + adicionalVeiculo;
       const valorTotal = Math.max(Math.round(valorBruto * 100) / 100, valorMinimo);
       data.distanciaKm = distanciaTotal;
       data.valorEstimado = valorTotal;
+
+      const composicaoPreco = [
+        `• Taxa base: R$ ${taxaBase.toFixed(2)}`,
+        ...(adicionalVeiculo > 0 ? [`• Adicional do veículo: R$ ${adicionalVeiculo.toFixed(2)}`] : []),
+        `• ${distanciaTotal} km × R$ ${custoKm.toFixed(2)}/km: R$ ${valorKm.toFixed(2)}`,
+      ].join("\n");
 
       const resumo =
         `📋 *Resumo do Orçamento*\n\n` +
@@ -480,8 +490,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         `🔄 Km total (ida+volta prestador): ${distanciaTotal} km\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
         `\n💰 *Valor estimado: R$ ${valorTotal.toFixed(2)}*\n` +
-        `  ├ Taxa base: R$ ${taxaBase.toFixed(2)}\n` +
-        `  └ ${distanciaTotal} km × R$ ${custoKm.toFixed(2)}/km: R$ ${valorKm.toFixed(2)}`;
+        composicaoPreco;
 
       await reply(supabase, phone, conversationId, resumo, provider);
       nextState = "aguardando_aceite";
@@ -727,6 +736,82 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
     }
   } catch (e) { console.warn("[GEO] Reverse geocode failed:", e); }
   return `${lat}, ${lng}`;
+}
+
+async function forwardGeocode(address: string): Promise<{ lat: number; lng: number } | null> {
+  const query = address.trim();
+  if (!query) return null;
+
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&q=${encodeURIComponent(query)}`,
+      { headers: { "User-Agent": "OpGrid/1.0", "Accept-Language": "pt-BR" } }
+    );
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    const first = Array.isArray(data) ? data[0] : null;
+    const lat = Number(first?.lat);
+    const lng = Number(first?.lon);
+    if (Number.isFinite(lat) && Number.isFinite(lng)) {
+      return { lat, lng };
+    }
+  } catch (e) {
+    console.warn("[GEO] Forward geocode failed:", e);
+  }
+
+  return null;
+}
+
+function normalizeVehicleType(value: unknown): string {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
+function resolveDynamicPricing(
+  pricingRows: Array<{ chave: string; valor: number }> | null | undefined,
+  vehicleType: unknown,
+) {
+  const pc: Record<string, number> = {};
+  for (const row of pricingRows || []) {
+    pc[row.chave] = Number(row.valor);
+  }
+
+  const vehicleText = normalizeVehicleType(vehicleType);
+  const isPesado = /caminhao|equipamento|pesad/.test(vehicleText);
+  const isUtilitario = /utilitario|van|fiorino|sprinter/.test(vehicleText);
+
+  const taxaBase = pc.taxa_base ?? 120;
+  const fatorIdaVolta = pc.fator_ida_volta ?? 2;
+  const fatorCorrecao = pc.fator_correcao_rodoviario ?? 1.3;
+  const fallbackParcial = pc.distancia_fallback_parcial ?? 20;
+  const fallbackTotal = pc.distancia_fallback_total ?? 15;
+  const valorMinimo = pc.valor_minimo ?? 80;
+
+  const custoKm = isPesado
+    ? (pc.custo_km_pesado ?? pc.custo_km ?? pc.custo_km_padrao ?? 4.5)
+    : isUtilitario
+      ? (pc.custo_km_utilitario ?? pc.custo_km ?? pc.custo_km_padrao ?? 4.5)
+      : (pc.custo_km_padrao ?? pc.custo_km ?? 4.5);
+
+  const adicionalVeiculo = isPesado
+    ? (pc.adicional_pesado ?? 0)
+    : isUtilitario
+      ? (pc.adicional_utilitario ?? 0)
+      : 0;
+
+  return {
+    taxaBase,
+    custoKm,
+    fatorIdaVolta,
+    fatorCorrecao,
+    fallbackParcial,
+    fallbackTotal,
+    valorMinimo,
+    adicionalVeiculo,
+  };
 }
 
 // ── Send message ──
