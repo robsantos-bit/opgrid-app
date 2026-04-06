@@ -28,7 +28,7 @@ Deno.serve(async (req: Request) => {
       const { data: atData, error: atErr } = await supabase
         .from('atendimentos')
         .select(`
-          id, status, notas, created_at, finalizado_at, protocolo,
+          id, status, notas, created_at, finalizado_at, protocolo, solicitacao_id, prestador_id,
           solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at ),
           prestadores ( id, nome, telefone, latitude, longitude, cidade, uf )
         `)
@@ -43,10 +43,59 @@ Deno.serve(async (req: Request) => {
         return jsonResponse({ error: 'Atendimento não encontrado' }, 404);
       }
 
+      let solicitacao = atData.solicitacoes || null;
+      let prestador = atData.prestadores || null;
+
+      // Fallback: fetch solicitacao separately if join returned null
+      if (!solicitacao && atData.solicitacao_id) {
+        console.log('[DISPATCH-OFFER-DETAIL] solicitacoes join null, fetching separately for', atData.solicitacao_id);
+        const { data: solData } = await supabase
+          .from('solicitacoes')
+          .select('id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at')
+          .eq('id', atData.solicitacao_id)
+          .maybeSingle();
+        if (solData) solicitacao = solData;
+      }
+
+      // Fallback: fetch prestador separately if join returned null
+      if (!prestador && atData.prestador_id) {
+        console.log('[DISPATCH-OFFER-DETAIL] prestadores join null, fetching separately for', atData.prestador_id);
+        const { data: prData } = await supabase
+          .from('prestadores')
+          .select('id, nome, telefone, latitude, longitude, cidade, uf')
+          .eq('id', atData.prestador_id)
+          .maybeSingle();
+        if (prData) prestador = prData;
+      }
+
+      // Fallback: if still no solicitacao, try via dispatch_offers
+      if (!solicitacao) {
+        console.log('[DISPATCH-OFFER-DETAIL] Trying dispatch_offers fallback for atendimento', atendimento_id);
+        const { data: offerData } = await supabase
+          .from('dispatch_offers')
+          .select('solicitacao_id, prestador_id, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at)')
+          .eq('atendimento_id', atendimento_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (offerData?.solicitacoes) {
+          solicitacao = offerData.solicitacoes;
+        }
+        if (!prestador && offerData?.prestador_id) {
+          const { data: prData } = await supabase
+            .from('prestadores')
+            .select('id, nome, telefone, latitude, longitude, cidade, uf')
+            .eq('id', offerData.prestador_id)
+            .maybeSingle();
+          if (prData) prestador = prData;
+        }
+      }
+
       return jsonResponse({
-        atendimento: atData,
-        solicitacao: atData.solicitacoes,
-        prestador: atData.prestadores,
+        atendimento: { ...atData, solicitacoes: solicitacao, prestadores: prestador },
+        solicitacao,
+        prestador,
       });
     }
 
