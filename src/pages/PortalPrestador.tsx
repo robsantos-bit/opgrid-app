@@ -200,7 +200,7 @@ function OfertaView({ oferta }: { oferta: any }) {
           <p className="text-sm text-muted-foreground max-w-[280px]">A OS foi reservada para você. Acesse o portal operacional para iniciar o atendimento.</p>
           {osId && (
             <Button className="mt-6 w-full max-w-[280px]" size="lg"
-              onClick={() => window.location.href = `/prestador/os/${osId}`}>
+              onClick={() => window.location.href = `/prestador/os/${osId}?offer_id=${oferta.id}`}>
               <Navigation className="h-4 w-4 mr-2" />Abrir Portal da OS
             </Button>
           )}

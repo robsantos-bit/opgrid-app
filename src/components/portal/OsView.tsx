@@ -179,17 +179,74 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const [placaInput, setPlacaInput] = useState('');
   const [placaValidada, setPlacaValidada] = useState(false);
   const [placaError, setPlacaError] = useState('');
+  const retryTimeoutRef = useRef<number | null>(null);
+  const offerIdRef = useRef<string | null>(
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('offer_id') : null
+  );
 
-  const fetchData = useCallback(async () => {
+  const fetchData = useCallback(async (attempt = 0) => {
+    let shouldRetry = false;
+
     try {
-      // Fetch via edge function to bypass RLS (with fallback logic built-in)
+      const normalizeDetail = (payload: any) => {
+        const offer = payload?.offer || null;
+        const atendimentoPayload = payload?.atendimento || null;
+
+        return {
+          atendimento: atendimentoPayload || (offer?.atendimento_id ? { id: offer.atendimento_id, status: 'aceito' } : null),
+          solicitacao:
+            payload?.solicitacao ||
+            atendimentoPayload?.solicitacoes ||
+            offer?.solicitacoes ||
+            null,
+          prestador:
+            payload?.prestador ||
+            atendimentoPayload?.prestadores ||
+            offer?.prestadores ||
+            null,
+        };
+      };
+
+      if (retryTimeoutRef.current) {
+        window.clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+
+      let resolvedAtendimento: any = null;
+      let resolvedSolicitacao: any = null;
+      let resolvedPrestador: any = null;
+
       const { data, error } = await supabase.functions.invoke('dispatch-offer-detail', {
         body: { atendimento_id: atendimentoId },
       });
 
-      if (error || !data) {
-        console.warn('dispatch-offer-detail failed, trying direct query:', error);
-        // Fallback: try direct query
+      if (!error && data) {
+        const normalized = normalizeDetail(data);
+        resolvedAtendimento = normalized.atendimento;
+        resolvedSolicitacao = normalized.solicitacao;
+        resolvedPrestador = normalized.prestador;
+      } else {
+        console.warn('dispatch-offer-detail failed, trying fallbacks:', error);
+      }
+
+      if ((!resolvedSolicitacao || !resolvedPrestador) && offerIdRef.current) {
+        try {
+          const { data: offerDetail, error: offerError } = await supabase.functions.invoke('dispatch-offer-detail', {
+            body: { offer_id: offerIdRef.current },
+          });
+
+          if (!offerError && offerDetail) {
+            const normalizedOffer = normalizeDetail(offerDetail);
+            resolvedAtendimento = resolvedAtendimento || normalizedOffer.atendimento || { id: atendimentoId, status: 'aceito' };
+            resolvedSolicitacao = resolvedSolicitacao || normalizedOffer.solicitacao;
+            resolvedPrestador = resolvedPrestador || normalizedOffer.prestador;
+          }
+        } catch (offerFallbackErr) {
+          console.warn('Offer detail fallback failed:', offerFallbackErr);
+        }
+      }
+
+      if (!resolvedAtendimento || !resolvedSolicitacao || !resolvedPrestador) {
         const { data: atData } = await supabase
           .from('atendimentos')
           .select('*, solicitacoes(*), prestadores(*)')
@@ -197,47 +254,74 @@ export default function OsView({ atendimentoId }: OsViewProps) {
           .maybeSingle();
 
         if (atData) {
-          setAtendimento(atData);
-          setSolicitacao(atData.solicitacoes);
-          setPrestador(atData.prestadores);
+          resolvedAtendimento = resolvedAtendimento || atData;
+          resolvedSolicitacao = resolvedSolicitacao || atData.solicitacoes || null;
+          resolvedPrestador = resolvedPrestador || atData.prestadores || null;
         }
-      } else {
-        const at = data.atendimento || data;
-        const sol = data.solicitacao || data.atendimento?.solicitacoes || null;
-        const prest = data.prestador || data.atendimento?.prestadores || null;
-        
-        setAtendimento(at);
-        setSolicitacao(sol);
-        setPrestador(prest);
+      }
 
-        // If still missing solicitacao, try dispatch_offers as last resort
-        if (!sol && at?.id) {
-          console.warn('Solicitacao still null, trying dispatch_offers fallback');
-          try {
-            const { data: offerData } = await supabase
-              .from('dispatch_offers')
-              .select('solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
-              .eq('atendimento_id', atendimentoId)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            
-            if (offerData?.solicitacoes) setSolicitacao(offerData.solicitacoes);
-            if (!prest && offerData?.prestadores) setPrestador(offerData.prestadores);
-          } catch (fallbackErr) {
-            console.warn('Dispatch offers fallback failed:', fallbackErr);
+      if (!resolvedSolicitacao || !resolvedPrestador) {
+        console.warn('OS still incomplete, trying dispatch_offers fallback');
+        try {
+          const offerFallback = offerIdRef.current
+            ? await supabase
+                .from('dispatch_offers')
+                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
+                .eq('id', offerIdRef.current)
+                .maybeSingle()
+            : await supabase
+                .from('dispatch_offers')
+                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
+                .eq('atendimento_id', atendimentoId)
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+          const offerData = offerFallback.data;
+
+          if (offerData) {
+            resolvedAtendimento = resolvedAtendimento || {
+              id: offerData.atendimento_id || atendimentoId,
+              status: offerData.status || 'aceito',
+              solicitacao_id: offerData.solicitacao_id,
+              prestador_id: offerData.prestador_id,
+            };
+            resolvedSolicitacao = resolvedSolicitacao || offerData.solicitacoes || null;
+            resolvedPrestador = resolvedPrestador || offerData.prestadores || null;
           }
+        } catch (fallbackErr) {
+          console.warn('Dispatch offers fallback failed:', fallbackErr);
         }
+      }
+
+      if (resolvedAtendimento) setAtendimento(resolvedAtendimento);
+      if (resolvedSolicitacao) setSolicitacao(resolvedSolicitacao);
+      if (resolvedPrestador) setPrestador(resolvedPrestador);
+
+      shouldRetry = !!resolvedAtendimento && (!resolvedSolicitacao || !resolvedPrestador) && attempt < 4;
+
+      if (shouldRetry) {
+        retryTimeoutRef.current = window.setTimeout(() => {
+          void fetchData(attempt + 1);
+        }, 1200);
       }
     } catch (err) {
       console.error('Error fetching OS data:', err);
     } finally {
-      setLoading(false);
+      if (!shouldRetry) {
+        setLoading(false);
+      }
     }
   }, [atendimentoId]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
+
+    return () => {
+      if (retryTimeoutRef.current) {
+        window.clearTimeout(retryTimeoutRef.current);
+      }
+    };
   }, [fetchData]);
 
   const currentStatus: OsStatus = (atendimento?.status || 'aceito').toLowerCase().replace(/ /g, '_') as OsStatus;
