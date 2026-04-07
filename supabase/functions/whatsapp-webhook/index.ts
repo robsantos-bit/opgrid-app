@@ -1193,7 +1193,8 @@ async function createSolicitacaoAndDispatch(
   const osMsg =
     `📄 *Ordem de Serviço Criada!*\n\n` +
     `📋 Protocolo: *${protocolo}*\n` +
-    `👤 Cliente: ${data.nome || "N/I"}\n🚗 ${data.modelo || "Veículo"} — Placa: ${data.placa || "N/I"}\n` +
+    `👤 Cliente: ${data.nome || "N/I"}\n🚗 ${data.tipo_veiculo || "Veículo"} — ${data.marca_veiculo || ""} ${data.modelo_veiculo || ""}\n` +
+    `🔖 Placa: ${data.placa || "N/I"}\n` +
     `🔧 Motivo: ${data.motivo || "Outro"}\n📍 Origem: ${data.origem || "N/I"}\n` +
     `🏁 Destino: ${data.destino || "N/I"}\n` +
     `💰 Valor: R$ ${(Number(data.valorEstimado || 0)).toFixed(2)}\n\n` +
