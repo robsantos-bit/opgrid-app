@@ -920,19 +920,29 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
           `✅ *Serviço finalizado!*\n\n` +
           `Seu veículo foi entregue com sucesso.\n\n` +
           `Obrigado por usar a *OpGrid*! 🙏\n\n` +
-          `Como foi sua experiência? Responda de 1 a 5:\n` +
-          `1️⃣ Péssima | 2️⃣ Ruim | 3️⃣ Regular | 4️⃣ Boa | 5️⃣ Excelente`;
+          `Como foi sua experiência? Responda de *1 a 5*:\n\n` +
+          `1️⃣ Péssima\n` +
+          `2️⃣ Ruim\n` +
+          `3️⃣ Regular\n` +
+          `4️⃣ Boa\n` +
+          `5️⃣ Excelente`;
         data._notified_finalizado = true;
       } else {
         const nota = parseInt(text);
         if (nota >= 1 && nota <= 5) {
           data.nota_satisfacao = nota;
-          // Save rating as top-level column for dashboard queries
           await supabase.from("conversations").update({ nota_satisfacao: nota }).eq("id", conversationId);
-          responseText = `Obrigado pela avaliação! ⭐ Nota: ${nota}/5\n\nPara uma nova solicitação, envie "Oi".`;
+          const stars = "⭐".repeat(nota);
+          responseText =
+            `${stars}\n\n` +
+            `Obrigado pela sua avaliação! Nota: *${nota}/5*\n\n` +
+            `A *OpGrid* agradece a sua confiança! 💙\n` +
+            `Estamos sempre à disposição. Até a próxima! 👋`;
           nextState = "concluido";
         } else {
-          responseText = 'Obrigado! Para uma nova solicitação, envie "Oi".';
+          responseText =
+            `A *OpGrid* agradece a sua confiança! 💙\n` +
+            `Estamos sempre à disposição. Até a próxima! 👋`;
           nextState = "concluido";
         }
       }
@@ -940,7 +950,8 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
     }
 
     case "concluido":
-      responseText = '✅ Este atendimento foi concluído. Para uma nova solicitação, envie "Oi".';
+      // Don't start a new flow — just thank and close
+      responseText = `✅ Este atendimento foi concluído.\n\nA *OpGrid* agradece! 💙\nPara uma nova solicitação, envie *"Oi"*.`;
       break;
 
     case "em_andamento":
