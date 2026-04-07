@@ -190,6 +190,9 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const [placaInput, setPlacaInput] = useState('');
   const [placaValidada, setPlacaValidada] = useState(false);
   const [placaError, setPlacaError] = useState('');
+  const [prestadorPartida, setPrestadorPartida] = useState<string>('Obtendo localização...');
+  const [prestadorGeoLat, setPrestadorGeoLat] = useState<number | undefined>(undefined);
+  const [prestadorGeoLng, setPrestadorGeoLng] = useState<number | undefined>(undefined);
   const retryTimeoutRef = useRef<number | null>(null);
   const offerIdRef = useRef<string | null>(
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('offer_id') : null
