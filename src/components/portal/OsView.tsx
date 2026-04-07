@@ -13,6 +13,17 @@ import {
   Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, Loader2,
   Navigation, Camera, FileText, Upload, Car, User, AlertTriangle, XCircle
 } from 'lucide-react';
+import ChecklistExecucao from '@/components/ChecklistExecucao';
+
+// Maps portal status → DB status
+const STATUS_DB_MAP: Record<string, string> = {
+  aceito: 'aceito',
+  em_deslocamento: 'Em andamento',
+  no_local: 'no_local',
+  em_transito: 'em_transito',
+  finalizado: 'Concluído',
+  cancelado: 'Cancelado',
+};
 
 // ====== Types ======
 type OsStatus = 'aceito' | 'em_deslocamento' | 'no_local' | 'em_transito' | 'finalizado' | 'cancelado';
@@ -324,15 +335,24 @@ export default function OsView({ atendimentoId }: OsViewProps) {
     };
   }, [fetchData]);
 
-  const currentStatus: OsStatus = (atendimento?.status || 'aceito').toLowerCase().replace(/ /g, '_') as OsStatus;
+  // Reverse-map DB status to portal status
+  const rawStatus = (atendimento?.status || 'aceito');
+  const DB_TO_PORTAL: Record<string, OsStatus> = {
+    'Concluído': 'finalizado',
+    'Em andamento': 'em_deslocamento',
+    'Cancelado': 'cancelado',
+  };
+  const currentStatus: OsStatus = DB_TO_PORTAL[rawStatus] || rawStatus.toLowerCase().replace(/ /g, '_') as OsStatus;
   const step = stepIndex(currentStatus);
+
 
   const updateStatus = async (newStatus: string) => {
     setActionLoading(true);
     try {
+      const dbStatus = STATUS_DB_MAP[newStatus] || newStatus;
       const { error } = await supabase
         .from('atendimentos')
-        .update({ status: newStatus })
+        .update({ status: dbStatus })
         .eq('id', atendimentoId);
 
       if (error) {
@@ -340,6 +360,7 @@ export default function OsView({ atendimentoId }: OsViewProps) {
         return;
       }
 
+      // Keep portal-side status in lowercase for UI stepper
       setAtendimento((prev: any) => ({ ...prev, status: newStatus }));
       toast.success(`Status atualizado: ${newStatus}`);
     } catch {
@@ -566,17 +587,18 @@ export default function OsView({ atendimentoId }: OsViewProps) {
             </p>
           </Card>
         ) : (
-          <Card className="p-4 space-y-3">
-            <div className="flex items-center gap-2 text-sm font-medium text-[hsl(160,60%,38%)]">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-[hsl(160,60%,38%)] px-1">
               <CheckCircle2 className="h-4 w-4" />
               <span>Placa confirmada — Checklist liberado</span>
             </div>
-            <p className="text-xs text-muted-foreground">Preencha o checklist de coleta abaixo.</p>
-            {/* TODO: Integrar ChecklistExecucao completo aqui */}
-            <div className="rounded-lg border border-[hsl(160,60%,38%)]/20 bg-[hsl(160,60%,38%)]/5 p-3 text-sm text-muted-foreground">
-              Checklist de coleta disponível para preenchimento.
-            </div>
-          </Card>
+            <ChecklistExecucao
+              tipo={currentStatus === 'em_transito' || currentStatus === 'finalizado' ? 'entrega' : 'coleta'}
+              protocolo={solicitacao?.protocolo || atendimento?.protocolo || '—'}
+              placa={solicitacao?.placa || 'N/D'}
+              prestador={prestador?.nome || 'Prestador'}
+            />
+          </div>
         )}
       </div>
 
