@@ -380,8 +380,9 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       break;
     }
 
-    // ─────────── 3. PLACA + TIPO VEÍCULO ───────────
+    // ─────────── 3. PLACA + TIPO + MARCA + MODELO ───────────
     case "aguardando_veiculo": {
+      // Sub-step 1: Placa
       if (!data.placa) {
         const placa = text.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
         if (placa.length < 7) { responseText = "⚠️ Placa inválida. Informe no formato *ABC1D23* ou *ABC-1234*:"; break; }
@@ -389,18 +390,51 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         responseText =
           `🚗 Placa registrada: *${placa}*\n\n` +
           `Qual o *tipo de veículo*?\n\n` +
-          `1️⃣ Carro\n2️⃣ Moto\n3️⃣ Caminhão\n4️⃣ Equipamento\n\n` +
+          `1️⃣ Carro\n2️⃣ Moto\n3️⃣ Caminhonete/SUV\n4️⃣ Caminhão\n5️⃣ Equipamento\n\n` +
           `_Responda com o número:_`;
         break;
       }
 
-      const tipoMap: Record<string, string> = { "1": "Carro", "2": "Moto", "3": "Caminhão", "4": "Equipamento" };
-      const tipo = tipoMap[textLower] || text;
-      data.modelo = tipo;
+      // Sub-step 2: Tipo de veículo
+      if (!data.tipo_veiculo) {
+        const tipoMap: Record<string, string> = {
+          "1": "Carro", "2": "Moto", "3": "Caminhonete/SUV",
+          "4": "Caminhão", "5": "Equipamento"
+        };
+        const tipo = tipoMap[textLower] || text;
+        data.tipo_veiculo = tipo;
+        data.modelo = tipo; // Keep for pricing compatibility
+        responseText =
+          `✅ Tipo: *${tipo}*\n\n` +
+          `Qual a *marca* do veículo?\n_(Ex: Volkswagen, Chevrolet, Fiat, Ford, Toyota, Hyundai, Honda, Renault, Jeep, Nissan, Audi, BMW, Mercedes)_`;
+        break;
+      }
+
+      // Sub-step 3: Marca
+      if (!data.marca_veiculo) {
+        if (text.length < 2) { responseText = "Por favor, informe a marca do veículo:"; break; }
+        data.marca_veiculo = text.trim();
+        responseText =
+          `✅ Marca: *${data.marca_veiculo}*\n\n` +
+          `Qual o *modelo* do veículo?\n_(Ex: Gol, Corsa, Uno, Civic, HB20, Onix, Compass)_`;
+        break;
+      }
+
+      // Sub-step 4: Modelo
+      if (!data.modelo_veiculo) {
+        if (text.length < 2) { responseText = "Por favor, informe o modelo do veículo:"; break; }
+        data.modelo_veiculo = text.trim();
+        nextState = "aguardando_origem";
+        responseText =
+          `✅ Veículo: *${data.tipo_veiculo}* — *${data.marca_veiculo} ${data.modelo_veiculo}*\n` +
+          `Placa: *${data.placa}*\n\n` +
+          `Agora envie sua *localização atual* 📍\n\nVocê pode:\n• Compartilhar localização pelo WhatsApp\n• Digitar o endereço completo`;
+        break;
+      }
+
+      // Fallback
       nextState = "aguardando_origem";
-      responseText =
-        `✅ Veículo: *${tipo}* — Placa: *${data.placa}*\n\n` +
-        `Agora envie sua *localização atual* 📍\n\nVocê pode:\n• Compartilhar localização pelo WhatsApp\n• Digitar o endereço completo`;
+      responseText = `Agora envie sua *localização atual* 📍`;
       break;
     }
 
@@ -483,32 +517,76 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         if (coords) data.coordenadas_destino = coords;
       }
       nextState = "aguardando_observacoes";
+      // Structured checklist instead of free-text observations
+      data._checklist_step = 0;
       responseText =
-        "📝 Deseja adicionar alguma *observação*?\n" +
-        "_(Ex: roda travada, veículo trancado, local sem sinal)_\n\n" +
-        "1️⃣ Sem observações\n2️⃣ Sim, quero informar\n\n_Responda com o número:_";
+        `📝 *Informações adicionais do veículo*\n\n` +
+        `Responda cada pergunta com *Sim* ou *Não*:\n\n` +
+        `1️⃣ As rodas estão travadas?`;
       break;
     }
 
-    // ─────────── 7. OBSERVAÇÕES + ORÇAMENTO (via calculate-quote) ───────────
+    // ─────────── 7. OBSERVAÇÕES ESTRUTURADAS + ORÇAMENTO ───────────
     case "aguardando_observacoes": {
-      const buttonId = nm.interactive?.button_reply?.id;
-      const isComObs = buttonId === "com_obs" || textLower === "2";
-      const isSemObs = buttonId === "sem_obs" || textLower === "1";
+      const checklistQuestions = [
+        { key: "rodas_travadas", question: "As rodas estão travadas?" },
+        { key: "veiculo_carregado", question: "O veículo está carregado?" },
+        { key: "veiculo_rebaixado", question: "O veículo é baixo ou rebaixado?" },
+        { key: "facil_acesso", question: "O veículo está de fácil acesso para remoção?" },
+        { key: "qtd_pessoas", question: "Quantas pessoas estão no veículo? (1, 2, 3, 4, 5)" },
+        { key: "veiculo_blindado", question: "O veículo é blindado?" },
+        { key: "documentos_local", question: "Os documentos estão no local?" },
+        { key: "chave_em_maos", question: "A chave do veículo está em mãos?" },
+        { key: "acompanha_reboque", question: "Irá acompanhar o reboque?" },
+        { key: "ciente_itens_pessoais", question: "Não nos responsabilizamos por itens pessoais deixados no veículo ou na cabine do prestador. Confirme: *OK, estou ciente*" },
+      ];
 
-      if (isComObs && !data._awaiting_obs_text) {
-        data._awaiting_obs_text = true;
-        await updateConv(supabase, conversationId, currentState, data);
-        await reply(supabase, phone, conversationId, "Digite suas observações:", provider);
-        return;
+      const step = data._checklist_step || 0;
+
+      if (step < checklistQuestions.length) {
+        const currentQ = checklistQuestions[step];
+
+        // Parse answer
+        if (step === 4) {
+          // Numeric answer for qtd_pessoas
+          const num = parseInt(text);
+          data[`info_${currentQ.key}`] = (num >= 1 && num <= 5) ? num : 1;
+        } else if (step === 9) {
+          // Last question — any answer proceeds
+          data[`info_${currentQ.key}`] = textLower.includes("ok") || textLower.includes("sim") || textLower.includes("ciente") ? "Sim" : "Sim";
+        } else {
+          const isSim = textLower === "sim" || textLower === "s" || textLower === "1";
+          data[`info_${currentQ.key}`] = isSim ? "Sim" : "Não";
+        }
+
+        data._checklist_step = step + 1;
+
+        if (step + 1 < checklistQuestions.length) {
+          const nextQ = checklistQuestions[step + 1];
+          if (step + 1 === 4) {
+            responseText = `✅ Registrado!\n\n${nextQ.question}`;
+          } else if (step + 1 === 9) {
+            responseText = `✅ Registrado!\n\n⚠️ ${nextQ.question}`;
+          } else {
+            responseText = `✅ Registrado!\n\n${nextQ.question}\n_(Sim ou Não)_`;
+          }
+          // Stay in same state — don't proceed to quote yet
+          await updateConv(supabase, conversationId, currentState, data);
+          await reply(supabase, phone, conversationId, responseText, provider);
+          return;
+        }
+
+        // All questions answered — build observacoes summary
+        const obsLines = checklistQuestions.map((q, i) => {
+          const val = data[`info_${q.key}`];
+          const label = q.question.replace(/\?$/, "").replace(/^Não nos responsabilizamos.*/, "Ciente sobre itens pessoais");
+          return `• ${label}: *${val}*`;
+        });
+        data.observacoes = obsLines.join("\n");
+        delete data._checklist_step;
       }
 
-      if (data._awaiting_obs_text) {
-        data.observacoes = text;
-        delete data._awaiting_obs_text;
-      } else {
-        data.observacoes = isSemObs ? "" : text;
-      }
+      // ── Continua para o orçamento ──
 
       // ── Determina tipo de veículo para calculate-quote ──
       const vehicleText = normalizeVehicleType(data.modelo);
@@ -622,7 +700,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
       const resumo =
         `📋 *Resumo do Orçamento*\n\n` +
-        `👤 ${data.nome}\n🚗 ${data.modelo || "Veículo"} — Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
+        `👤 ${data.nome}\n🚗 ${data.tipo_veiculo || "Veículo"} — ${data.marca_veiculo || ""} ${data.modelo_veiculo || ""}\n🔖 Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
         `📍 ${data.origem}\n🏁 ${data.destino}\n` +
         `📏 Distância: ~${Number(quoteResult.distancia_km).toFixed(1)} km\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
@@ -1064,8 +1142,12 @@ async function createSolicitacaoAndDispatch(
     canal: "WhatsApp",
     cliente_nome: data.nome || "Cliente não informado",
     cliente_telefone: cleanPhone, cliente_whatsapp: cleanPhone,
-    placa: data.placa || null, tipo_veiculo: data.modelo || "Veículo não informado",
+    placa: data.placa || null, tipo_veiculo: data.tipo_veiculo || data.modelo || "Veículo não informado",
+    marca_veiculo: data.marca_veiculo || null,
+    modelo_veiculo: data.modelo_veiculo || null,
     origem_endereco: data.origem || null, destino_endereco: data.destino || null,
+    origem_latitude: data.coordenadas?.lat || null, origem_longitude: data.coordenadas?.lng || null,
+    destino_latitude: data.coordenadas_destino?.lat || null, destino_longitude: data.coordenadas_destino?.lng || null,
     motivo: data.motivo || "Outro", observacoes: data.observacoes || "",
     distancia_estimada_km: toNum(data.distanciaKm),
     valor: toNum(data.valorEstimado), valor_estimado: toNum(data.valorEstimado),
@@ -1111,7 +1193,8 @@ async function createSolicitacaoAndDispatch(
   const osMsg =
     `📄 *Ordem de Serviço Criada!*\n\n` +
     `📋 Protocolo: *${protocolo}*\n` +
-    `👤 Cliente: ${data.nome || "N/I"}\n🚗 ${data.modelo || "Veículo"} — Placa: ${data.placa || "N/I"}\n` +
+    `👤 Cliente: ${data.nome || "N/I"}\n🚗 ${data.tipo_veiculo || "Veículo"} — ${data.marca_veiculo || ""} ${data.modelo_veiculo || ""}\n` +
+    `🔖 Placa: ${data.placa || "N/I"}\n` +
     `🔧 Motivo: ${data.motivo || "Outro"}\n📍 Origem: ${data.origem || "N/I"}\n` +
     `🏁 Destino: ${data.destino || "N/I"}\n` +
     `💰 Valor: R$ ${(Number(data.valorEstimado || 0)).toFixed(2)}\n\n` +

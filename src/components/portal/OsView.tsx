@@ -190,6 +190,9 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const [placaInput, setPlacaInput] = useState('');
   const [placaValidada, setPlacaValidada] = useState(false);
   const [placaError, setPlacaError] = useState('');
+  const [prestadorPartida, setPrestadorPartida] = useState<string>('Obtendo localização...');
+  const [prestadorGeoLat, setPrestadorGeoLat] = useState<number | undefined>(undefined);
+  const [prestadorGeoLng, setPrestadorGeoLng] = useState<number | undefined>(undefined);
   const retryTimeoutRef = useRef<number | null>(null);
   const offerIdRef = useRef<string | null>(
     typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('offer_id') : null
@@ -277,12 +280,12 @@ export default function OsView({ atendimentoId }: OsViewProps) {
           const offerFallback = offerIdRef.current
             ? await supabase
                 .from('dispatch_offers')
-                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
+                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf, endereco)')
                 .eq('id', offerIdRef.current)
                 .maybeSingle()
             : await supabase
                 .from('dispatch_offers')
-                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
+                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf, endereco)')
                 .eq('atendimento_id', atendimentoId)
                 .order('created_at', { ascending: false })
                 .limit(1)
@@ -378,11 +381,47 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const prestadorLat = prestador?.latitude;
   const prestadorLng = prestador?.longitude;
 
-  // Calculate total distance
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setPrestadorGeoLat(pos.coords.latitude);
+          setPrestadorGeoLng(pos.coords.longitude);
+          setPrestadorPartida(`${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+          // Reverse geocode for readable address
+          fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`, { headers: { 'User-Agent': 'OpGrid/1.0' } })
+            .then(r => r.json())
+            .then(d => { if (d.display_name) setPrestadorPartida(d.display_name); })
+            .catch(() => {});
+        },
+        () => {
+          // Fallback to registered address
+          const addr = [prestador?.endereco, prestador?.cidade, prestador?.uf].filter(Boolean).join(', ');
+          setPrestadorPartida(addr || (prestadorLat ? `${prestadorLat}, ${prestadorLng}` : 'N/D'));
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      const addr = [prestador?.endereco, prestador?.cidade, prestador?.uf].filter(Boolean).join(', ');
+      setPrestadorPartida(addr || 'N/D');
+    }
+  }, [prestador, prestadorLat, prestadorLng]);
+
+  // Retorno do prestador — endereço cadastrado
+  const retornoPrestador = [prestador?.endereco, prestador?.cidade, prestador?.uf].filter(Boolean).join(', ') || 'Endereço não cadastrado';
+
+  // Calculate total distance: prestador → origem → destino
   let distanciaTotal = '—';
   if (originLat && originLng && destLat && destLng) {
-    const dist = haversineKm(originLat, originLng, destLat, destLng);
-    distanciaTotal = `${(dist * 2).toFixed(1)} km (ida+volta)`;
+    const distOrigDest = haversineKm(originLat, originLng, destLat, destLng);
+    const geoLat = prestadorGeoLat || prestadorLat;
+    const geoLng = prestadorGeoLng || prestadorLng;
+    if (geoLat && geoLng) {
+      const distPrestOrigem = haversineKm(geoLat, geoLng, originLat, originLng);
+      distanciaTotal = `${(distPrestOrigem + distOrigDest).toFixed(1)} km`;
+    } else {
+      distanciaTotal = `${distOrigDest.toFixed(1)} km`;
+    }
   }
 
   const openMaps = (app: 'google' | 'waze') => {
@@ -462,10 +501,10 @@ export default function OsView({ atendimentoId }: OsViewProps) {
       <div className="px-4 pt-4">
         <SectionHeader title="Endereços" />
         <Card className="overflow-hidden">
-          <NumberedRow num={1} color="bg-green-500" label="Partida do Prestador" value={prestadorLat ? `Lat: ${prestadorLat}, Lng: ${prestadorLng}` : 'N/D'} />
-          <NumberedRow num={2} color="bg-orange-500" label="Origem do Atendimento" value={solicitacao?.origem_endereco || 'N/D'} />
+          <NumberedRow num={1} color="bg-green-500" label="Partida do Prestador" value={prestadorPartida} />
+          <NumberedRow num={2} color="bg-orange-500" label="Origem do Atendimento" value={solicitacao?.origem_endereco || (originLat ? `${originLat}, ${originLng}` : 'N/D')} />
           <NumberedRow num={3} color="bg-red-500" label="Destino do Atendimento" value={solicitacao?.destino_endereco || 'N/D'} />
-          <NumberedRow num={4} color="bg-blue-500" label="Retorno do Prestador" value="A definir" />
+          <NumberedRow num={4} color="bg-blue-500" label="Retorno do Prestador" value={retornoPrestador} />
           <NumberedRow num={5} color="bg-teal-500" label="Distância Total" value={distanciaTotal} />
         </Card>
 
@@ -484,7 +523,9 @@ export default function OsView({ atendimentoId }: OsViewProps) {
       <div className="px-4 pt-5">
         <SectionHeader title="Veículo" />
         <Card className="overflow-hidden">
-          <IconRow icon={Car} label="Veículo" value={solicitacao?.tipo_veiculo || solicitacao?.placa || 'N/D'} />
+          <IconRow icon={Car} label="Tipo de Veículo" value={solicitacao?.tipo_veiculo || 'N/D'} />
+          <IconRow icon={Car} label="Marca" value={solicitacao?.marca_veiculo || 'N/D'} />
+          <IconRow icon={Car} label="Modelo" value={solicitacao?.modelo_veiculo || 'N/D'} />
           <IconRow icon={FileText} label="Placa" value={solicitacao?.placa || 'N/D'} />
         </Card>
       </div>
