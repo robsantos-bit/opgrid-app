@@ -11,7 +11,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, Loader2,
-  Navigation, Camera, FileText, Upload, Car, User, AlertTriangle, XCircle
+  Navigation, Camera, FileText, Upload, Car, User, AlertTriangle, XCircle, DollarSign
 } from 'lucide-react';
 import ChecklistExecucao from '@/components/ChecklistExecucao';
 
@@ -27,6 +27,8 @@ const STATUS_DB_MAP: Record<string, string> = {
 
 // ====== Types ======
 type OsStatus = 'aceito' | 'em_deslocamento' | 'no_local' | 'em_transito' | 'finalizado' | 'cancelado';
+type FormaPagamento = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Para faturar';
+const FORMAS_PAGAMENTO: FormaPagamento[] = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'PIX', 'Para faturar'];
 
 const STATUS_STEPS: { key: OsStatus; label: string }[] = [
   { key: 'aceito', label: 'Aceito' },
@@ -190,6 +192,8 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const [placaInput, setPlacaInput] = useState('');
   const [placaValidada, setPlacaValidada] = useState(false);
   const [placaError, setPlacaError] = useState('');
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamento | ''>('');
+  const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
   const [prestadorPartida, setPrestadorPartida] = useState<string>('Obtendo localização...');
   const [prestadorGeoLat, setPrestadorGeoLat] = useState<number | undefined>(undefined);
   const [prestadorGeoLng, setPrestadorGeoLng] = useState<number | undefined>(undefined);
@@ -744,6 +748,64 @@ export default function OsView({ atendimentoId }: OsViewProps) {
               {actionLoading && <Loader2 className="h-5 w-5 mr-2 animate-spin" />}
               <CheckCircle2 className="h-5 w-5 mr-2" />Finalizar atendimento
             </Button>
+          )}
+
+          {currentStatus === 'finalizado' && !pagamentoConfirmado && (
+            <Card className="p-4 space-y-3 border-[hsl(160,60%,38%)]/30">
+              <div className="flex items-center gap-2 text-sm font-bold text-[hsl(160,60%,38%)]">
+                <DollarSign className="h-4 w-4" />
+                <span>Forma de Pagamento</span>
+              </div>
+              <p className="text-xs text-muted-foreground">Selecione como o cliente realizou o pagamento:</p>
+              <div className="grid grid-cols-1 gap-2">
+                {FORMAS_PAGAMENTO.map((fp) => (
+                  <Button
+                    key={fp}
+                    variant={formaPagamento === fp ? 'default' : 'outline'}
+                    className={`h-11 justify-start text-sm ${formaPagamento === fp ? 'bg-[hsl(160,60%,38%)] hover:bg-[hsl(160,60%,32%)] text-white' : ''}`}
+                    onClick={() => setFormaPagamento(fp)}
+                  >
+                    {fp === 'Dinheiro' && '💵 '}
+                    {fp === 'Cartão de Crédito' && '💳 '}
+                    {fp === 'Cartão de Débito' && '💳 '}
+                    {fp === 'PIX' && '📱 '}
+                    {fp === 'Para faturar' && '📄 '}
+                    {fp}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                className="w-full h-14 text-base font-bold bg-[hsl(24,85%,55%)] hover:bg-[hsl(24,85%,48%)] text-white mt-2"
+                disabled={!formaPagamento || actionLoading}
+                onClick={async () => {
+                  setActionLoading(true);
+                  try {
+                    await supabase.from('atendimentos').update({ forma_pagamento: formaPagamento }).eq('id', atendimentoId);
+                    if (prestador?.id) {
+                      await supabase.from('prestadores').update({ status: 'Ativo' }).eq('id', prestador.id);
+                    }
+                    setPagamentoConfirmado(true);
+                    toast.success('Pagamento registrado! Você está online novamente.');
+                  } catch {
+                    toast.error('Erro ao confirmar pagamento');
+                  } finally {
+                    setActionLoading(false);
+                  }
+                }}
+              >
+                {actionLoading && <Loader2 className="h-5 w-5 mr-2 animate-spin" />}
+                <CheckCircle2 className="h-5 w-5 mr-2" />Confirmar Recebimento
+              </Button>
+            </Card>
+          )}
+
+          {currentStatus === 'finalizado' && pagamentoConfirmado && (
+            <div className="rounded-lg bg-[hsl(160,60%,38%)]/10 border border-[hsl(160,60%,38%)]/30 p-4 text-center space-y-2">
+              <CheckCircle2 className="h-8 w-8 text-[hsl(160,60%,38%)] mx-auto" />
+              <p className="text-sm font-bold text-[hsl(160,60%,38%)]">Atendimento concluído!</p>
+              <p className="text-xs text-muted-foreground">Pagamento: <strong>{formaPagamento}</strong></p>
+              <p className="text-xs text-muted-foreground">Você está <strong>online</strong> e disponível para novos atendimentos.</p>
+            </div>
           )}
 
           <Button variant="outline" className="w-full h-12 border-[hsl(24,85%,55%)]/30 text-[hsl(24,85%,55%)]">
