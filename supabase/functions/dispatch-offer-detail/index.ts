@@ -29,8 +29,8 @@ Deno.serve(async (req: Request) => {
         .from('atendimentos')
         .select(`
           id, status, notas, created_at, finalizado_at, protocolo, solicitacao_id, prestador_id,
-          solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at ),
-          prestadores ( id, nome, telefone, latitude, longitude, cidade, uf )
+          solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at ),
+          prestadores ( id, nome, telefone, latitude, longitude, cidade, uf, endereco )
         `)
         .eq('id', atendimento_id)
         .maybeSingle();
