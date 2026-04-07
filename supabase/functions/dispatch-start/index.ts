@@ -496,6 +496,16 @@ async function loadOriginCoordinates(
   return lat !== null && lng !== null ? { lat, lng } : null;
 }
 
+function loadDestinoCoordinates(sol: any): Coordinates | null {
+  const lat = pickNumber([
+    sol?.destino_lat, sol?.destino_latitude,
+  ]);
+  const lng = pickNumber([
+    sol?.destino_lng, sol?.destino_longitude,
+  ]);
+  return lat !== null && lng !== null ? { lat, lng } : null;
+}
+
 // ── Messages ──
 
 function buildProviderMessage(
