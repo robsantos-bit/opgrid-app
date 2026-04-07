@@ -128,7 +128,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const origem = await loadOriginCoordinates(supabase, conversationId, sol);
-    const ranked = rankPrestadores(prestadoresRaw || [], origem).filter(
+    const destino = loadDestinoCoordinates(sol);
+    const ranked = rankPrestadores(prestadoresRaw || [], origem, destino).filter(
       (p) => !!p.phone
     );
 
@@ -411,8 +412,11 @@ function isPrestadorAtivo(status: unknown): boolean {
 
 function rankPrestadores(
   raw: any[],
-  origem: Coordinates | null
+  origem: Coordinates | null,
+  destino: Coordinates | null = null
 ): RankedPrestador[] {
+  const FATOR_CORRECAO_RODOVIARIO = 1.3;
+
   return (raw
     .map((r) => {
       if (!r?.id || !isPrestadorAtivo(r?.status)) return null;
@@ -421,11 +425,26 @@ function rankPrestadores(
       );
       const lat = pickNumber([r?.latitude, r?.lat]);
       const lng = pickNumber([r?.longitude, r?.lng, r?.lon]);
-      const distKm =
+
+      // Distance from provider to origin (for ranking/ETA)
+      const distToOrigin =
         origem && lat !== null && lng !== null
-          ? round2(haversineKm(origem.lat, origem.lng, lat, lng))
+          ? haversineKm(origem.lat, origem.lng, lat, lng)
           : null;
-      const eta = distKm !== null ? Math.max(5, Math.round(distKm * 1.5)) : null;
+
+      // Full trip: prestador→origem + origem→destino + destino→retorno(prestador base)
+      let fullTripKm: number | null = null;
+      if (distToOrigin !== null && lat !== null && lng !== null) {
+        const origDestKm = (origem && destino)
+          ? haversineKm(origem.lat, origem.lng, destino.lat, destino.lng)
+          : 0;
+        const retornoKm = destino
+          ? haversineKm(destino.lat, destino.lng, lat, lng)
+          : distToOrigin; // if no dest, assume return = same as outbound
+        fullTripKm = round2((distToOrigin + origDestKm + retornoKm) * FATOR_CORRECAO_RODOVIARIO);
+      }
+
+      const eta = distToOrigin !== null ? Math.max(5, Math.round(distToOrigin * 1.5 * FATOR_CORRECAO_RODOVIARIO)) : null;
       return {
         id: String(r.id),
         name: pickFirstString(
@@ -435,7 +454,7 @@ function rankPrestadores(
         phone,
         latitude: lat,
         longitude: lng,
-        distanceKm: distKm,
+        distanceKm: fullTripKm,
         etaMin: eta,
         raw: r,
       } as RankedPrestador;
@@ -477,6 +496,16 @@ async function loadOriginCoordinates(
   return lat !== null && lng !== null ? { lat, lng } : null;
 }
 
+function loadDestinoCoordinates(sol: any): Coordinates | null {
+  const lat = pickNumber([
+    sol?.destino_lat, sol?.destino_latitude,
+  ]);
+  const lng = pickNumber([
+    sol?.destino_lng, sol?.destino_longitude,
+  ]);
+  return lat !== null && lng !== null ? { lat, lng } : null;
+}
+
 // ── Messages ──
 
 function buildProviderMessage(
@@ -486,7 +515,7 @@ function buildProviderMessage(
 ): string {
   const dist =
     prest.distanceKm !== null
-      ? `📏 Distância até cliente: ~${prest.distanceKm.toFixed(1)} km\n`
+      ? `📏 Distância total do trajeto: ~${prest.distanceKm.toFixed(1)} km\n`
       : "";
   return (
     `🚛 *Nova Oferta de Guincho!*\n\n` +

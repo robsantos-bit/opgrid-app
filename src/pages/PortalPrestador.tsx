@@ -261,8 +261,8 @@ function OfertaView({ oferta }: { oferta: any }) {
         </Card>
         <Card>
           <CardContent className="p-3 text-center">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Distância</p>
-            <p className="text-xl font-bold text-foreground">{oferta.estimated_distance_km || '—'} km</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">Distância Total</p>
+            <p className="text-xl font-bold text-foreground">{oferta.estimated_distance_km ? Number(oferta.estimated_distance_km).toFixed(1) : '—'} km</p>
           </CardContent>
         </Card>
       </div>
