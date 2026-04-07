@@ -321,6 +321,7 @@ interface PricingRow {
   id: string;
   chave: string;
   valor: number;
+  porcentagem: number;
   descricao: string | null;
   unidade: string | null;
   ativo: boolean;
@@ -328,14 +329,20 @@ interface PricingRow {
 
 const PRICING_LABELS: Record<string, string> = {
   taxa_base: 'Taxa Base',
-  custo_km: 'Custo por Km',
+  custo_km_padrao: 'Custo Km (Leve)',
+  custo_km_utilitario: 'Custo Km (Utilitário)',
+  custo_km_pesado: 'Custo Km (Pesado)',
   fator_ida_volta: 'Fator Ida+Volta',
   fator_correcao_rodoviario: 'Correção Rodoviária',
   distancia_fallback_parcial: 'Distância Fallback (parcial)',
   distancia_fallback_total: 'Distância Fallback (sem GPS)',
   valor_minimo: 'Valor Mínimo',
-  adicional_noturno: 'Adicional Noturno',
-  adicional_pesado: 'Adicional Veículo Pesado',
+  adicional_noturno: 'Adicional Noturno (%)',
+  adicional_utilitario: 'Adicional Utilitário',
+  adicional_pesado: 'Adicional Pesado',
+  adicional_patins: 'Adicional Patins',
+  multiplicador_eixo_caminhao: 'Eixos Caminhão (pedágio)',
+  repasse_pedagio_ativo: 'Repasse Pedágio (1=sim)',
 };
 
 function PricingConfigPanel() {
@@ -359,7 +366,10 @@ function PricingConfigPanel() {
     } else {
       setRows(data || []);
       const vals: Record<string, string> = {};
-      (data || []).forEach((r: PricingRow) => { vals[r.chave] = String(r.valor); });
+      (data || []).forEach((r: PricingRow) => {
+        const isPercent = r.unidade === '%';
+        vals[r.chave] = isPercent ? String(r.porcentagem ?? 0) : String(r.valor);
+      });
       setEditValues(vals);
     }
     setLoading(false);
@@ -370,10 +380,13 @@ function PricingConfigPanel() {
     let hasError = false;
     for (const row of rows) {
       const newVal = parseFloat(editValues[row.chave] || '0');
-      if (newVal !== row.valor) {
+      const isPercent = row.unidade === '%';
+      const currentVal = isPercent ? (row.porcentagem ?? 0) : row.valor;
+      if (newVal !== currentVal) {
+        const updatePayload = isPercent ? { porcentagem: newVal } : { valor: newVal };
         const { error } = await supabase
           .from('pricing_config')
-          .update({ valor: newVal })
+          .update(updatePayload)
           .eq('id', row.id);
         if (error) {
           toast.error(`Erro ao salvar ${row.chave}: ${error.message}`);
