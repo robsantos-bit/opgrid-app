@@ -280,12 +280,12 @@ export default function OsView({ atendimentoId }: OsViewProps) {
           const offerFallback = offerIdRef.current
             ? await supabase
                 .from('dispatch_offers')
-                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
+                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf, endereco)')
                 .eq('id', offerIdRef.current)
                 .maybeSingle()
             : await supabase
                 .from('dispatch_offers')
-                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf)')
+                .select('id, atendimento_id, solicitacao_id, prestador_id, status, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at), prestadores(id, nome, telefone, latitude, longitude, cidade, uf, endereco)')
                 .eq('atendimento_id', atendimentoId)
                 .order('created_at', { ascending: false })
                 .limit(1)
