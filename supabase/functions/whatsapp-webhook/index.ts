@@ -380,15 +380,54 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
       break;
     }
 
-    // ─────────── 3. PLACA + TIPO + MARCA + MODELO ───────────
+    // ─────────── 3. PLACA + CONSULTA AUTOMÁTICA (ApiPlacas) ───────────
     case "aguardando_veiculo": {
-      // Sub-step 1: Placa
+      // Sub-step 1: Captura da placa
       if (!data.placa) {
-        const placa = text.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
-        if (placa.length < 7) { responseText = "⚠️ Placa inválida. Informe no formato *ABC1D23* ou *ABC-1234*:"; break; }
-        data.placa = placa;
+        const placaLimpa = text.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+        if (placaLimpa.length < 7) {
+          responseText = "⚠️ Placa inválida. Informe no formato *ABC1D23* ou *ABC-1234*:";
+          break;
+        }
+
+        data.placa = placaLimpa;
+        const apiToken = Deno.env.get("API_PLACAS_TOKEN");
+
+        // 🔍 TENTATIVA DE CONSULTA AUTOMÁTICA
+        if (apiToken) {
+          try {
+            console.log(`🔍 [API PLACAS] Consultando: ${placaLimpa}`);
+            const res = await fetch(`https://apiplacas.com.br/v2/consultar/${placaLimpa}/${apiToken}`);
+
+            if (res.ok) {
+              const veiculo = await res.json();
+
+              if (veiculo && veiculo.modelo) {
+                data.marca_veiculo = veiculo.marca;
+                data.modelo_veiculo = veiculo.modelo;
+                data.ano = veiculo.ano;
+                data.cor = veiculo.cor;
+                data.tipo_veiculo = veiculo.tipo;
+                data.modelo = `${veiculo.marca} ${veiculo.modelo}`;
+
+                responseText =
+                  `✅ *Veículo Identificado!*\n\n` +
+                  `🚗 *${veiculo.marca} ${veiculo.modelo}*\n` +
+                  `🎨 Cor: ${veiculo.cor || "N/I"} | Ano: ${veiculo.ano || "N/I"}\n\n` +
+                  `Os dados acima estão corretos? Se sim, envie sua *localização atual* 📍 ou digite o endereço de origem:`;
+
+                nextState = "aguardando_origem";
+                break;
+              }
+            }
+          } catch (err) {
+            console.error("❌ [API PLACAS] Erro na consulta, seguindo manual:", err.message);
+          }
+        }
+
+        // FALLBACK MANUAL — API falhou ou token ausente
         responseText =
-          `🚗 Placa registrada: *${placa}*\n\n` +
+          `🚗 Placa registrada: *${placaLimpa}*\n\n` +
           `Qual o *tipo de veículo*?\n\n` +
           `1️⃣ Carro\n2️⃣ Moto\n3️⃣ Caminhonete/SUV\n4️⃣ Caminhão\n5️⃣ Equipamento\n\n` +
           `_Responda com o número:_`;
@@ -403,7 +442,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         };
         const tipo = tipoMap[textLower] || text;
         data.tipo_veiculo = tipo;
-        data.modelo = tipo; // Keep for pricing compatibility
+        data.modelo = tipo;
         responseText =
           `✅ Tipo: *${tipo}*\n\n` +
           `Qual a *marca* do veículo?\n_(Ex: Volkswagen, Chevrolet, Fiat, Ford, Toyota, Hyundai, Honda, Renault, Jeep, Nissan, Audi, BMW, Mercedes)_`;
