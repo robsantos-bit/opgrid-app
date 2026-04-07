@@ -465,17 +465,26 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   // Retorno do prestador — endereço cadastrado
   const retornoPrestador = [prestador?.endereco, prestador?.cidade, prestador?.uf].filter(Boolean).join(', ') || 'Endereço não cadastrado';
 
-  // Calculate total distance: prestador → origem → destino
+  // Calculate total distance: prestador → origem → destino → retorno (base)
+  const FATOR_CORRECAO_RODOVIARIO = 1.3;
   let distanciaTotal = '—';
   if (originLat && originLng && destLat && destLng) {
     const distOrigDest = haversineKm(originLat, originLng, destLat, destLng);
     const geoLat = prestadorGeoLat || prestadorLat;
     const geoLng = prestadorGeoLng || prestadorLng;
+    // Retorno: destino → base cadastrada do prestador
+    const baseLat = prestadorLat;
+    const baseLng = prestadorLng;
     if (geoLat && geoLng) {
       const distPrestOrigem = haversineKm(geoLat, geoLng, originLat, originLng);
-      distanciaTotal = `${(distPrestOrigem + distOrigDest).toFixed(1)} km`;
+      const distRetorno = (baseLat && baseLng)
+        ? haversineKm(destLat, destLng, baseLat, baseLng)
+        : distPrestOrigem; // fallback: assume retorno ≈ ida
+      const totalHaversine = distPrestOrigem + distOrigDest + distRetorno;
+      distanciaTotal = `${(totalHaversine * FATOR_CORRECAO_RODOVIARIO).toFixed(1)} km`;
     } else {
-      distanciaTotal = `${distOrigDest.toFixed(1)} km`;
+      // Sem localização do prestador: origem→destino × 2 (ida e volta) × correção
+      distanciaTotal = `${(distOrigDest * 2 * FATOR_CORRECAO_RODOVIARIO).toFixed(1)} km`;
     }
   }
 
