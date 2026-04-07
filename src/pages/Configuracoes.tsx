@@ -321,6 +321,7 @@ interface PricingRow {
   id: string;
   chave: string;
   valor: number;
+  porcentagem: number;
   descricao: string | null;
   unidade: string | null;
   ativo: boolean;
@@ -328,14 +329,20 @@ interface PricingRow {
 
 const PRICING_LABELS: Record<string, string> = {
   taxa_base: 'Taxa Base',
-  custo_km: 'Custo por Km',
+  custo_km_padrao: 'Custo Km (Leve)',
+  custo_km_utilitario: 'Custo Km (Utilitário)',
+  custo_km_pesado: 'Custo Km (Pesado)',
   fator_ida_volta: 'Fator Ida+Volta',
   fator_correcao_rodoviario: 'Correção Rodoviária',
   distancia_fallback_parcial: 'Distância Fallback (parcial)',
   distancia_fallback_total: 'Distância Fallback (sem GPS)',
   valor_minimo: 'Valor Mínimo',
-  adicional_noturno: 'Adicional Noturno',
-  adicional_pesado: 'Adicional Veículo Pesado',
+  adicional_noturno: 'Adicional Noturno (%)',
+  adicional_utilitario: 'Adicional Utilitário',
+  adicional_pesado: 'Adicional Pesado',
+  adicional_patins: 'Adicional Patins',
+  multiplicador_eixo_caminhao: 'Eixos Caminhão (pedágio)',
+  repasse_pedagio_ativo: 'Repasse Pedágio (1=sim)',
 };
 
 function PricingConfigPanel() {
