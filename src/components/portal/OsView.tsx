@@ -378,11 +378,52 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const prestadorLat = prestador?.latitude;
   const prestadorLng = prestador?.longitude;
 
-  // Calculate total distance
+  // Partida do prestador — current geolocation or registered address
+  const [prestadorPartida, setPrestadorPartida] = useState<string>('Obtendo localização...');
+  const [prestadorGeoLat, setPrestadorGeoLat] = useState<number | undefined>(prestadorLat);
+  const [prestadorGeoLng, setPrestadorGeoLng] = useState<number | undefined>(prestadorLng);
+
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setPrestadorGeoLat(pos.coords.latitude);
+          setPrestadorGeoLng(pos.coords.longitude);
+          setPrestadorPartida(`${pos.coords.latitude.toFixed(6)}, ${pos.coords.longitude.toFixed(6)}`);
+          // Reverse geocode for readable address
+          fetch(`https://nominatim.openstreetmap.org/reverse?lat=${pos.coords.latitude}&lon=${pos.coords.longitude}&format=json`, { headers: { 'User-Agent': 'OpGrid/1.0' } })
+            .then(r => r.json())
+            .then(d => { if (d.display_name) setPrestadorPartida(d.display_name); })
+            .catch(() => {});
+        },
+        () => {
+          // Fallback to registered address
+          const addr = [prestador?.endereco, prestador?.cidade, prestador?.uf].filter(Boolean).join(', ');
+          setPrestadorPartida(addr || (prestadorLat ? `${prestadorLat}, ${prestadorLng}` : 'N/D'));
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else {
+      const addr = [prestador?.endereco, prestador?.cidade, prestador?.uf].filter(Boolean).join(', ');
+      setPrestadorPartida(addr || 'N/D');
+    }
+  }, [prestador, prestadorLat, prestadorLng]);
+
+  // Retorno do prestador — endereço cadastrado
+  const retornoPrestador = [prestador?.endereco, prestador?.cidade, prestador?.uf].filter(Boolean).join(', ') || 'Endereço não cadastrado';
+
+  // Calculate total distance: prestador → origem → destino
   let distanciaTotal = '—';
   if (originLat && originLng && destLat && destLng) {
-    const dist = haversineKm(originLat, originLng, destLat, destLng);
-    distanciaTotal = `${(dist * 2).toFixed(1)} km (ida+volta)`;
+    const distOrigDest = haversineKm(originLat, originLng, destLat, destLng);
+    const geoLat = prestadorGeoLat || prestadorLat;
+    const geoLng = prestadorGeoLng || prestadorLng;
+    if (geoLat && geoLng) {
+      const distPrestOrigem = haversineKm(geoLat, geoLng, originLat, originLng);
+      distanciaTotal = `${(distPrestOrigem + distOrigDest).toFixed(1)} km`;
+    } else {
+      distanciaTotal = `${distOrigDest.toFixed(1)} km`;
+    }
   }
 
   const openMaps = (app: 'google' | 'waze') => {
