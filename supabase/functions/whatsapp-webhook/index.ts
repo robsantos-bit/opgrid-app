@@ -926,6 +926,8 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         const nota = parseInt(text);
         if (nota >= 1 && nota <= 5) {
           data.nota_satisfacao = nota;
+          // Save rating as top-level column for dashboard queries
+          await supabase.from("conversations").update({ nota_satisfacao: nota }).eq("id", conversationId);
           responseText = `Obrigado pela avaliação! ⭐ Nota: ${nota}/5\n\nPara uma nova solicitação, envie "Oi".`;
           nextState = "concluido";
         } else {
