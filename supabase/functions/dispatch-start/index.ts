@@ -128,7 +128,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const origem = await loadOriginCoordinates(supabase, conversationId, sol);
-    const ranked = rankPrestadores(prestadoresRaw || [], origem).filter(
+    const destino = loadDestinoCoordinates(sol);
+    const ranked = rankPrestadores(prestadoresRaw || [], origem, destino).filter(
       (p) => !!p.phone
     );
 
