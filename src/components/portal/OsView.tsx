@@ -503,10 +503,10 @@ export default function OsView({ atendimentoId }: OsViewProps) {
       <div className="px-4 pt-4">
         <SectionHeader title="Endereços" />
         <Card className="overflow-hidden">
-          <NumberedRow num={1} color="bg-green-500" label="Partida do Prestador" value={prestadorLat ? `Lat: ${prestadorLat}, Lng: ${prestadorLng}` : 'N/D'} />
-          <NumberedRow num={2} color="bg-orange-500" label="Origem do Atendimento" value={solicitacao?.origem_endereco || 'N/D'} />
+          <NumberedRow num={1} color="bg-green-500" label="Partida do Prestador" value={prestadorPartida} />
+          <NumberedRow num={2} color="bg-orange-500" label="Origem do Atendimento" value={solicitacao?.origem_endereco || (originLat ? `${originLat}, ${originLng}` : 'N/D')} />
           <NumberedRow num={3} color="bg-red-500" label="Destino do Atendimento" value={solicitacao?.destino_endereco || 'N/D'} />
-          <NumberedRow num={4} color="bg-blue-500" label="Retorno do Prestador" value="A definir" />
+          <NumberedRow num={4} color="bg-blue-500" label="Retorno do Prestador" value={retornoPrestador} />
           <NumberedRow num={5} color="bg-teal-500" label="Distância Total" value={distanciaTotal} />
         </Card>
 
