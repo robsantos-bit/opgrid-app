@@ -17,8 +17,8 @@ import ChecklistExecucao from '@/components/ChecklistExecucao';
 
 // Maps portal status → DB status
 const STATUS_DB_MAP: Record<string, string> = {
-  aceito: 'aceito',
-  em_deslocamento: 'Em andamento',
+  aceito: 'aceito_prestador',
+  em_deslocamento: 'em_deslocamento',
   no_local: 'no_local',
   em_transito: 'em_transito',
   finalizado: 'Concluído',
@@ -341,8 +341,17 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   // Reverse-map DB status to portal status
   const rawStatus = (atendimento?.status || 'aceito');
   const DB_TO_PORTAL: Record<string, OsStatus> = {
-    'Concluído': 'finalizado',
+    aceito: 'aceito',
+    aceito_prestador: 'aceito',
+    aberto: 'aceito',
+    solicitado: 'aceito',
+    em_deslocamento: 'em_deslocamento',
     'Em andamento': 'em_deslocamento',
+    no_local: 'no_local',
+    em_transito: 'em_transito',
+    finalizado: 'finalizado',
+    'Concluído': 'finalizado',
+    cancelado: 'cancelado',
     'Cancelado': 'cancelado',
   };
   const currentStatus: OsStatus = DB_TO_PORTAL[rawStatus] || rawStatus.toLowerCase().replace(/ /g, '_') as OsStatus;

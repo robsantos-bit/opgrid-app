@@ -391,34 +391,45 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         }
 
         data.placa = placaLimpa;
-        const apiToken = Deno.env.get("API_PLACAS_TOKEN");
+        const apiToken = Deno.env.get("API_PLACAS_TOKEN")?.trim();
 
         // 🔍 TENTATIVA DE CONSULTA AUTOMÁTICA
         if (apiToken) {
           try {
             console.log(`🔍 [API PLACAS] Consultando: ${placaLimpa}`);
-            const res = await fetch(`https://apiplacas.com.br/v2/consultar/${placaLimpa}/${apiToken}`);
+            const res = await fetch(`https://wdapi2.com.br/consulta/${placaLimpa}/${apiToken}`, {
+              headers: {
+                "Accept": "application/json",
+                "User-Agent": "OpGrid/1.0",
+              },
+            });
 
             if (res.ok) {
               const veiculo = await res.json();
+              const parsed = normalizeApiPlacasVehicle(veiculo);
 
-              if (veiculo && veiculo.modelo) {
-                data.marca_veiculo = veiculo.marca;
-                data.modelo_veiculo = veiculo.modelo;
-                data.ano = veiculo.ano;
-                data.cor = veiculo.cor;
-                data.tipo_veiculo = veiculo.tipo;
-                data.modelo = `${veiculo.marca} ${veiculo.modelo}`;
+              if (parsed.marca || parsed.modelo) {
+                data.marca_veiculo = parsed.marca || data.marca_veiculo || "";
+                data.modelo_veiculo = parsed.modelo || data.modelo_veiculo || "";
+                data.ano = parsed.ano || null;
+                data.cor = parsed.cor || null;
+                data.tipo_veiculo = parsed.tipo || data.tipo_veiculo || "Carro";
+                data.modelo = [data.marca_veiculo, data.modelo_veiculo].filter(Boolean).join(" ").trim() || data.tipo_veiculo;
 
                 responseText =
-                  `✅ *Veículo Identificado!*\n\n` +
-                  `🚗 *${veiculo.marca} ${veiculo.modelo}*\n` +
-                  `🎨 Cor: ${veiculo.cor || "N/I"} | Ano: ${veiculo.ano || "N/I"}\n\n` +
-                  `Os dados acima estão corretos? Se sim, envie sua *localização atual* 📍 ou digite o endereço de origem:`;
+                  `✅ *Veículo identificado automaticamente!*\n\n` +
+                  `🚗 *${data.modelo}*\n` +
+                  `🏷️ Tipo: ${data.tipo_veiculo}\n` +
+                  `🎨 Cor: ${data.cor || "N/I"} | Ano: ${data.ano || "N/I"}\n\n` +
+                  `Agora envie sua *localização atual* 📍 ou digite o endereço de origem:`;
 
                 nextState = "aguardando_origem";
                 break;
               }
+              console.warn("⚠️ [API PLACAS] Resposta sem marca/modelo:", JSON.stringify(veiculo).slice(0, 500));
+            } else {
+              const raw = await res.text();
+              console.warn(`⚠️ [API PLACAS] HTTP ${res.status}: ${raw.slice(0, 300)}`);
             }
           } catch (err) {
             console.error("❌ [API PLACAS] Erro na consulta, seguindo manual:", err.message);
@@ -488,7 +499,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         if (!endereco || endereco.length < 5) {
           endereco = await reverseGeocode(lat, lng);
         }
-        data.origem = endereco || `${lat}, ${lng}`;
+        data.origem = formatAddressWithCoords(endereco, lat, lng);
         console.log(`[ORIGEM] GPS capturado: lat=${lat}, lng=${lng}, endereco="${data.origem}"`);
       } else {
         // Tenta extrair coordenadas do texto (caso W-API envie como texto "lat,lng")
@@ -499,7 +510,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
           if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
             data.coordenadas = { lat, lng };
             const endereco = await reverseGeocode(lat, lng);
-            data.origem = endereco || `${lat}, ${lng}`;
+            data.origem = formatAddressWithCoords(endereco, lat, lng);
             console.log(`[ORIGEM] Coordenadas extraídas do texto: lat=${lat}, lng=${lng}`);
           } else {
             data.origem = text;
@@ -548,7 +559,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
         if (!endDest || endDest.length < 5) {
           endDest = await reverseGeocode(nm.location.latitude, nm.location.longitude);
         }
-        data.destino = endDest || `${nm.location.latitude}, ${nm.location.longitude}`;
+        data.destino = formatAddressWithCoords(endDest, nm.location.latitude, nm.location.longitude);
       } else {
         if (text.length < 5) { responseText = "🏁 Por favor, informe o endereço de destino com mais detalhes:"; break; }
         data.destino = text;
@@ -1010,6 +1021,61 @@ async function forwardGeocode(address: string): Promise<{ lat: number; lng: numb
   }
 
   return null;
+}
+
+function formatAddressWithCoords(address: string | null | undefined, lat: number, lng: number): string {
+  const latNum = Number(lat);
+  const lngNum = Number(lng);
+  const coords = Number.isFinite(latNum) && Number.isFinite(lngNum)
+    ? `${latNum.toFixed(6)}, ${lngNum.toFixed(6)}`
+    : "";
+  const cleanAddress = String(address || "").trim();
+
+  if (!cleanAddress) return coords;
+  if (!coords) return cleanAddress;
+  if (cleanAddress.includes(coords)) return cleanAddress;
+
+  return `${cleanAddress}\n📍 GPS: ${coords}`;
+}
+
+function pickFirstVehicleField(...values: unknown[]): string {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text && text.toLowerCase() !== "null" && text.toLowerCase() !== "undefined") {
+      return text;
+    }
+  }
+
+  return "";
+}
+
+function mapApiPlacasTipoVeiculo(value: unknown): string {
+  const raw = normalizeVehicleType(value);
+
+  if (!raw) return "Carro";
+  if (/moto|motocic|ciclomotor/.test(raw)) return "Moto";
+  if (/caminhonete|camioneta|pickup|pick up|suv|utilitario|utilitário/.test(raw)) return "Caminhonete/SUV";
+  if (/caminhao|caminhão/.test(raw)) return "Caminhão";
+  if (/equip|maquina|máquina|implemento|trator|reboque|semi/.test(raw)) return "Equipamento";
+
+  return "Carro";
+}
+
+function normalizeApiPlacasVehicle(payload: any) {
+  const extra = payload?.extra || {};
+  const marca = pickFirstVehicleField(payload?.MARCA, payload?.marca, extra?.marca);
+  const modelo = pickFirstVehicleField(payload?.MODELO, payload?.modelo, extra?.modelo).replace(/^.*?\//, "").trim();
+  const ano = pickFirstVehicleField(payload?.ano, payload?.anoModelo, extra?.ano_modelo, extra?.ano_fabricacao);
+  const cor = pickFirstVehicleField(payload?.cor, payload?.COR, extra?.cor);
+  const tipoRaw = pickFirstVehicleField(payload?.tipo, payload?.tipo_veiculo, extra?.tipo_veiculo, extra?.segmento, extra?.especie);
+
+  return {
+    marca,
+    modelo,
+    ano,
+    cor,
+    tipo: mapApiPlacasTipoVeiculo(tipoRaw),
+  };
 }
 
 function normalizeVehicleType(value: unknown): string {
