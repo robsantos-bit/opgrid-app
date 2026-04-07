@@ -381,9 +381,6 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const prestadorLat = prestador?.latitude;
   const prestadorLng = prestador?.longitude;
 
-  const prestadorLat = prestador?.latitude;
-  const prestadorLng = prestador?.longitude;
-
   useEffect(() => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
