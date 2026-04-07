@@ -1176,7 +1176,11 @@ async function createSolicitacaoAndDispatch(
   const now = new Date().toISOString();
   const fallbackProtocol = buildFallbackProtocol(new Date(now));
 
-  const { data: sol, error: solErr } = await insertWithSchemaFallback(supabase, "solicitacoes", {
+  console.log("[CREATE-OS] Coordenadas origem:", JSON.stringify(data.coordenadas));
+  console.log("[CREATE-OS] Coordenadas destino:", JSON.stringify(data.coordenadas_destino));
+  console.log("[CREATE-OS] Endereço origem:", data.origem, "| destino:", data.destino);
+
+  const solPayload: Record<string, unknown> = {
     protocolo: fallbackProtocol, created_at: now, updated_at: now, data_hora: now,
     canal: "WhatsApp",
     cliente_nome: data.nome || "Cliente não informado",
@@ -1185,19 +1189,30 @@ async function createSolicitacaoAndDispatch(
     marca_veiculo: data.marca_veiculo || null,
     modelo_veiculo: data.modelo_veiculo || null,
     origem_endereco: data.origem || null, destino_endereco: data.destino || null,
-    origem_latitude: data.coordenadas?.lat || null, origem_longitude: data.coordenadas?.lng || null,
-    destino_latitude: data.coordenadas_destino?.lat || null, destino_longitude: data.coordenadas_destino?.lng || null,
     motivo: data.motivo || "Outro", observacoes: data.observacoes || "",
-    distancia_estimada_km: toNum(data.distanciaKm),
     valor: toNum(data.valorEstimado), valor_estimado: toNum(data.valorEstimado),
     status: "pendente", prioridade: "normal", status_proposta: "Aceita",
-  }, "*");
+  };
+
+  // Coordenadas adicionadas separadamente — insertWithSchemaFallback remove se coluna não existir
+  if (data.coordenadas?.lat) solPayload.origem_latitude = Number(data.coordenadas.lat);
+  if (data.coordenadas?.lng) solPayload.origem_longitude = Number(data.coordenadas.lng);
+  if (data.coordenadas_destino?.lat) solPayload.destino_latitude = Number(data.coordenadas_destino.lat);
+  if (data.coordenadas_destino?.lng) solPayload.destino_longitude = Number(data.coordenadas_destino.lng);
+  if (data.distanciaKm) solPayload.distancia_estimada_km = toNum(data.distanciaKm);
+
+  console.log("[CREATE-OS] Payload:", JSON.stringify(solPayload).slice(0, 600));
+
+  const { data: sol, error: solErr } = await insertWithSchemaFallback(supabase, "solicitacoes", solPayload, "*");
 
   if (solErr || !sol) {
     console.error("[DISPATCH] Error creating solicitacao:", solErr);
+    console.error("[DISPATCH] Payload que falhou:", JSON.stringify(solPayload).slice(0, 500));
     await reply(supabase, cleanPhone, conversationId, "⚠️ Ocorreu um erro ao criar sua OS. Nossa equipe foi notificada.", provider);
     return { ok: false, dispatchStarted: false };
   }
+
+  console.log("[CREATE-OS] ✅ Solicitação criada:", sol.id, "protocolo:", sol.protocolo || fallbackProtocol);
 
   const protocolo = sol.protocolo || fallbackProtocol;
 
@@ -1209,6 +1224,7 @@ async function createSolicitacaoAndDispatch(
 
   const atendimentoId = atendimento?.id || null;
   if (atErr) console.error("[DISPATCH] Atendimento error:", atErr);
+  if (atendimentoId) console.log("[CREATE-OS] ✅ Atendimento criado:", atendimentoId);
 
   const resultPatch: Record<string, unknown> = {
     protocolo,
@@ -1220,14 +1236,23 @@ async function createSolicitacaoAndDispatch(
     _dispatch_last_attempt_at: now,
   };
 
+  // Atualiza conversation com solicitacao_id, atendimento_id E coordenadas no data
   await supabase.from("conversations").update({
     solicitacao_id: sol.id,
     ...(atendimentoId ? { atendimento_id: atendimentoId } : {}),
+    data: {
+      ...data,
+      protocolo,
+      solicitacao_id: sol.id,
+      ...(atendimentoId ? { atendimento_id: atendimentoId } : {}),
+    },
   }).eq("id", conversationId);
 
   if (atendimentoId) {
     await supabase.from("solicitacoes").update({ atendimento_id: atendimentoId }).eq("id", sol.id);
   }
+
+  console.log("[CREATE-OS] Conversation atualizada, chamando dispatch-start...");
 
   const osMsg =
     `📄 *Ordem de Serviço Criada!*\n\n` +
@@ -1255,6 +1280,7 @@ async function createSolicitacaoAndDispatch(
       body: JSON.stringify({ solicitacao_id: sol.id, atendimento_id: atendimentoId, conversation_id: conversationId, contact_phone: cleanPhone }),
     });
     const dispatchBody = await res.text();
+    console.log("[CREATE-OS] dispatch-start response:", res.status, dispatchBody.slice(0, 300));
     if (!res.ok) {
       dispatchError = `dispatch-start ${res.status}: ${dispatchBody.slice(0, 300)}`;
       console.error("[DISPATCH] dispatch-start error:", dispatchError);
