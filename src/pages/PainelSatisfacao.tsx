@@ -23,12 +23,12 @@ function useSatisfactionData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('conversations')
-        .select('id, client_phone, nota_satisfacao, updated_at, state')
+        .select('id, contact_phone, nota_satisfacao, updated_at, state')
         .not('nota_satisfacao', 'is', null)
         .order('updated_at', { ascending: false });
 
       if (error) throw error;
-      return (data || []) as ConversationRating[];
+      return (data || []).map((d: any) => ({ ...d, client_phone: d.contact_phone })) as ConversationRating[];
     },
   });
 }
@@ -52,15 +52,15 @@ function usePrestadorRatings() {
       // Get all conversations with ratings
       const { data: conversations } = await supabase
         .from('conversations')
-        .select('client_phone, nota_satisfacao')
+        .select('contact_phone, nota_satisfacao')
         .not('nota_satisfacao', 'is', null);
 
       // Map phone -> nota
       const phoneToNota = new Map<string, number[]>();
       (conversations || []).forEach((c: any) => {
-        const arr = phoneToNota.get(c.client_phone) || [];
+        const arr = phoneToNota.get(c.contact_phone) || [];
         arr.push(c.nota_satisfacao);
-        phoneToNota.set(c.client_phone, arr);
+        phoneToNota.set(c.contact_phone, arr);
       });
 
       // Aggregate by prestador
