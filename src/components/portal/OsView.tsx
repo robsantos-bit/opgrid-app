@@ -335,8 +335,16 @@ export default function OsView({ atendimentoId }: OsViewProps) {
     };
   }, [fetchData]);
 
-  const currentStatus: OsStatus = (atendimento?.status || 'aceito').toLowerCase().replace(/ /g, '_') as OsStatus;
+  // Reverse-map DB status to portal status
+  const rawStatus = (atendimento?.status || 'aceito');
+  const DB_TO_PORTAL: Record<string, OsStatus> = {
+    'Concluído': 'finalizado',
+    'Em andamento': 'em_deslocamento',
+    'Cancelado': 'cancelado',
+  };
+  const currentStatus: OsStatus = DB_TO_PORTAL[rawStatus] || rawStatus.toLowerCase().replace(/ /g, '_') as OsStatus;
   const step = stepIndex(currentStatus);
+
 
   const updateStatus = async (newStatus: string) => {
     setActionLoading(true);
