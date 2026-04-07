@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
         console.log('[DISPATCH-OFFER-DETAIL] solicitacoes join null, fetching separately for', atData.solicitacao_id);
         const { data: solData } = await supabase
           .from('solicitacoes')
-          .select('id, cliente_nome, cliente_telefone, placa, tipo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at')
+          .select('id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at')
           .eq('id', atData.solicitacao_id)
           .maybeSingle();
         if (solData) solicitacao = solData;
@@ -62,7 +62,7 @@ Deno.serve(async (req: Request) => {
         console.log('[DISPATCH-OFFER-DETAIL] prestadores join null, fetching separately for', atData.prestador_id);
         const { data: prData } = await supabase
           .from('prestadores')
-          .select('id, nome, telefone, latitude, longitude, cidade, uf')
+          .select('id, nome, telefone, latitude, longitude, cidade, uf, endereco')
           .eq('id', atData.prestador_id)
           .maybeSingle();
         if (prData) prestador = prData;
