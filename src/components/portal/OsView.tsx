@@ -376,7 +376,49 @@ export default function OsView({ atendimentoId }: OsViewProps) {
         return;
       }
 
-      // Keep portal-side status in lowercase for UI stepper
+      // When finalizing: sync solicitacao + conversation + send satisfaction survey
+      if (newStatus === 'finalizado') {
+        // Update solicitacao status
+        const solId = atendimento?.solicitacao_id || solicitacao?.id;
+        if (solId) {
+          await supabase.from('solicitacoes').update({ status: 'finalizado' }).eq('id', solId);
+        }
+
+        // Update conversation state to 'finalizado' so the bot sends the survey
+        const clientPhone = solicitacao?.cliente_telefone?.replace(/\D/g, '');
+        if (clientPhone) {
+          const { data: convData } = await supabase
+            .from('conversations')
+            .select('id, data')
+            .eq('contact_phone', clientPhone)
+            .order('updated_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (convData) {
+            const mergedData = { ...(convData.data || {}), _notified_finalizado: false };
+            await supabase.from('conversations').update({
+              state: 'finalizado',
+              data: mergedData,
+              updated_at: new Date().toISOString(),
+            }).eq('id', convData.id);
+
+            // Proactively send satisfaction survey via whatsapp-send
+            try {
+              await supabase.functions.invoke('whatsapp-send', {
+                body: {
+                  to: clientPhone,
+                  message: `✅ *Serviço finalizado!*\n\nSeu veículo foi entregue com sucesso.\n\nObrigado por usar a *OpGrid*! 🙏\n\nComo foi sua experiência? Responda de 1 a 5:\n1️⃣ Péssima | 2️⃣ Ruim | 3️⃣ Regular | 4️⃣ Boa | 5️⃣ Excelente`,
+                  conversation_id: convData.id,
+                },
+              });
+            } catch (e) {
+              console.warn('Failed to send satisfaction survey:', e);
+            }
+          }
+        }
+      }
+
       setAtendimento((prev: any) => ({ ...prev, status: newStatus }));
       toast.success(`Status atualizado: ${newStatus}`);
     } catch {
