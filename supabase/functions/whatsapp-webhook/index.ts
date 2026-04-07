@@ -179,51 +179,77 @@ function normalizeWapi(body: any): NormalizedMessage[] {
   const messages: NormalizedMessage[] = [];
   const event = body.event || "";
 
-  if (body.isGroup) return messages;
-  if (body.fromMe === true) return messages;
+  // Bloqueio de segurança para grupos e mensagens do próprio número
+  if (body.isGroup || body.fromMe === true) return messages;
 
-  if (event === "onMessageStatus" || event === "message_status") {
+  // 1. TRATAMENTO DE STATUS (Read, Delivered, Sent)
+  if (event === "onMessageStatus" || event === "message_status" || body.status || body.ack) {
     const data = body.data || body;
     const key = data.key || data;
-    const status = data.status || data.ack;
     const statusMap: Record<number, string> = { 0: "pending", 1: "sent", 2: "delivered", 3: "read" };
-    const statusStr = typeof status === "number" ? (statusMap[status] || "unknown") : String(status);
+    const statusVal = data.status || data.ack;
+    
     messages.push({
-      id: key.id || data.id || "", from: (key.remoteJid || "").replace(/@s\.whatsapp\.net|@c\.us/g, ""),
-      contactName: "", type: "status", content: "", raw: body, isStatus: true, statusValue: statusStr,
+      id: key.id || data.id || "",
+      from: (key.remoteJid || data.from || "").replace(/@s\.whatsapp\.net|@c\.us/g, ""),
+      contactName: "",
+      type: "status",
+      content: "",
+      raw: body,
+      isStatus: true,
+      statusValue: typeof statusVal === "number" ? (statusMap[statusVal] || "unknown") : String(statusVal),
     });
     return messages;
   }
 
+  // 2. TRATAMENTO DE MENSAGENS RECEBIDAS (Text, Location, Media)
   if (event === "onMessage" || event === "messages.upsert" || event === "webhookReceived" || !event) {
     const data = body.data || body;
     const key = data.key || {};
-    if (key.fromMe === true || data.fromMe === true) return messages;
+    
+    // Ignora se for mensagem enviada por nós
+    if (key.fromMe === true || data.fromMe === true || body.fromMe === true) return messages;
 
+    // Identificação do Telefone
     let phone = "";
     if (body.sender?.id) phone = body.sender.id.replace(/@s\.whatsapp\.net|@c\.us/g, "");
-    else phone = (key.remoteJid || data.from || "").replace(/@s\.whatsapp\.net|@c\.us/g, "");
+    else phone = (key.remoteJid || data.from || body.from || "").replace(/@s\.whatsapp\.net|@c\.us/g, "");
+    
     if (!phone) return messages;
 
     const msgId = key.id || data.id || body.messageId || `wapi_${Date.now()}`;
     const pushName = data.pushName || data.senderName || body.sender?.name || "";
-    const msg = body.msgContent || data.message || {};
+    
+    // O segredo está aqui: A W-API pode enviar em 'msgContent', 'message' ou direto no 'data'
+    const msg = body.msgContent || data.message || data || {};
+    
     let type = "text";
     let content = "";
     let interactive: any = undefined;
     let location: any = undefined;
 
-    if (msg.conversation) content = msg.conversation;
-    else if (msg.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
-    else if (msg.imageMessage) { type = "image"; content = msg.imageMessage.caption || "[Imagem]"; }
-    else if (msg.videoMessage) { type = "video"; content = msg.videoMessage.caption || "[Vídeo]"; }
-    else if (msg.audioMessage) { type = "audio"; content = "[Áudio]"; }
-    else if (msg.documentMessage) { type = "document"; content = msg.documentMessage.fileName || "[Documento]"; }
-    else if (msg.locationMessage) {
+    // 📍 CAPTURA DE LOCALIZAÇÃO (Padrão W-API)
+    // A documentação mostra que pode vir como locationMessage ou dentro de um objeto location
+    const locObj = msg.locationMessage || msg.location || data.location;
+    
+    if (locObj) {
       type = "location";
-      location = { latitude: msg.locationMessage.degreesLatitude, longitude: msg.locationMessage.degreesLongitude, address: msg.locationMessage.address };
-      content = `${location.latitude},${location.longitude}`;
-    }
+      const lat = locObj.degreesLatitude || locObj.latitude || locObj.lat;
+      const lng = locObj.degreesLongitude || locObj.longitude || locObj.lng;
+      
+      if (lat && lng) {
+        location = { 
+          latitude: Number(lat), 
+          longitude: Number(lng), 
+          address: locObj.address || locObj.name || "" 
+        };
+        content = `${lat},${lng}`;
+        console.log(`📍 [W-API] Localização detectada: ${content}`);
+      }
+    } 
+    // 📝 CAPTURA DE TEXTO E OUTROS
+    else if (msg.conversation) content = msg.conversation;
+    else if (msg.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
     else if (msg.buttonsResponseMessage) {
       type = "interactive";
       interactive = { button_reply: { id: msg.buttonsResponseMessage.selectedButtonId, title: msg.buttonsResponseMessage.selectedDisplayText } };
@@ -234,11 +260,24 @@ function normalizeWapi(body: any): NormalizedMessage[] {
       interactive = { list_reply: { title: msg.listResponseMessage.title } };
       content = msg.listResponseMessage.title || "";
     }
-    else if (data.body || data.text) content = data.body || data.text || "";
+    else {
+      content = data.body || data.text || body.text || "";
+    }
 
     if (!content && type === "text") return messages;
-    messages.push({ id: msgId, from: phone, contactName: pushName || phone, type, content, raw: body, interactive, location });
+
+    messages.push({ 
+      id: msgId, 
+      from: phone, 
+      contactName: pushName || phone, 
+      type, 
+      content, 
+      raw: body, 
+      interactive, 
+      location 
+    });
   }
+  
   return messages;
 }
 
