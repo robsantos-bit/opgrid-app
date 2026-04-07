@@ -523,7 +523,9 @@ export default function OsView({ atendimentoId }: OsViewProps) {
       <div className="px-4 pt-5">
         <SectionHeader title="Veículo" />
         <Card className="overflow-hidden">
-          <IconRow icon={Car} label="Veículo" value={solicitacao?.tipo_veiculo || solicitacao?.placa || 'N/D'} />
+          <IconRow icon={Car} label="Tipo de Veículo" value={solicitacao?.tipo_veiculo || 'N/D'} />
+          <IconRow icon={Car} label="Marca" value={solicitacao?.marca_veiculo || 'N/D'} />
+          <IconRow icon={Car} label="Modelo" value={solicitacao?.modelo_veiculo || 'N/D'} />
           <IconRow icon={FileText} label="Placa" value={solicitacao?.placa || 'N/D'} />
         </Card>
       </div>
