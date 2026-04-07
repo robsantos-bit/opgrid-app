@@ -20,11 +20,11 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
-    // 1. Busca TODAS as configurações de preço do banco de uma vez
+    // 1. Busca Configurações de Preço
     const { data: configs } = await supabase.from('pricing_config').select('chave, valor, porcentagem').eq('ativo', true);
     const getPrice = (key: string) => configs?.find((c: any) => c.chave === key);
 
-    // 2. Chamada para Google Routes API (Advanced para Pedágios)
+    // 2. Chamada Google Routes (Pedágios)
     const googleKey = Deno.env.get("GOOGLE_MAPS_API_KEY");
     if (!googleKey) {
       return new Response(JSON.stringify({ erro: "GOOGLE_MAPS_API_KEY não configurada." }), {
@@ -57,12 +57,18 @@ Deno.serve(async (req: Request) => {
       throw new Error("Não foi possível calcular a rota entre os endereços.");
     }
 
-    // 3. Extração de Dados da Rota
+    // 3. Extração de Dados e Fatores
     const distanciaKm = (route.distanceMeters / 1000) * (getPrice('fator_correcao_rodoviario')?.valor || 1.3);
-    const pedagiosEstima = Number(route.travelAdvisory?.tollInfo?.estimatedPrice?.[0]?.units || 0);
+    const pedagioBaseGoogle = Number(route.travelAdvisory?.tollInfo?.estimatedPrice?.[0]?.units || 0);
     const fatorIdaVolta = getPrice('fator_ida_volta')?.valor || 2;
 
-    // 4. Lógica de Precificação Baseada no Tipo de Veículo
+    // 🚛 LÓGICA DE EIXOS
+    let multiplicadorEixo = 1;
+    if (tipo_veiculo === 'pesado') {
+      multiplicadorEixo = getPrice('multiplicador_eixo_caminhao')?.valor || 2;
+    }
+
+    // 4. Lógica de Precificação por Tipo
     let custoKmBase = getPrice('custo_km_padrao')?.valor || 4.5;
     let adicionalTipo = 0;
 
@@ -74,26 +80,29 @@ Deno.serve(async (req: Request) => {
       adicionalTipo = getPrice('adicional_pesado')?.valor || 600;
     }
 
-    // 5. Cálculos de Adicionais
+    // 5. Cálculos Finais
     const valorBase = getPrice('taxa_base')?.valor || 180;
     const custoDistancia = distanciaKm * custoKmBase * fatorIdaVolta;
     const adicionalPatins = possui_patins ? (getPrice('adicional_patins')?.valor || 300) : 0;
-    const custoPedagios = pedagiosEstima * fatorIdaVolta;
 
-    // Subtotal antes do adicional noturno
+    // 💰 CÁLCULO DO PEDÁGIO: (Google * Eixos) * IdaVolta
+    const repassePedagioAtivo = (getPrice('repasse_pedagio_ativo')?.valor || 1) === 1;
+    const custoPedagios = repassePedagioAtivo ? (pedagioBaseGoogle * multiplicadorEixo) * fatorIdaVolta : 0;
+
     let total = valorBase + custoDistancia + adicionalTipo + adicionalPatins + custoPedagios;
 
-    // Aplicação de Adicional Noturno (Porcentagem)
+    // Adicional Noturno
+    let valorNoturno = 0;
     if (eh_noturno) {
       const percNoturno = getPrice('adicional_noturno')?.porcentagem || 0.40;
-      total = total * (1 + percNoturno);
+      valorNoturno = total * percNoturno;
+      total += valorNoturno;
     }
 
-    // Garantia de Valor Mínimo
+    // Valor Mínimo
     const valorMinimo = getPrice('valor_minimo')?.valor || 180;
     if (total < valorMinimo) total = valorMinimo;
 
-    // 6. Retorno Detalhado
     return new Response(JSON.stringify({
       sucesso: true,
       orcamento: {
@@ -104,7 +113,7 @@ Deno.serve(async (req: Request) => {
         custo_km: custoDistancia,
         adicional_tipo: adicionalTipo,
         adicional_patins: adicionalPatins,
-        adicional_noturno: eh_noturno ? total - (valorBase + custoDistancia + adicionalTipo + adicionalPatins + custoPedagios) : 0,
+        adicional_noturno: valorNoturno,
         previsao_chegada: route.duration
       }
     }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
