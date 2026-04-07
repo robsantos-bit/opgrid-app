@@ -12,6 +12,7 @@ import PainelAlertas from "@/pages/PainelAlertas";
 import PainelSLA from "@/pages/PainelSLA";
 import PainelSaudeOperacao from "@/pages/PainelSaudeOperacao";
 import PainelMapaExecutivo from "@/pages/PainelMapaExecutivo";
+import PainelSatisfacao from "@/pages/PainelSatisfacao";
 import OperacaoSolicitacoes from "@/pages/OperacaoSolicitacoes";
 import OperacaoAtendimentos from "@/pages/OperacaoAtendimentos";
 import Despacho from "@/pages/Despacho";
@@ -79,6 +80,7 @@ function AppRoutes() {
       <Route path="/app/painel/sla" element={<ProtectedRoute><PainelSLA /></ProtectedRoute>} />
       <Route path="/app/painel/saude" element={<ProtectedRoute><PainelSaudeOperacao /></ProtectedRoute>} />
       <Route path="/app/painel/mapa-executivo" element={<ProtectedRoute><PainelMapaExecutivo /></ProtectedRoute>} />
+      <Route path="/app/painel/satisfacao" element={<ProtectedRoute><PainelSatisfacao /></ProtectedRoute>} />
 
       {/* Operação */}
       <Route path="/app/operacao/solicitacoes" element={<ProtectedRoute requiredModules={['operacao', 'solicitacoes']}><OperacaoSolicitacoes /></ProtectedRoute>} />
