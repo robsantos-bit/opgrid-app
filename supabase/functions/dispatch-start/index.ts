@@ -515,7 +515,7 @@ function buildProviderMessage(
 ): string {
   const dist =
     prest.distanceKm !== null
-      ? `📏 Distância até cliente: ~${prest.distanceKm.toFixed(1)} km\n`
+      ? `📏 Distância total do trajeto: ~${prest.distanceKm.toFixed(1)} km\n`
       : "";
   return (
     `🚛 *Nova Oferta de Guincho!*\n\n` +
