@@ -700,7 +700,7 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
       const resumo =
         `📋 *Resumo do Orçamento*\n\n` +
-        `👤 ${data.nome}\n🚗 ${data.modelo || "Veículo"} — Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
+        `👤 ${data.nome}\n🚗 ${data.tipo_veiculo || "Veículo"} — ${data.marca_veiculo || ""} ${data.modelo_veiculo || ""}\n🔖 Placa: ${data.placa}\n🔧 ${data.motivo}\n` +
         `📍 ${data.origem}\n🏁 ${data.destino}\n` +
         `📏 Distância: ~${Number(quoteResult.distancia_km).toFixed(1)} km\n` +
         (data.observacoes ? `📝 Obs: ${data.observacoes}\n` : "") +
