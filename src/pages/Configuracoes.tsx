@@ -366,7 +366,10 @@ function PricingConfigPanel() {
     } else {
       setRows(data || []);
       const vals: Record<string, string> = {};
-      (data || []).forEach((r: PricingRow) => { vals[r.chave] = String(r.valor); });
+      (data || []).forEach((r: PricingRow) => {
+        const isPercent = r.unidade === '%';
+        vals[r.chave] = isPercent ? String(r.porcentagem ?? 0) : String(r.valor);
+      });
       setEditValues(vals);
     }
     setLoading(false);
@@ -377,10 +380,13 @@ function PricingConfigPanel() {
     let hasError = false;
     for (const row of rows) {
       const newVal = parseFloat(editValues[row.chave] || '0');
-      if (newVal !== row.valor) {
+      const isPercent = row.unidade === '%';
+      const currentVal = isPercent ? (row.porcentagem ?? 0) : row.valor;
+      if (newVal !== currentVal) {
+        const updatePayload = isPercent ? { porcentagem: newVal } : { valor: newVal };
         const { error } = await supabase
           .from('pricing_config')
-          .update({ valor: newVal })
+          .update(updatePayload)
           .eq('id', row.id);
         if (error) {
           toast.error(`Erro ao salvar ${row.chave}: ${error.message}`);
