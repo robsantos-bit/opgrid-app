@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
     const { data: items, error: fetchErr } = await supabase
       .from('message_queue')
       .select('*')
-      .in('status', ['pending', 'scheduled'])
+      .eq('status', 'pending')
       .lte('scheduled_at', now)
       .order('scheduled_at', { ascending: true })
       .limit(50);
