@@ -83,7 +83,8 @@ Deno.serve(async (req: Request) => {
         .order("updated_at", { ascending: false }).limit(5);
 
       if (allConvs?.length) {
-        const terminalStates = ["cancelado", "finalizado", "concluido"];
+        const terminalStates = ["cancelado", "concluido"];
+        // "finalizado" is NOT terminal — client still needs to rate
         conversa = allConvs.find((c: any) => !terminalStates.includes(c.state)) || null;
       }
 
