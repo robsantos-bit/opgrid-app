@@ -28,8 +28,8 @@ Deno.serve(async (req: Request) => {
       const { data: atData, error: atErr } = await supabase
         .from('atendimentos')
         .select(`
-          id, status, notas, created_at, finalizado_at, protocolo, solicitacao_id, prestador_id,
-          solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at ),
+          id, status, notas, created_at, finalizado_at, solicitacao_id, prestador_id,
+          solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at ),
           prestadores ( id, nome, telefone, latitude, longitude, cidade, uf, endereco )
         `)
         .eq('id', atendimento_id)
@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
         console.log('[DISPATCH-OFFER-DETAIL] solicitacoes join null, fetching separately for', atData.solicitacao_id);
         const { data: solData } = await supabase
           .from('solicitacoes')
-          .select('id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at')
+          .select('id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at')
           .eq('id', atData.solicitacao_id)
           .maybeSingle();
         if (solData) solicitacao = solData;
@@ -73,7 +73,7 @@ Deno.serve(async (req: Request) => {
         console.log('[DISPATCH-OFFER-DETAIL] Trying dispatch_offers fallback for atendimento', atendimento_id);
         const { data: offerData } = await supabase
           .from('dispatch_offers')
-          .select('solicitacao_id, prestador_id, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, observacoes, created_at)')
+          .select('solicitacao_id, prestador_id, solicitacoes(id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at)')
           .eq('atendimento_id', atendimento_id)
           .order('created_at', { ascending: false })
           .limit(1)
@@ -123,7 +123,7 @@ Deno.serve(async (req: Request) => {
         rejection_reason,
         created_at,
         prestadores ( id, nome, telefone, endereco, latitude, longitude, cidade, uf ),
-        solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, valor, status, prioridade, protocolo, motivo, observacoes, created_at )
+        solicitacoes ( id, cliente_nome, cliente_telefone, placa, tipo_veiculo, marca_veiculo, modelo_veiculo, origem_endereco, destino_endereco, origem_latitude, origem_longitude, destino_latitude, destino_longitude, valor, status, prioridade, protocolo, motivo, created_at )
       `)
       .eq('id', offer_id)
       .maybeSingle();
