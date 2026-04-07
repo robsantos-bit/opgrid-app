@@ -11,7 +11,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   Truck, MapPin, Clock, Phone, MessageCircle, CheckCircle2, Loader2,
-  Navigation, Camera, FileText, Upload, Car, User, AlertTriangle, XCircle
+  Navigation, Camera, FileText, Upload, Car, User, AlertTriangle, XCircle, DollarSign
 } from 'lucide-react';
 import ChecklistExecucao from '@/components/ChecklistExecucao';
 
