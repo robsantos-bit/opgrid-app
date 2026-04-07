@@ -27,6 +27,8 @@ const STATUS_DB_MAP: Record<string, string> = {
 
 // ====== Types ======
 type OsStatus = 'aceito' | 'em_deslocamento' | 'no_local' | 'em_transito' | 'finalizado' | 'cancelado';
+type FormaPagamento = 'Dinheiro' | 'Cartão de Crédito' | 'Cartão de Débito' | 'PIX' | 'Para faturar';
+const FORMAS_PAGAMENTO: FormaPagamento[] = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'PIX', 'Para faturar'];
 
 const STATUS_STEPS: { key: OsStatus; label: string }[] = [
   { key: 'aceito', label: 'Aceito' },
@@ -190,6 +192,8 @@ export default function OsView({ atendimentoId }: OsViewProps) {
   const [placaInput, setPlacaInput] = useState('');
   const [placaValidada, setPlacaValidada] = useState(false);
   const [placaError, setPlacaError] = useState('');
+  const [formaPagamento, setFormaPagamento] = useState<FormaPagamento | ''>('');
+  const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
   const [prestadorPartida, setPrestadorPartida] = useState<string>('Obtendo localização...');
   const [prestadorGeoLat, setPrestadorGeoLat] = useState<number | undefined>(undefined);
   const [prestadorGeoLng, setPrestadorGeoLng] = useState<number | undefined>(undefined);
