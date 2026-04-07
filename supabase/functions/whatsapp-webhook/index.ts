@@ -406,18 +406,37 @@ async function processState(supabase: any, conversa: any, nm: NormalizedMessage,
 
     // ─────────── 4. ORIGEM ───────────
     case "aguardando_origem": {
+      console.log(`[ORIGEM] nm.type="${nm.type}", nm.location=${JSON.stringify(nm.location)}, text="${text.slice(0,60)}"`);
       if (nm.type === "location" && nm.location) {
-        data.coordenadas = { lat: nm.location.latitude, lng: nm.location.longitude };
+        const lat = Number(nm.location.latitude);
+        const lng = Number(nm.location.longitude);
+        data.coordenadas = { lat, lng };
         let endereco = nm.location.address || "";
         if (!endereco || endereco.length < 5) {
-          endereco = await reverseGeocode(nm.location.latitude, nm.location.longitude);
+          endereco = await reverseGeocode(lat, lng);
         }
-        data.origem = endereco || `${nm.location.latitude}, ${nm.location.longitude}`;
+        data.origem = endereco || `${lat}, ${lng}`;
+        console.log(`[ORIGEM] GPS capturado: lat=${lat}, lng=${lng}, endereco="${data.origem}"`);
       } else {
-        if (text.length < 5) { responseText = "📍 Por favor, envie um endereço mais detalhado ou compartilhe sua localização:"; break; }
-        data.origem = text;
-        const coords = await forwardGeocode(text);
-        if (coords) data.coordenadas = coords;
+        // Tenta extrair coordenadas do texto (caso W-API envie como texto "lat,lng")
+        const coordMatch = text.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+        if (coordMatch) {
+          const lat = Number(coordMatch[1]);
+          const lng = Number(coordMatch[2]);
+          if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+            data.coordenadas = { lat, lng };
+            const endereco = await reverseGeocode(lat, lng);
+            data.origem = endereco || `${lat}, ${lng}`;
+            console.log(`[ORIGEM] Coordenadas extraídas do texto: lat=${lat}, lng=${lng}`);
+          } else {
+            data.origem = text;
+          }
+        } else {
+          if (text.length < 5) { responseText = "📍 Por favor, envie um endereço mais detalhado ou compartilhe sua localização:"; break; }
+          data.origem = text;
+          const coords = await forwardGeocode(text);
+          if (coords) data.coordenadas = coords;
+        }
       }
       nextState = "aguardando_motivo";
       responseText =
