@@ -228,10 +228,30 @@ function normalizeWapi(body: any): NormalizedMessage[] {
     let interactive: any = undefined;
     let location: any = undefined;
 
-    // 📍 CAPTURA DE LOCALIZAÇÃO (Padrão W-API)
-    // A documentação mostra que pode vir como locationMessage ou dentro de um objeto location
-    const locObj = msg.locationMessage || msg.location || data.location;
-    
+    // 📍 CAPTURA DE LOCALIZAÇÃO — busca multinível em todos os caminhos possíveis da W-API
+    // Pode vir como locationMessage, liveLocationMessage, location, ou aninhado em vários níveis
+    function findLocationObj(...sources: any[]): any {
+      for (const src of sources) {
+        if (!src || typeof src !== "object") continue;
+        // Checa caminhos diretos
+        for (const key of ["locationMessage", "liveLocationMessage", "location"]) {
+          if (src[key] && typeof src[key] === "object") {
+            const obj = src[key];
+            const lat = obj.degreesLatitude || obj.latitude || obj.lat;
+            const lng = obj.degreesLongitude || obj.longitude || obj.lng;
+            if (lat && lng) return obj;
+          }
+        }
+        // Checa se o próprio objeto tem lat/lng
+        const lat = src.degreesLatitude || src.latitude || src.lat;
+        const lng = src.degreesLongitude || src.longitude || src.lng;
+        if (lat && lng) return src;
+      }
+      return null;
+    }
+
+    const locObj = findLocationObj(msg, data, body, data.message, body.msgContent);
+
     if (locObj) {
       type = "location";
       const lat = locObj.degreesLatitude || locObj.latitude || locObj.lat;
@@ -241,12 +261,12 @@ function normalizeWapi(body: any): NormalizedMessage[] {
         location = { 
           latitude: Number(lat), 
           longitude: Number(lng), 
-          address: locObj.address || locObj.name || "" 
+          address: locObj.address || locObj.name || locObj.comment || "" 
         };
-        content = `${lat},${lng}`;
-        console.log(`📍 [W-API] Localização detectada: ${content}`);
+        content = `${Number(lat)},${Number(lng)}`;
+        console.log(`📍 [W-API] Localização detectada: lat=${lat}, lng=${lng}, address="${location.address}"`);
       }
-    } 
+    }
     // 📝 CAPTURA DE TEXTO E OUTROS
     else if (msg.conversation) content = msg.conversation;
     else if (msg.extendedTextMessage?.text) content = msg.extendedTextMessage.text;
