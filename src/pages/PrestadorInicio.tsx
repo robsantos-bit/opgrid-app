@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabaseData';
 import { usePrestadorOnline } from '@/hooks/usePrestadorOnline';
+import { BellRing, TestTube } from 'lucide-react';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell } from 'lucide-react';
 
