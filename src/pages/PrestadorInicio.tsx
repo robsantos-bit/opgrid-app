@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabaseData';
 import { usePrestadorOnline } from '@/hooks/usePrestadorOnline';
-import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff } from 'lucide-react';
+import { usePushSubscription } from '@/hooks/usePushSubscription';
+import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell } from 'lucide-react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
   const { data: prestador, isLoading } = usePrestadorById(user?.provider_id);
   const { data: atendimentos = [] } = useAtendimentosByPrestador(user?.provider_id);
   const { isOnline, goOnline, goOffline } = usePrestadorOnline(user?.provider_id ?? undefined);
+  const { isSubscribed, isSupported, subscribe } = usePushSubscription(user?.provider_id ?? undefined);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -38,12 +40,25 @@ export default function PrestadorInicio() {
       </div>
 
       {isOnline && (
-        <div className="bg-success/10 border border-success/30 rounded-lg px-4 py-2.5 flex items-center gap-2">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
-          </span>
-          <span className="text-sm font-medium text-success">Online — Aguardando novas ofertas...</span>
+        <div className="space-y-2">
+          <div className="bg-success/10 border border-success/30 rounded-lg px-4 py-2.5 flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+            </span>
+            <span className="text-sm font-medium text-success">Online — Aguardando novas ofertas...</span>
+          </div>
+          {isSupported && !isSubscribed && (
+            <Button variant="outline" size="sm" className="w-full gap-2" onClick={subscribe}>
+              <Bell className="h-4 w-4" />
+              Ativar notificações push (tela bloqueada)
+            </Button>
+          )}
+          {isSubscribed && (
+            <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+              <Bell className="h-3 w-3" /> Push ativo — alertas mesmo com tela bloqueada
+            </div>
+          )}
         </div>
       )}
 
