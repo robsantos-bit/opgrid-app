@@ -55,12 +55,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('user_id', supaUser.id)
         .single();
 
+      const resolvedRole = (roleData?.role as UserRole) || (profile?.provider_id ? 'prestador' : 'operador');
+
       if (profile) {
         return {
           id: profile.id,
           nome: profile.nome || supaUser.email?.split('@')[0] || 'Usuário',
           email: profile.email || supaUser.email || '',
-          role: (roleData?.role as UserRole) || 'operador',
+          role: resolvedRole,
           provider_id: profile.provider_id,
         };
       }
