@@ -5,13 +5,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabaseData';
 import { usePrestadorOnline } from '@/hooks/usePrestadorOnline';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
-import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell } from 'lucide-react';
+import { toast } from 'sonner';
+import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell, BellRing, TestTube } from 'lucide-react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
   const { data: prestador, isLoading } = usePrestadorById(user?.provider_id);
   const { data: atendimentos = [] } = useAtendimentosByPrestador(user?.provider_id);
-  const { isOnline, goOnline, goOffline } = usePrestadorOnline(user?.provider_id ?? undefined);
+  const { isOnline, goOnline, goOffline, playSirene } = usePrestadorOnline(user?.provider_id ?? undefined);
   const { isSubscribed, isSupported, subscribe } = usePushSubscription(user?.provider_id ?? undefined);
 
   if (isLoading) {
@@ -59,6 +60,51 @@ export default function PrestadorInicio() {
               <Bell className="h-3 w-3" /> Push ativo — alertas mesmo com tela bloqueada
             </div>
           )}
+          {/* Test buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={() => {
+                playSirene();
+                toast.success('🚨 TESTE: NOVO SERVIÇO NA REGIÃO!', {
+                  description: 'Simulação de oferta recebida via realtime.',
+                  duration: 10000,
+                });
+              }}
+            >
+              <TestTube className="h-4 w-4" />
+              Testar Sirene
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={async () => {
+                if (!('serviceWorker' in navigator)) {
+                  toast.error('Service Worker não suportado neste navegador.');
+                  return;
+                }
+                const reg = await navigator.serviceWorker.ready;
+                const options: NotificationOptions & Record<string, unknown> = {
+                  body: 'Teste local — Veículo leve - Av. Paulista, 1000',
+                  icon: '/icon-192x192.png',
+                  badge: '/icon-192x192.png',
+                  tag: 'oferta-teste',
+                  renotify: true,
+                  requireInteraction: true,
+                  data: { url: '/prestador' },
+                };
+                (options as any).vibrate = [500, 200, 500, 200, 500];
+                await reg.showNotification('🚨 NOVO SERVIÇO NA REGIÃO!', options as NotificationOptions);
+                toast.info('Notificação push local enviada!');
+              }}
+            >
+              <BellRing className="h-4 w-4" />
+              Testar Push
+            </Button>
+          </div>
         </div>
       )}
 
