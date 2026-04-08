@@ -6,7 +6,7 @@ import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabas
 import { usePrestadorOnline } from '@/hooks/usePrestadorOnline';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { toast } from 'sonner';
-import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell, BellRing, TestTube } from 'lucide-react';
+import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell, BellRing, TestTube, MapPin } from 'lucide-react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
@@ -134,6 +134,19 @@ export default function PrestadorInicio() {
                     <span className="text-muted-foreground">{label}</span>
                     <span className="font-medium capitalize">{val || '—'}</span>
                   </div>
+                ))}
+              </div>
+              {/* Endereço fixo (base de retorno) */}
+              {(prestador.endereco || prestador.cidade || prestador.uf) && (
+                <div className="flex items-start gap-2 bg-muted/50 rounded-lg p-3 mt-2">
+                  <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                  <div className="text-[13px]">
+                    <p className="font-semibold text-foreground">Endereço Base (Retorno)</p>
+                    <p className="text-muted-foreground">
+                      {[prestador.endereco, prestador.cidade, prestador.uf].filter(Boolean).join(' — ')}
+                    </p>
+                  </div>
+                </div>
                 ))}
               </div>
             </CardContent>
