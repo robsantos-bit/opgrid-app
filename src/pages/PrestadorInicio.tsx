@@ -21,10 +21,31 @@ export default function PrestadorInicio() {
 
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl mx-auto p-4">
-      <div>
-        <h1>Portal do Prestador</h1>
-        <p className="text-[13px] text-muted-foreground mt-0.5">Bem-vindo, {user?.nome}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1>Portal do Prestador</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Bem-vindo, {user?.nome}</p>
+        </div>
+        <Button
+          size="lg"
+          variant={isOnline ? 'destructive' : 'default'}
+          onClick={isOnline ? goOffline : goOnline}
+          className={`gap-2 font-bold ${isOnline ? 'animate-pulse' : ''}`}
+        >
+          {isOnline ? <WifiOff className="h-5 w-5" /> : <Wifi className="h-5 w-5" />}
+          {isOnline ? 'Ficar Offline' : 'Ficar Online'}
+        </Button>
       </div>
+
+      {isOnline && (
+        <div className="bg-success/10 border border-success/30 rounded-lg px-4 py-2.5 flex items-center gap-2">
+          <span className="relative flex h-3 w-3">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+          </span>
+          <span className="text-sm font-medium text-success">Online — Aguardando novas ofertas...</span>
+        </div>
+      )}
 
       {prestador ? (
         <>
