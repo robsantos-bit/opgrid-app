@@ -76,7 +76,7 @@ export function PrestadorRouteGuard({ children }: { children: ReactNode }) {
   if (isLoading) return <Loading />;
   if (!isAuthenticated) return <Navigate to="/conecte-se" replace state={{ from: location }} />;
   if (canAccessApp && !canAccessPrestador) return <Navigate to="/app/painel" replace />;
-  if (!canAccessPrestador || !providerId) return <Navigate to="/conecte-se" replace />;
+  if (!canAccessPrestador) return <Navigate to="/conecte-se" replace />;
 
   return <>{children}</>;
 }
@@ -131,7 +131,7 @@ export function PrestadorRoute({ children }: { children: ReactNode }) {
   if (isLoading) return <Loading />;
   if (!isAuthenticated) return <Navigate to="/conecte-se" replace state={{ from: location }} />;
   if (canAccessApp && !canAccessPrestador) return <Navigate to="/app/painel" replace />;
-  if (!canAccessPrestador || !providerId) return <Navigate to="/conecte-se" replace />;
+  if (!canAccessPrestador) return <Navigate to="/conecte-se" replace />;
 
   return <>{children}</>;
 }
