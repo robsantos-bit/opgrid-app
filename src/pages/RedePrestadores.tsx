@@ -92,6 +92,9 @@ export default function RedePrestadores() {
       cnpj: selected.cnpj || '',
       telefone: selected.telefone || '',
       email: selected.email || '',
+      endereco: selected.endereco || '',
+      cidade: selected.cidade || '',
+      uf: selected.uf || '',
       tipo: selected.tipo || 'guincho',
       status: selected.status || 'ativo',
     });
@@ -218,7 +221,7 @@ export default function RedePrestadores() {
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); openDetail(p); }}>
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); setEditForm({ nome: p.nome || '', cnpj: p.cnpj || '', telefone: p.telefone || '', email: p.email || '', tipo: p.tipo || 'guincho', status: p.status || 'ativo' }); setEditMode(true); }}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); setEditForm({ nome: p.nome || '', cnpj: p.cnpj || '', telefone: p.telefone || '', email: p.email || '', endereco: p.endereco || '', cidade: p.cidade || '', uf: p.uf || '', tipo: p.tipo || 'guincho', status: p.status || 'ativo' }); setEditMode(true); }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -274,6 +277,20 @@ export default function RedePrestadores() {
                     <Label className="text-xs font-semibold">Email</Label>
                     <Input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Endereço (Retorno do Prestador)</Label>
+                    <Input placeholder="Rua, número, bairro" value={editForm.endereco} onChange={e => setEditForm(p => ({ ...p, endereco: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">Cidade</Label>
+                      <Input placeholder="Cidade" value={editForm.cidade} onChange={e => setEditForm(p => ({ ...p, cidade: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs font-semibold">UF</Label>
+                      <Input placeholder="SP" maxLength={2} value={editForm.uf} onChange={e => setEditForm(p => ({ ...p, uf: e.target.value.toUpperCase() }))} />
+                    </div>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label className="text-xs font-semibold">Tipo</Label>
@@ -304,6 +321,9 @@ export default function RedePrestadores() {
                     ['CNPJ', selected.cnpj],
                     ['Telefone', selected.telefone],
                     ['Email', selected.email],
+                    ['Endereço (Retorno)', selected.endereco],
+                    ['Cidade', selected.cidade],
+                    ['UF', selected.uf],
                     ['Tipo', selected.tipo],
                     ['Status', selected.status],
                     ['Cadastrado em', selected.created_at ? new Date(selected.created_at).toLocaleString('pt-BR') : '—'],
