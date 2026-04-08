@@ -12,7 +12,7 @@ export default function PrestadorInicio() {
   const { user } = useAuth();
   const { data: prestador, isLoading } = usePrestadorById(user?.provider_id);
   const { data: atendimentos = [] } = useAtendimentosByPrestador(user?.provider_id);
-  const { isOnline, goOnline, goOffline } = usePrestadorOnline(user?.provider_id ?? undefined);
+  const { isOnline, goOnline, goOffline, playSirene } = usePrestadorOnline(user?.provider_id ?? undefined);
   const { isSubscribed, isSupported, subscribe } = usePushSubscription(user?.provider_id ?? undefined);
 
   if (isLoading) {

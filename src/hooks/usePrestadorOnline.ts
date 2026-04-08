@@ -121,5 +121,5 @@ export function usePrestadorOnline(prestadorId: string | undefined) {
     };
   }, [stopSirene]);
 
-  return { isOnline, goOnline, goOffline };
+  return { isOnline, goOnline, goOffline, playSirene };
 }
