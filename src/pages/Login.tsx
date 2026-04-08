@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ import {
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -25,10 +27,24 @@ export default function Login() {
     setLoading(true);
     const { error } = await login(email, password);
     if (error) {
-      toast.error('Credenciais inválidas: ' + error);
+      if (error.toLowerCase().includes('email_not_confirmed') || error.toLowerCase().includes('email not confirmed')) {
+        toast.error('E-mail não confirmado. Verifique sua caixa de entrada.');
+      } else {
+        toast.error('Credenciais inválidas: ' + error);
+      }
     } else {
       toast.success('Bem-vindo ao OpGrid');
-      navigate('/app');
+      // Invalidate cached auth-profile so route guards fetch fresh role data
+      await queryClient.invalidateQueries({ queryKey: ['auth-profile'] });
+      // Wait briefly for the auth state to propagate
+      await new Promise(r => setTimeout(r, 500));
+      // Re-fetch to determine correct redirect
+      const authData = await queryClient.fetchQuery<any>({
+        queryKey: ['auth-profile'],
+        staleTime: 0,
+      });
+      const isPrestador = authData?.roles?.includes('prestador') && !authData?.canAccessApp;
+      navigate(isPrestador ? '/prestador/inicio' : '/app/painel');
     }
     setLoading(false);
   };
