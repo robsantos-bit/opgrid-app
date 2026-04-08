@@ -37,9 +37,9 @@ export default function Login() {
       // Invalidate cached auth-profile so route guards fetch fresh role data
       await queryClient.invalidateQueries({ queryKey: ['auth-profile'] });
       // Wait briefly for the auth state to propagate
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 500));
       // Re-fetch to determine correct redirect
-      const { data: authData } = await queryClient.fetchQuery({
+      const authData = await queryClient.fetchQuery<any>({
         queryKey: ['auth-profile'],
         staleTime: 0,
       });
