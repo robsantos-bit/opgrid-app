@@ -4,13 +4,15 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabaseData';
 import { usePrestadorOnline } from '@/hooks/usePrestadorOnline';
-import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff } from 'lucide-react';
+import { usePushSubscription } from '@/hooks/usePushSubscription';
+import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell } from 'lucide-react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
   const { data: prestador, isLoading } = usePrestadorById(user?.provider_id);
   const { data: atendimentos = [] } = useAtendimentosByPrestador(user?.provider_id);
   const { isOnline, goOnline, goOffline } = usePrestadorOnline(user?.provider_id ?? undefined);
+  const { isSubscribed, isSupported, subscribe } = usePushSubscription(user?.provider_id ?? undefined);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
