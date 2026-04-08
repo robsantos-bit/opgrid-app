@@ -87,16 +87,17 @@ export default function PrestadorInicio() {
                   return;
                 }
                 const reg = await navigator.serviceWorker.ready;
-                await reg.showNotification('🚨 NOVO SERVIÇO NA REGIÃO!', {
+                const options: NotificationOptions & Record<string, unknown> = {
                   body: 'Teste local — Veículo leve - Av. Paulista, 1000',
                   icon: '/icon-192x192.png',
                   badge: '/icon-192x192.png',
-                  vibrate: [500, 200, 500, 200, 500],
                   tag: 'oferta-teste',
                   renotify: true,
                   requireInteraction: true,
                   data: { url: '/prestador' },
-                });
+                };
+                (options as any).vibrate = [500, 200, 500, 200, 500];
+                await reg.showNotification('🚨 NOVO SERVIÇO NA REGIÃO!', options as NotificationOptions);
                 toast.info('Notificação push local enviada!');
               }}
             >
