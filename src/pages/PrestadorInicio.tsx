@@ -147,8 +147,7 @@ export default function PrestadorInicio() {
                     </p>
                   </div>
                 </div>
-                ))}
-              </div>
+              )}
             </CardContent>
           </Card>
 
