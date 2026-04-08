@@ -17,6 +17,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: string | null }>;
+  requestPasswordReset: (email: string) => Promise<{ error: string | null }>;
+  resendConfirmation: (email: string) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   isAdmin: boolean;
   hasAccess: (modules: string[]) => boolean;
@@ -111,6 +113,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error: null };
   };
 
+  const requestPasswordReset = async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    if (error) return { error: error.message };
+    return { error: null };
+  };
+
+  const resendConfirmation = async (email: string) => {
+    const { error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/conecte-se`,
+      },
+    });
+
+    if (error) return { error: error.message };
+    return { error: null };
+  };
+
   const logout = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -129,6 +153,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       loading,
       login,
+      requestPasswordReset,
+      resendConfirmation,
       logout,
       isAdmin: user?.role === 'admin',
       hasAccess,
