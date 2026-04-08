@@ -40,12 +40,25 @@ export default function PrestadorInicio() {
       </div>
 
       {isOnline && (
-        <div className="bg-success/10 border border-success/30 rounded-lg px-4 py-2.5 flex items-center gap-2">
-          <span className="relative flex h-3 w-3">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
-          </span>
-          <span className="text-sm font-medium text-success">Online — Aguardando novas ofertas...</span>
+        <div className="space-y-2">
+          <div className="bg-success/10 border border-success/30 rounded-lg px-4 py-2.5 flex items-center gap-2">
+            <span className="relative flex h-3 w-3">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3 w-3 bg-success"></span>
+            </span>
+            <span className="text-sm font-medium text-success">Online — Aguardando novas ofertas...</span>
+          </div>
+          {isSupported && !isSubscribed && (
+            <Button variant="outline" size="sm" className="w-full gap-2" onClick={subscribe}>
+              <Bell className="h-4 w-4" />
+              Ativar notificações push (tela bloqueada)
+            </Button>
+          )}
+          {isSubscribed && (
+            <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+              <Bell className="h-3 w-3" /> Push ativo — alertas mesmo com tela bloqueada
+            </div>
+          )}
         </div>
       )}
 
