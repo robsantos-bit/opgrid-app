@@ -13,26 +13,31 @@ import {
 } from 'lucide-react';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, requestPasswordReset, resendConfirmation } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [helperLoading, setHelperLoading] = useState<'reset' | 'resend' | null>(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) { toast.error('Informe e-mail e senha'); return; }
     setLoading(true);
+    setNeedsConfirmation(false);
     const { error } = await login(email, password);
     if (error) {
       if (error.toLowerCase().includes('email_not_confirmed') || error.toLowerCase().includes('email not confirmed')) {
+        setNeedsConfirmation(true);
         toast.error('E-mail não confirmado. Verifique sua caixa de entrada.');
       } else {
         toast.error('Credenciais inválidas: ' + error);
       }
     } else {
+      setNeedsConfirmation(false);
       toast.success('Bem-vindo ao OpGrid');
       // Invalidate cached auth-profile so route guards fetch fresh role data
       await queryClient.invalidateQueries({ queryKey: ['auth-profile'] });
@@ -47,6 +52,45 @@ export default function Login() {
       navigate(isPrestador ? '/prestador/inicio' : '/app/painel');
     }
     setLoading(false);
+  };
+
+  const handlePasswordReset = async () => {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      toast.error('Informe seu e-mail para redefinir a senha.');
+      return;
+    }
+
+    setHelperLoading('reset');
+    const { error } = await requestPasswordReset(normalizedEmail);
+
+    if (error) {
+      toast.error('Não foi possível enviar o link de redefinição: ' + error);
+    } else {
+      toast.success('Link de redefinição enviado para seu e-mail.');
+    }
+
+    setHelperLoading(null);
+  };
+
+  const handleResendConfirmation = async () => {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      toast.error('Informe seu e-mail para reenviar a confirmação.');
+      return;
+    }
+
+    setHelperLoading('resend');
+    const { error } = await resendConfirmation(normalizedEmail);
+
+    if (error) {
+      toast.error('Não foi possível reenviar a confirmação: ' + error);
+    } else {
+      setNeedsConfirmation(true);
+      toast.success('E-mail de confirmação reenviado com sucesso.');
+    }
+
+    setHelperLoading(null);
   };
 
   const differentials = [
@@ -162,6 +206,40 @@ export default function Login() {
                 <Button type="submit" className="w-full h-9 font-semibold text-[13px]" disabled={loading}>
                   {loading ? <span className="flex items-center gap-2"><span className="w-3.5 h-3.5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />Entrando...</span> : <>Entrar na central <ArrowRight className="h-3.5 w-3.5 ml-1" /></>}
                 </Button>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-3 text-[11px] font-medium">
+                    <button
+                      type="button"
+                      onClick={handlePasswordReset}
+                      disabled={helperLoading !== null}
+                      className="text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {helperLoading === 'reset' ? 'Enviando link...' : 'Esqueci minha senha'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleResendConfirmation}
+                      disabled={helperLoading !== null}
+                      className="text-primary transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {helperLoading === 'resend' ? 'Reenviando...' : 'Reenviar confirmação'}
+                    </button>
+                  </div>
+
+                  <p className="text-[11px] text-muted-foreground">
+                    Não recebeu o e-mail? Digite seu e-mail acima para reenviar a confirmação ou recuperar a senha.
+                  </p>
+
+                  {needsConfirmation && (
+                    <div className="rounded-lg border border-warning/20 bg-warning/5 px-3 py-2">
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">
+                        O acesso do prestador depende da confirmação do e-mail. Se a mensagem não chegou, use o link de reenviar confirmação.
+                      </p>
+                    </div>
+                  )}
+                </div>
               </form>
             </CardContent>
           </Card>

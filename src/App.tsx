@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { ProtectedRoute, PrestadorRoute, PublicOnlyRoute } from "@/components/RouteGuards";
 import Login from "@/pages/Login";
+import ResetPassword from "@/pages/ResetPassword";
 import PainelDashboard from "@/pages/PainelDashboard";
 import PainelIndicadores from "@/pages/PainelIndicadores";
 import PainelAlertas from "@/pages/PainelAlertas";
@@ -71,6 +72,7 @@ function AppRoutes() {
       {/* Auth */}
       <Route path="/conecte-se" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path="/login" element={<Navigate to="/conecte-se" replace />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
 
       {/* Backoffice — /app/* */}
       <Route path="/app" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
