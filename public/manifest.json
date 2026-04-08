@@ -1,0 +1,15 @@
+{
+  "name": "OpGrid Prestador",
+  "short_name": "OpGrid",
+  "start_url": "/prestador",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ff0000",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}
