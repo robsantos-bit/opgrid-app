@@ -60,6 +60,50 @@ export default function PrestadorInicio() {
               <Bell className="h-3 w-3" /> Push ativo — alertas mesmo com tela bloqueada
             </div>
           )}
+          {/* Test buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={() => {
+                playSirene();
+                toast.success('🚨 TESTE: NOVO SERVIÇO NA REGIÃO!', {
+                  description: 'Simulação de oferta recebida via realtime.',
+                  duration: 10000,
+                });
+              }}
+            >
+              <TestTube className="h-4 w-4" />
+              Testar Sirene
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-2"
+              onClick={async () => {
+                if (!('serviceWorker' in navigator)) {
+                  toast.error('Service Worker não suportado neste navegador.');
+                  return;
+                }
+                const reg = await navigator.serviceWorker.ready;
+                await reg.showNotification('🚨 NOVO SERVIÇO NA REGIÃO!', {
+                  body: 'Teste local — Veículo leve - Av. Paulista, 1000',
+                  icon: '/icon-192x192.png',
+                  badge: '/icon-192x192.png',
+                  vibrate: [500, 200, 500, 200, 500],
+                  tag: 'oferta-teste',
+                  renotify: true,
+                  requireInteraction: true,
+                  data: { url: '/prestador' },
+                });
+                toast.info('Notificação push local enviada!');
+              }}
+            >
+              <BellRing className="h-4 w-4" />
+              Testar Push
+            </Button>
+          </div>
         </div>
       )}
 
