@@ -10,6 +10,7 @@ export default function PrestadorInicio() {
   const { user } = useAuth();
   const { data: prestador, isLoading } = usePrestadorById(user?.provider_id);
   const { data: atendimentos = [] } = useAtendimentosByPrestador(user?.provider_id);
+  const { isOnline, goOnline, goOffline } = usePrestadorOnline(user?.provider_id ?? undefined);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
