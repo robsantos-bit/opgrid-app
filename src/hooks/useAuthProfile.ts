@@ -93,6 +93,7 @@ async function getCurrentAuthData(): Promise<AuthContextData> {
 
   // Even if profile/roles fail, user IS authenticated
   const roles = ((roleRows || []).map((row) => row.role) as AppRole[]) || [];
+  const inferredPrestador = roles.length === 0 && Boolean(profile?.provider_id);
 
   console.log('[AuthProfile] Loaded:', { roles, profile: !!profile });
 
@@ -105,12 +106,12 @@ async function getCurrentAuthData(): Promise<AuthContextData> {
   ];
 
   const primaryRole =
-    priorityOrder.find((role) => roles.includes(role)) ?? null;
+    priorityOrder.find((role) => roles.includes(role)) ?? (inferredPrestador ? 'prestador' : null);
 
   const isAdmin = roles.includes('admin');
   const isOperador = roles.includes('operador');
   const isFinanceiro = roles.includes('financeiro');
-  const isPrestador = roles.includes('prestador');
+  const isPrestador = roles.includes('prestador') || inferredPrestador;
   const isComercial = roles.includes('comercial');
 
   return {
@@ -127,7 +128,7 @@ async function getCurrentAuthData(): Promise<AuthContextData> {
     isPrestador,
     isComercial,
     canAccessApp: isAdmin || isOperador || isFinanceiro || isComercial,
-    canAccessPrestador: isPrestador,
+    canAccessPrestador: isPrestador && Boolean(profile?.provider_id),
   };
 }
 

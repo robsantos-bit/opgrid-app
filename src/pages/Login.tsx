@@ -48,7 +48,7 @@ export default function Login() {
         queryKey: ['auth-profile'],
         staleTime: 0,
       });
-      const isPrestador = authData?.roles?.includes('prestador') && !authData?.canAccessApp;
+      const isPrestador = Boolean(authData?.canAccessPrestador) || (Boolean(authData?.providerId) && !authData?.canAccessApp);
       navigate(isPrestador ? '/prestador/inicio' : '/app/painel');
     }
     setLoading(false);
