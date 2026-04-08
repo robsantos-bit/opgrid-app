@@ -1,8 +1,10 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabaseData';
-import { Loader2, User, Building2, Headphones, Activity, CheckCircle2 } from 'lucide-react';
+import { usePrestadorOnline } from '@/hooks/usePrestadorOnline';
+import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff } from 'lucide-react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
