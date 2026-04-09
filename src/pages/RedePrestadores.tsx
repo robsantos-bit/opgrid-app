@@ -432,6 +432,27 @@ export default function RedePrestadores() {
                 </div>
               </div>
             </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Serviços Prestados <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3">
+                {TIPOS_SERVICO.map(t => (
+                  <label key={t} className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox
+                      checked={cadastroForm.servicos.includes(t)}
+                      onCheckedChange={(checked) => {
+                        setCadastroForm(p => ({
+                          ...p,
+                          servicos: checked
+                            ? [...p.servicos, t]
+                            : p.servicos.filter(s => s !== t),
+                        }));
+                      }}
+                    />
+                    {t}
+                  </label>
+                ))}
+              </div>
+            </div>
             <div className="rounded-lg border border-border bg-accent/50 p-3 flex gap-3 items-start">
               <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
               <div className="text-xs text-muted-foreground">
