@@ -84,6 +84,7 @@ const menuGroups = [
       { title: 'Configurações', url: '/app/admin/configuracoes', icon: Settings, modules: ['admin', 'configuracoes'] },
       { title: 'Mercado Pago', url: '/app/admin/mercadopago', icon: CreditCard, modules: ['admin', 'configuracoes'] },
       { title: 'Positron GPS', url: '/app/admin/positron', icon: Satellite, modules: ['admin', 'configuracoes'] },
+      { title: 'Assinatura', url: '/app/admin/assinatura', icon: BadgeDollarSign, modules: ['admin', 'configuracoes'] },
       { title: 'Suporte', url: '/app/admin/suporte', icon: HelpCircle, modules: ['admin', 'configuracoes'] },
     ],
   },
