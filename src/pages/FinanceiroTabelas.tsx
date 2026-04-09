@@ -23,6 +23,21 @@ interface TabelaItem {
   observacao: string;
 }
 
+const REGIOES_DISPONIVEIS = [
+  'São Paulo Capital',
+  'Grande São Paulo (ABCD)',
+  'Interior SP - Campinas',
+  'Interior SP - Ribeirão Preto',
+  'Interior SP - Sorocaba',
+  'Interior SP - São José dos Campos',
+  'Litoral SP',
+  'Rio de Janeiro Capital',
+  'Grande Rio (Niterói/Baixada)',
+  'Belo Horizonte',
+  'Curitiba',
+  'Nacional (Padrão)',
+];
+
 interface TabelaComercial {
   id: string;
   nome: string;
@@ -30,6 +45,8 @@ interface TabelaComercial {
   vigenciaFim: string;
   status: 'Vigente' | 'Expirada' | 'Rascunho' | 'Em revisão';
   prestadorVinculado: string;
+  regioes: string[];
+  prioridade: number;
   itens: TabelaItem[];
 }
 
