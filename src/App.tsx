@@ -40,6 +40,7 @@ import AdminAutomacoes from "@/pages/AdminAutomacoes";
 import AdminFilaMensagens from "@/pages/AdminFilaMensagens";
 import AdminLogsMensagens from "@/pages/AdminLogsMensagens";
 import AdminChecklists from "@/pages/AdminChecklists";
+import ChecklistHistorico from "@/pages/ChecklistHistorico";
 import AdminAuditoria from "@/pages/AdminAuditoria";
 import AdminPermissoes from "@/pages/AdminPermissoes";
 import Configuracoes from "@/pages/Configuracoes";
@@ -92,6 +93,7 @@ function AppRoutes() {
       <Route path="/app/operacao/teste-acionamento" element={<ProtectedRoute requiredModules={['operacao']}><OperacaoTesteAcionamento /></ProtectedRoute>} />
       <Route path="/app/operacao/acompanhamento" element={<ProtectedRoute requiredModules={['operacao']}><AcompanhamentoCliente /></ProtectedRoute>} />
       <Route path="/app/operacao/checklists" element={<ProtectedRoute requiredModules={['operacao']}><OperacaoChecklists /></ProtectedRoute>} />
+      <Route path="/app/operacao/checklists/historico" element={<ProtectedRoute requiredModules={['operacao']}><ChecklistHistorico /></ProtectedRoute>} />
 
       {/* Rede */}
       <Route path="/app/rede/prestadores" element={<ProtectedRoute requiredModules={['rede', 'prestadores']}><RedePrestadores /></ProtectedRoute>} />
@@ -118,6 +120,7 @@ function AppRoutes() {
       <Route path="/app/admin/fila-mensagens" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminFilaMensagens /></ProtectedRoute>} />
       <Route path="/app/admin/logs-mensagens" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminLogsMensagens /></ProtectedRoute>} />
       <Route path="/app/admin/checklists" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminChecklists /></ProtectedRoute>} />
+      <Route path="/app/admin/checklists/historico" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><ChecklistHistorico /></ProtectedRoute>} />
       <Route path="/app/admin/auditoria" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminAuditoria /></ProtectedRoute>} />
       <Route path="/app/admin/permissoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminPermissoes /></ProtectedRoute>} />
       <Route path="/app/admin/configuracoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><Configuracoes /></ProtectedRoute>} />
