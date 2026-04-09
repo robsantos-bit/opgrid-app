@@ -10,12 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { usePrestadores, useUpdatePrestador } from '@/hooks/useSupabaseData';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Search, X, Eye, Loader2, Users, MapPin, UserPlus, Building2, Phone, Mail, Truck, UsersRound, CheckCircle2, Info, Pencil, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 const STATUSES = ['ativo', 'inativo', 'bloqueado'];
-const TIPOS = ['guincho', 'plataforma', 'apoio'];
+const TIPOS_SERVICO = [
+  'Guincho Leve', 'Guincho Utilitário', 'Guincho Pesado', 'Guincho Extra-Pesado',
+  'Munk', 'Socorro Mecânico', 'Patins', 'Chaveiro',
+];
 
 export default function RedePrestadores() {
   const { data: prestadores = [], isLoading } = usePrestadores();
@@ -30,7 +34,7 @@ export default function RedePrestadores() {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [cadastroForm, setCadastroForm] = useState({
-    nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '',
+    nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '', servicos: [] as string[],
   });
   const [cadastroSaving, setCadastroSaving] = useState(false);
 
@@ -74,7 +78,7 @@ export default function RedePrestadores() {
     setTimeout(() => {
       setCadastroSaving(false);
       setShowCadastro(false);
-      setCadastroForm({ nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '' });
+      setCadastroForm({ nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '', servicos: [] });
       toast.success('Prestador cadastrado com sucesso! Senha enviada por email.');
     }, 1200);
   };
@@ -87,6 +91,7 @@ export default function RedePrestadores() {
 
   const startEdit = () => {
     if (!selected) return;
+    const parsedServicos = Array.isArray(selected.tipos_servico) ? selected.tipos_servico : (selected.tipo ? [selected.tipo] : []);
     setEditForm({
       nome: selected.nome || '',
       cnpj: selected.cnpj || '',
@@ -95,7 +100,7 @@ export default function RedePrestadores() {
       endereco: selected.endereco || '',
       cidade: selected.cidade || '',
       uf: selected.uf || '',
-      tipo: selected.tipo || 'guincho',
+      servicos: parsedServicos,
       status: selected.status || 'ativo',
     });
     setEditMode(true);
@@ -104,9 +109,15 @@ export default function RedePrestadores() {
   const handleSaveEdit = async () => {
     if (!selected) return;
     try {
-      await updateMut.mutateAsync({ id: selected.id, ...editForm });
+      const payload: any = { ...editForm };
+      // Map servicos to tipos_servico column
+      if (payload.servicos) {
+        payload.tipos_servico = payload.servicos;
+        delete payload.servicos;
+      }
+      await updateMut.mutateAsync({ id: selected.id, ...payload });
       toast.success('Prestador atualizado com sucesso.');
-      setSelected({ ...selected, ...editForm });
+      setSelected({ ...selected, ...payload });
       setEditMode(false);
     } catch (err: any) {
       toast.error('Erro ao atualizar: ' + err.message);
@@ -118,7 +129,8 @@ export default function RedePrestadores() {
       const s = search.toLowerCase();
       const matchSearch = !s || (p.nome || '').toLowerCase().includes(s) || (p.cnpj || '').includes(s);
       const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-      const matchTipo = filterTipo === 'all' || p.tipo === filterTipo;
+      const pServicos: string[] = Array.isArray(p.tipos_servico) ? p.tipos_servico : (p.tipo ? [p.tipo] : []);
+      const matchTipo = filterTipo === 'all' || pServicos.some((sv: string) => sv.toLowerCase().includes(filterTipo.toLowerCase()));
       return matchSearch && matchStatus && matchTipo;
     });
   }, [prestadores, search, filterStatus, filterTipo]);
@@ -141,13 +153,11 @@ export default function RedePrestadores() {
     }
   };
 
-  const tipoBadge = (tipo: string) => {
-    switch (tipo) {
-      case 'guincho': return 'default' as const;
-      case 'plataforma': return 'info' as const;
-      case 'apoio': return 'outline' as const;
-      default: return 'secondary' as const;
-    }
+  const getServicosDisplay = (p: any): string => {
+    const arr: string[] = Array.isArray(p.tipos_servico) ? p.tipos_servico : (p.tipo ? [p.tipo] : []);
+    if (arr.length === 0) return '—';
+    if (arr.length <= 2) return arr.join(', ');
+    return `${arr[0]} +${arr.length - 1}`;
   };
 
   const ativos = prestadores.filter((p: any) => p.status === 'ativo' || p.status === 'Ativo').length;
@@ -179,12 +189,10 @@ export default function RedePrestadores() {
           </SelectContent>
         </Select>
         <Select value={filterTipo} onValueChange={setFilterTipo}>
-          <SelectTrigger className="w-[130px] h-9 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectTrigger className="w-[170px] h-9 text-xs"><SelectValue placeholder="Serviço" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos tipos</SelectItem>
-            <SelectItem value="guincho">Guincho</SelectItem>
-            <SelectItem value="plataforma">Plataforma</SelectItem>
-            <SelectItem value="apoio">Apoio</SelectItem>
+            <SelectItem value="all">Todos serviços</SelectItem>
+            {TIPOS_SERVICO.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
         <Badge variant="outline" className="h-9 px-3 flex items-center text-[11px] font-medium">
@@ -213,7 +221,7 @@ export default function RedePrestadores() {
                 <TableCell className="font-medium text-[13px]">{p.nome || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{p.cnpj || '—'}</TableCell>
                 <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{p.telefone || '—'}</TableCell>
-                <TableCell><Badge variant={tipoBadge(p.tipo)} className="text-[10px] capitalize">{p.tipo || '—'}</Badge></TableCell>
+                <TableCell><Badge variant="outline" className="text-[10px]">{getServicosDisplay(p)}</Badge></TableCell>
                 <TableCell><Badge variant={statusBadge(p.status)} className="text-[10px] capitalize">{p.status || '—'}</Badge></TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
                 <TableCell className="text-right">
@@ -221,7 +229,7 @@ export default function RedePrestadores() {
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); openDetail(p); }}>
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); setEditForm({ nome: p.nome || '', cnpj: p.cnpj || '', telefone: p.telefone || '', email: p.email || '', endereco: p.endereco || '', cidade: p.cidade || '', uf: p.uf || '', tipo: p.tipo || 'guincho', status: p.status || 'ativo' }); setEditMode(true); }}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); const sv = Array.isArray(p.tipos_servico) ? p.tipos_servico : (p.tipo ? [p.tipo] : []); setEditForm({ nome: p.nome || '', cnpj: p.cnpj || '', telefone: p.telefone || '', email: p.email || '', endereco: p.endereco || '', cidade: p.cidade || '', uf: p.uf || '', servicos: sv, status: p.status || 'ativo' }); setEditMode(true); }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   </div>
@@ -252,9 +260,11 @@ export default function RedePrestadores() {
               <SheetHeader>
                 <SheetTitle>{editMode ? 'Editar Prestador' : selected.nome}</SheetTitle>
                 {!editMode && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Badge variant={statusBadge(selected.status)} className="capitalize">{selected.status}</Badge>
-                    <Badge variant={tipoBadge(selected.tipo)} className="capitalize">{selected.tipo}</Badge>
+                    {(Array.isArray(selected.tipos_servico) ? selected.tipos_servico : (selected.tipo ? [selected.tipo] : [])).map((s: string) => (
+                      <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
+                    ))}
                   </div>
                 )}
               </SheetHeader>
@@ -291,21 +301,33 @@ export default function RedePrestadores() {
                       <Input placeholder="SP" maxLength={2} value={editForm.uf} onChange={e => setEditForm(p => ({ ...p, uf: e.target.value.toUpperCase() }))} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Tipo</Label>
-                      <Select value={editForm.tipo} onValueChange={v => setEditForm(p => ({ ...p, tipo: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{TIPOS.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
-                      </Select>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Serviços Prestados</Label>
+                    <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3">
+                      {TIPOS_SERVICO.map(t => (
+                        <label key={t} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <Checkbox
+                            checked={(editForm.servicos || []).includes(t)}
+                            onCheckedChange={(checked) => {
+                              setEditForm(p => ({
+                                ...p,
+                                servicos: checked
+                                  ? [...(p.servicos || []), t]
+                                  : (p.servicos || []).filter((s: string) => s !== t),
+                              }));
+                            }}
+                          />
+                          {t}
+                        </label>
+                      ))}
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Status</Label>
-                      <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Status</Label>
+                    <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button variant="outline" className="flex-1" onClick={() => setEditMode(false)}>Cancelar</Button>
@@ -324,7 +346,7 @@ export default function RedePrestadores() {
                     ['Endereço (Retorno)', selected.endereco],
                     ['Cidade', selected.cidade],
                     ['UF', selected.uf],
-                    ['Tipo', selected.tipo],
+                    ['Serviços', getServicosDisplay(selected)],
                     ['Status', selected.status],
                     ['Cadastrado em', selected.created_at ? new Date(selected.created_at).toLocaleString('pt-BR') : '—'],
                   ].map(([label, val]) => (
@@ -408,6 +430,27 @@ export default function RedePrestadores() {
                   <Input placeholder="Ex: 10" className="pl-10" type="number" value={cadastroForm.qtdMotoristas}
                     onChange={e => setCadastroForm(p => ({ ...p, qtdMotoristas: e.target.value }))} />
                 </div>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold">Serviços Prestados <span className="text-destructive">*</span></Label>
+              <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3">
+                {TIPOS_SERVICO.map(t => (
+                  <label key={t} className="flex items-center gap-2 text-xs cursor-pointer">
+                    <Checkbox
+                      checked={cadastroForm.servicos.includes(t)}
+                      onCheckedChange={(checked) => {
+                        setCadastroForm(p => ({
+                          ...p,
+                          servicos: checked
+                            ? [...p.servicos, t]
+                            : p.servicos.filter(s => s !== t),
+                        }));
+                      }}
+                    />
+                    {t}
+                  </label>
+                ))}
               </div>
             </div>
             <div className="rounded-lg border border-border bg-accent/50 p-3 flex gap-3 items-start">
