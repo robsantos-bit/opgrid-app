@@ -68,6 +68,9 @@ export default function Clientes() {
         updateForm('endereco', [result.logradouro, result.bairro].filter(Boolean).join(', '));
         updateForm('cidade', result.localidade || '');
         updateForm('uf', result.uf || '');
+        toast.success('Endereço preenchido automaticamente!');
+      } else {
+        toast.error('CEP não encontrado. Verifique e tente novamente.');
       }
     }
   };
