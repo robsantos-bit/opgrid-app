@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AppLayout } from '@/components/AppLayout';
+import AppLayout from '@/components/AppLayout';
 import { MapPin, Key, Shield, Satellite, Radio, CheckCircle2, AlertTriangle, Loader2, Save, ExternalLink, RefreshCw, Truck } from 'lucide-react';
 import { toast } from 'sonner';
 

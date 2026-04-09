@@ -56,6 +56,9 @@ import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
 import AdminConversas from "@/pages/AdminConversas";
 import QueroSerPrestador from "@/pages/QueroSerPrestador";
 import AdminLeadsPrestadores from "@/pages/AdminLeadsPrestadores";
+import Clientes from "@/pages/Clientes";
+import ConfigMercadoPago from "@/pages/ConfigMercadoPago";
+import ConfigPositron from "@/pages/ConfigPositron";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 

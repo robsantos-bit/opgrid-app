@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { AppLayout } from '@/components/AppLayout';
+import AppLayout from '@/components/AppLayout';
 import { Plus, Search, Edit2, Trash2, Phone, Mail, MapPin, Building2, User, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCepLookup } from '@/hooks/useCepLookup';
