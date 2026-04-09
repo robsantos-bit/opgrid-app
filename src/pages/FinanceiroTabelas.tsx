@@ -421,9 +421,10 @@ export default function FinanceiroTabelas() {
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent">
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Nome</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Regiões</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Vigência</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Prestador</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center">Prio</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center">Itens</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right">Ações</TableHead>
           </TableRow></TableHeader>
