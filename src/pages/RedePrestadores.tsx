@@ -189,12 +189,10 @@ export default function RedePrestadores() {
           </SelectContent>
         </Select>
         <Select value={filterTipo} onValueChange={setFilterTipo}>
-          <SelectTrigger className="w-[130px] h-9 text-xs"><SelectValue placeholder="Tipo" /></SelectTrigger>
+          <SelectTrigger className="w-[170px] h-9 text-xs"><SelectValue placeholder="Serviço" /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Todos tipos</SelectItem>
-            <SelectItem value="guincho">Guincho</SelectItem>
-            <SelectItem value="plataforma">Plataforma</SelectItem>
-            <SelectItem value="apoio">Apoio</SelectItem>
+            <SelectItem value="all">Todos serviços</SelectItem>
+            {TIPOS_SERVICO.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
         <Badge variant="outline" className="h-9 px-3 flex items-center text-[11px] font-medium">
