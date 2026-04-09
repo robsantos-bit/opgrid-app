@@ -129,7 +129,8 @@ export default function RedePrestadores() {
       const s = search.toLowerCase();
       const matchSearch = !s || (p.nome || '').toLowerCase().includes(s) || (p.cnpj || '').includes(s);
       const matchStatus = filterStatus === 'all' || p.status === filterStatus;
-      const matchTipo = filterTipo === 'all' || p.tipo === filterTipo;
+      const pServicos: string[] = Array.isArray(p.tipos_servico) ? p.tipos_servico : (p.tipo ? [p.tipo] : []);
+      const matchTipo = filterTipo === 'all' || pServicos.some((sv: string) => sv.toLowerCase().includes(filterTipo.toLowerCase()));
       return matchSearch && matchStatus && matchTipo;
     });
   }, [prestadores, search, filterStatus, filterTipo]);
