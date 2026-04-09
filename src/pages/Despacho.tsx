@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAtendimentos, useSolicitacoes } from '@/hooks/useSupabaseData';
 import { useAllDispatchOffers } from '@/hooks/useWhatsAppData';
-import { Loader2, Radar, Clock, CheckCircle2, AlertTriangle, Eye, ArrowRight, Truck } from 'lucide-react';
+import { Loader2, Radar, Clock, CheckCircle2, AlertTriangle, Eye, ArrowRight, Truck, Plus, Users, Volume2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import NovoAcionamentoDialog from '@/components/NovoAcionamentoDialog';
+import { useQueryClient } from '@tanstack/react-query';
 
 type QueueStatus = 'Aguardando' | 'Ofertas enviadas' | 'Aceito' | 'Sem prestador';
 
