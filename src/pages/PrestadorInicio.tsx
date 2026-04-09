@@ -15,6 +15,7 @@ export default function PrestadorInicio() {
   const { data: atendimentos = [] } = useAtendimentosByPrestador(user?.provider_id);
   const { isOnline, goOnline, goOffline, playSirene } = usePrestadorOnline(user?.provider_id ?? undefined);
   const { isSubscribed, isSupported, subscribe } = usePushSubscription(user?.provider_id ?? undefined);
+  const { canInstall, isInstalled, install } = usePwaInstall();
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
