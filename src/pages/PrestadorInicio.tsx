@@ -5,8 +5,9 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePrestadorById, useAtendimentosByPrestador } from '@/hooks/useSupabaseData';
 import { usePrestadorOnline } from '@/hooks/usePrestadorOnline';
 import { usePushSubscription } from '@/hooks/usePushSubscription';
+import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { toast } from 'sonner';
-import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell, BellRing, TestTube, MapPin } from 'lucide-react';
+import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell, BellRing, TestTube, MapPin, Smartphone } from 'lucide-react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
