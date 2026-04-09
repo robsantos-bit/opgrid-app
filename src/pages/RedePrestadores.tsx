@@ -301,21 +301,33 @@ export default function RedePrestadores() {
                       <Input placeholder="SP" maxLength={2} value={editForm.uf} onChange={e => setEditForm(p => ({ ...p, uf: e.target.value.toUpperCase() }))} />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Tipo</Label>
-                      <Select value={editForm.tipo} onValueChange={v => setEditForm(p => ({ ...p, tipo: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{TIPOS.map(t => <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>)}</SelectContent>
-                      </Select>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Serviços Prestados</Label>
+                    <div className="grid grid-cols-2 gap-2 rounded-md border border-border p-3">
+                      {TIPOS_SERVICO.map(t => (
+                        <label key={t} className="flex items-center gap-2 text-xs cursor-pointer">
+                          <Checkbox
+                            checked={(editForm.servicos || []).includes(t)}
+                            onCheckedChange={(checked) => {
+                              setEditForm(p => ({
+                                ...p,
+                                servicos: checked
+                                  ? [...(p.servicos || []), t]
+                                  : (p.servicos || []).filter((s: string) => s !== t),
+                              }));
+                            }}
+                          />
+                          {t}
+                        </label>
+                      ))}
                     </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-xs font-semibold">Status</Label>
-                      <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold">Status</Label>
+                    <Select value={editForm.status} onValueChange={v => setEditForm(p => ({ ...p, status: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>{STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}</SelectContent>
+                    </Select>
                   </div>
                   <div className="flex gap-2 pt-2">
                     <Button variant="outline" className="flex-1" onClick={() => setEditMode(false)}>Cancelar</Button>
