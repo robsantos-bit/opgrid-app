@@ -89,12 +89,26 @@ export default function Despacho() {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  const handleSirenToggle = (v: boolean) => {
+    setSirenEnabled(v);
+    localStorage.setItem('opgrid-siren-muted', v ? 'false' : 'true');
+  };
+
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
         <div className="page-header-text">
-          <h1>Central de Despacho</h1>
-          <p>Fila operacional em tempo real das solicitações que precisam de prestador.</p>
+          <h1>Painel de Acionamentos</h1>
+          <p>Gerencie acionamentos de serviço em tempo real</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+            <Switch checked={sirenEnabled} onCheckedChange={handleSirenToggle} />
+          </div>
+          <Button onClick={() => setNovoAcionamentoOpen(true)} className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" />Novo Acionamento
+          </Button>
         </div>
       </div>
 
