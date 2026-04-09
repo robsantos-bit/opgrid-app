@@ -198,7 +198,7 @@ export default function Clientes() {
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
           <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold">{clientes.length}</p><p className="text-xs text-muted-foreground">Total</p></CardContent></Card>
-          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-green-600">{clientes.filter(c => c.status === 'Ativo').length}</p><p className="text-xs text-muted-foreground">Ativos</p></CardContent></Card>
+          <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{clientes.filter(c => c.status === 'Ativo').length}</p><p className="text-xs text-muted-foreground">Ativos</p></CardContent></Card>
           <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-muted-foreground">{clientes.filter(c => c.status === 'Inativo').length}</p><p className="text-xs text-muted-foreground">Inativos</p></CardContent></Card>
         </div>
 

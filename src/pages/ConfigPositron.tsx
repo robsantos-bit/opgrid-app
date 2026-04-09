@@ -78,7 +78,7 @@ export default function ConfigPositron() {
         {connected && (
           <div className="grid grid-cols-3 gap-3 max-w-4xl">
             <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{veiculosSync}</p><p className="text-xs text-muted-foreground">Veículos Rastreados</p></CardContent></Card>
-            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-green-600">{Math.floor(veiculosSync * 0.75)}</p><p className="text-xs text-muted-foreground">Online Agora</p></CardContent></Card>
+            <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-primary">{Math.floor(veiculosSync * 0.75)}</p><p className="text-xs text-muted-foreground">Online Agora</p></CardContent></Card>
             <Card><CardContent className="p-3 text-center"><p className="text-2xl font-bold text-muted-foreground">{Math.floor(veiculosSync * 0.25)}</p><p className="text-xs text-muted-foreground">Offline</p></CardContent></Card>
           </div>
         )}
