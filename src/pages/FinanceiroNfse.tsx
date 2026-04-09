@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -339,10 +340,39 @@ function EmissaoManualTab() {
       return;
     }
     setEmitindo(true);
-    await new Promise(r => setTimeout(r, 2000));
-    setEmitindo(false);
-    toast.success('NFS-e emitida com sucesso! Número: 000006');
-    setTomadorNome(''); setTomadorDoc(''); setTomadorEmail(''); setValor(''); setProtocolo('');
+    try {
+      const { data, error } = await supabase.functions.invoke('nfse-emit', {
+        body: {
+          prestador: {
+            cnpj: '', // Será preenchido das configurações salvas
+            inscricao_municipal: '',
+            razao_social: '',
+            codigo_municipio: '3554102', // Taubaté
+            regime_tributario: 'simples',
+          },
+          tomador: {
+            cpf_cnpj: tomadorDoc,
+            razao_social: tomadorNome,
+            email: tomadorEmail || undefined,
+          },
+          servico: {
+            codigo_servico: '14.01',
+            discriminacao: descricao,
+            valor: parseFloat(valor),
+            aliquota_iss: 5,
+          },
+          atendimento_id: protocolo || undefined,
+          ambiente: 'homologacao',
+        },
+      });
+      if (error) throw error;
+      toast.success(`NFS-e emitida! ${data?.data?.numero_nfse ? 'Nº ' + data.data.numero_nfse : 'Protocolo: ' + (data?.data?.protocolo || 'processando')}`);
+      setTomadorNome(''); setTomadorDoc(''); setTomadorEmail(''); setValor(''); setProtocolo('');
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao emitir NFS-e');
+    } finally {
+      setEmitindo(false);
+    }
   };
 
   return (
