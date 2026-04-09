@@ -297,6 +297,22 @@ export default function FinanceiroTabelas() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5 min-w-[80px]">
+              <Label className="text-xs font-medium">Prioridade</Label>
+              <Input type="number" min="0" max="100" value={editForm.prioridade} onChange={e => setEditForm(p => ({ ...p, prioridade: parseInt(e.target.value) || 0 }))} className="w-20" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <Label className="text-xs font-medium flex items-center gap-1.5 mb-2"><MapPin className="h-3 w-3" />Regiões de aplicação</Label>
+            <div className="flex flex-wrap gap-2">
+              {REGIOES_DISPONIVEIS.map(r => (
+                <label key={r} className="flex items-center gap-1.5 text-xs cursor-pointer bg-muted/50 rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors">
+                  <Checkbox checked={editForm.regioes.includes(r)} onCheckedChange={() => setEditForm(p => ({ ...p, regioes: toggleRegiao(p.regioes, r) }))} className="h-3.5 w-3.5" />
+                  {r}
+                </label>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1.5">Tabelas com maior prioridade substituem as de menor prioridade na mesma região. "Nacional (Padrão)" funciona como fallback.</p>
           </div>
         </CardContent></Card>
 
