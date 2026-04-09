@@ -262,6 +262,12 @@ export default function Despacho() {
           )}
         </SheetContent>
       </Sheet>
+
+      <NovoAcionamentoDialog
+        open={novoAcionamentoOpen}
+        onOpenChange={setNovoAcionamentoOpen}
+        onCreated={() => queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })}
+      />
     </div>
   );
 }
