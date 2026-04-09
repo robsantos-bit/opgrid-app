@@ -260,9 +260,11 @@ export default function RedePrestadores() {
               <SheetHeader>
                 <SheetTitle>{editMode ? 'Editar Prestador' : selected.nome}</SheetTitle>
                 {!editMode && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-wrap">
                     <Badge variant={statusBadge(selected.status)} className="capitalize">{selected.status}</Badge>
-                    <Badge variant={tipoBadge(selected.tipo)} className="capitalize">{selected.tipo}</Badge>
+                    {(Array.isArray(selected.tipos_servico) ? selected.tipos_servico : (selected.tipo ? [selected.tipo] : [])).map((s: string) => (
+                      <Badge key={s} variant="outline" className="text-[10px]">{s}</Badge>
+                    ))}
                   </div>
                 )}
               </SheetHeader>
