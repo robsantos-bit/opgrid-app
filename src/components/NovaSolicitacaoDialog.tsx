@@ -63,6 +63,8 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
         const endField = field === 'origemCep' ? 'origemEndereco' : 'destinoEndereco';
         set(endField, addr);
         toast.success('Endereço preenchido automaticamente!');
+      } else {
+        toast.error('CEP não encontrado. Verifique e tente novamente.');
       }
     }
   };
@@ -70,10 +72,15 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
   const handlePlacaChange = (value: string) => {
     const upper = value.toUpperCase();
     set('veiculoPlaca', upper);
-    const result = lookupPlaca(upper);
-    if (result) {
-      set('veiculoModelo', result.modelo);
-      toast.success(`Veículo encontrado: ${result.modelo}`);
+    const clean = upper.replace(/[-\s]/g, '');
+    if (clean.length >= 7) {
+      const result = lookupPlaca(upper);
+      if (result) {
+        set('veiculoModelo', `${result.marca} ${result.modelo}`);
+        toast.success(`Veículo encontrado: ${result.marca} ${result.modelo} - ${result.cor}`);
+      } else {
+        toast.info('Placa não encontrada na base. Preencha o modelo manualmente.');
+      }
     }
   };
 
