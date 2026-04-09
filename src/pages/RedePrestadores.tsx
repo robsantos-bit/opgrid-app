@@ -16,7 +16,10 @@ import { toast } from 'sonner';
 
 const PAGE_SIZE = 25;
 const STATUSES = ['ativo', 'inativo', 'bloqueado'];
-const TIPOS = ['guincho', 'plataforma', 'apoio'];
+const TIPOS_SERVICO = [
+  'Guincho Leve', 'Guincho Utilitário', 'Guincho Pesado', 'Guincho Extra-Pesado',
+  'Munk', 'Socorro Mecânico', 'Patins', 'Chaveiro',
+];
 
 export default function RedePrestadores() {
   const { data: prestadores = [], isLoading } = usePrestadores();
