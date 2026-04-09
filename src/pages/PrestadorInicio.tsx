@@ -26,20 +26,36 @@ export default function PrestadorInicio() {
 
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl mx-auto p-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1>Portal do Prestador</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Bem-vindo, {user?.nome}</p>
         </div>
-        <Button
-          size="lg"
-          variant={isOnline ? 'destructive' : 'default'}
-          onClick={isOnline ? goOffline : goOnline}
-          className={`gap-2 font-bold ${isOnline ? 'animate-pulse' : ''}`}
-        >
-          {isOnline ? <WifiOff className="h-5 w-5" /> : <Wifi className="h-5 w-5" />}
-          {isOnline ? 'Ficar Offline' : 'Ficar Online'}
-        </Button>
+        <div className="flex items-center gap-2">
+          {canInstall && (
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={async () => {
+                const ok = await install();
+                if (ok) toast.success('App instalado com sucesso!');
+              }}
+              className="gap-2 font-bold border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+            >
+              <Smartphone className="h-5 w-5" />
+              📱 Instalar App
+            </Button>
+          )}
+          <Button
+            size="lg"
+            variant={isOnline ? 'destructive' : 'default'}
+            onClick={isOnline ? goOffline : goOnline}
+            className={`gap-2 font-bold ${isOnline ? 'animate-pulse' : ''}`}
+          >
+            {isOnline ? <WifiOff className="h-5 w-5" /> : <Wifi className="h-5 w-5" />}
+            {isOnline ? 'Ficar Offline' : 'Ficar Online'}
+          </Button>
+        </div>
       </div>
 
       {isOnline && (
