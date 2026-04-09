@@ -192,7 +192,7 @@ export default function FinanceiroTabelas() {
 
   const openEditor = (t: TabelaComercial) => {
     setEditingTabela(t.id);
-    setEditForm({ nome: t.nome, vigenciaInicio: t.vigenciaInicio, vigenciaFim: t.vigenciaFim, prestadorVinculado: t.prestadorVinculado, status: t.status });
+    setEditForm({ nome: t.nome, vigenciaInicio: t.vigenciaInicio, vigenciaFim: t.vigenciaFim, prestadorVinculado: t.prestadorVinculado, status: t.status, regioes: [...t.regioes], prioridade: t.prioridade });
   };
 
   const updateItemField = (tarifaId: string, field: keyof TabelaItem, value: string | number) => {
@@ -216,6 +216,8 @@ export default function FinanceiroTabelas() {
       vigenciaFim: editForm.vigenciaFim || t.vigenciaFim,
       prestadorVinculado: editForm.prestadorVinculado || t.prestadorVinculado,
       status: (editForm.status || t.status) as TabelaComercial['status'],
+      regioes: editForm.regioes,
+      prioridade: editForm.prioridade,
     } : t));
     toast.success('Tabela salva com sucesso!');
   };
