@@ -10,6 +10,7 @@ import {
 import {
   LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send,
   Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones, Smartphone, UserPlus, Star,
+  Building2, CreditCard, Satellite,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
