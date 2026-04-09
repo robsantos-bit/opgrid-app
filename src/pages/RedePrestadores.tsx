@@ -109,9 +109,15 @@ export default function RedePrestadores() {
   const handleSaveEdit = async () => {
     if (!selected) return;
     try {
-      await updateMut.mutateAsync({ id: selected.id, ...editForm });
+      const payload: any = { ...editForm };
+      // Map servicos to tipos_servico column
+      if (payload.servicos) {
+        payload.tipos_servico = payload.servicos;
+        delete payload.servicos;
+      }
+      await updateMut.mutateAsync({ id: selected.id, ...payload });
       toast.success('Prestador atualizado com sucesso.');
-      setSelected({ ...selected, ...editForm });
+      setSelected({ ...selected, ...payload });
       setEditMode(false);
     } catch (err: any) {
       toast.error('Erro ao atualizar: ' + err.message);
