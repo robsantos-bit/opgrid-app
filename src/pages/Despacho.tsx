@@ -45,10 +45,13 @@ function getQueueStatus(solicitacao: any, offers: any[], atendimento: any): Queu
 }
 
 export default function Despacho() {
+  const queryClient = useQueryClient();
   const { data: solicitacoes = [], isLoading: loadingSolicitacoes } = useSolicitacoes();
   const { data: atendimentos = [], isLoading: loadingAtendimentos } = useAtendimentos();
   const { data: offers = [], isLoading: loadingOffers } = useAllDispatchOffers();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [novoAcionamentoOpen, setNovoAcionamentoOpen] = useState(false);
+  const [sirenEnabled, setSirenEnabled] = useState(() => localStorage.getItem('opgrid-siren-muted') !== 'true');
 
   const queue = useMemo(() => {
     const activeSolicitacoes = solicitacoes.filter((s: any) => !['cancelada', 'concluida', 'finalizada'].includes(String(s.status || '').toLowerCase()));
