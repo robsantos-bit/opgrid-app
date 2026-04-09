@@ -68,6 +68,7 @@ const menuGroups = [
       { title: 'Tarifas', url: '/app/financeiro/tarifas', icon: Tag, modules: ['financeiro', 'tarifas'] },
       { title: 'Tabelas Comerciais', url: '/app/financeiro/tabelas', icon: TableProperties, modules: ['financeiro', 'tabela-precos'] },
       { title: 'Relatórios', url: '/app/financeiro/relatorios', icon: BarChart3, modules: ['financeiro'] },
+      { title: 'Notas Fiscais (NFS-e)', url: '/app/financeiro/nfse', icon: FileText, modules: ['financeiro'] },
     ],
   },
   {

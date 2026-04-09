@@ -60,6 +60,7 @@ import Clientes from "@/pages/Clientes";
 import ConfigMercadoPago from "@/pages/ConfigMercadoPago";
 import ConfigPositron from "@/pages/ConfigPositron";
 import Assinatura from "@/pages/Assinatura";
+import FinanceiroNfse from "@/pages/FinanceiroNfse";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -116,6 +117,7 @@ function AppRoutes() {
       <Route path="/app/financeiro/tarifas" element={<ProtectedRoute requiredModules={['financeiro', 'tarifas']}><FinanceiroTarifas /></ProtectedRoute>} />
       <Route path="/app/financeiro/tabelas" element={<ProtectedRoute requiredModules={['financeiro', 'tabela-precos']}><FinanceiroTabelas /></ProtectedRoute>} />
       <Route path="/app/financeiro/relatorios" element={<ProtectedRoute requiredModules={['financeiro']}><FinanceiroRelatorios /></ProtectedRoute>} />
+      <Route path="/app/financeiro/nfse" element={<ProtectedRoute requiredModules={['financeiro']}><FinanceiroNfse /></ProtectedRoute>} />
 
       {/* Admin */}
       <Route path="/app/admin/usuarios" element={<ProtectedRoute requiredModules={['admin', 'usuarios']}><AdminUsuarios /></ProtectedRoute>} />
