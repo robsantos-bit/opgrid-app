@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Label } from '@/components/ui/label';
 import { usePrestadores, useUpdatePrestador } from '@/hooks/useSupabaseData';
 import { useCnpjLookup } from '@/hooks/useCnpjLookup';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Search, X, Eye, Loader2, Users, MapPin, UserPlus, Building2, Phone, Mail, Truck, UsersRound, CheckCircle2, Info, Pencil, Save } from 'lucide-react';
 import { toast } from 'sonner';
 
