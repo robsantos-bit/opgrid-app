@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Plus, Search, Pencil, TableProperties, Calendar, Eye, Save, ArrowLeft, Copy } from 'lucide-react';
+import { Plus, Search, Pencil, TableProperties, Calendar, Eye, Save, ArrowLeft, Copy, MapPin } from 'lucide-react';
 import { getTarifas } from '@/data/store';
 
 interface TabelaItem {
