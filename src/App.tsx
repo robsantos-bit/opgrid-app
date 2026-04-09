@@ -57,6 +57,7 @@ import AdminConversas from "@/pages/AdminConversas";
 import QueroSerPrestador from "@/pages/QueroSerPrestador";
 import AdminLeadsPrestadores from "@/pages/AdminLeadsPrestadores";
 import Clientes from "@/pages/Clientes";
+import Contratos from "@/pages/Contratos";
 import ConfigMercadoPago from "@/pages/ConfigMercadoPago";
 import ConfigPositron from "@/pages/ConfigPositron";
 import Assinatura from "@/pages/Assinatura";
@@ -159,7 +160,7 @@ function AppRoutes() {
       <Route path="/app/auditoria" element={<Navigate to="/app/admin/auditoria" replace />} />
       <Route path="/app/mapa" element={<Navigate to="/app/operacao/mapa" replace />} />
       <Route path="/app/usuarios" element={<Navigate to="/app/admin/usuarios" replace />} />
-      <Route path="/app/contratos" element={<Navigate to="/app/financeiro/faturamento" replace />} />
+      <Route path="/app/contratos" element={<ProtectedRoute requiredModules={['financeiro']}><Contratos /></ProtectedRoute>} />
 
       {/* Portal do Prestador — autenticado */}
       <Route path="/prestador" element={<PrestadorRoute><PrestadorInicio /></PrestadorRoute>} />

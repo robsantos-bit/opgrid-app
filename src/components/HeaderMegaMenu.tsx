@@ -73,6 +73,7 @@ const menuGroups: MenuGroup[] = [
       { label: 'Tarifas', path: '/app/financeiro/tarifas', icon: Tag, description: 'Gestão de tarifas' },
       { label: 'Tabelas Comerciais', path: '/app/financeiro/tabelas', icon: TableProperties, description: 'Preços e condições' },
       { label: 'Relatórios', path: '/app/financeiro/relatorios', icon: BarChart3, description: 'Análises financeiras' },
+      { label: 'Contratos', path: '/app/contratos', icon: FileText, description: 'Acordos comerciais e vigência' },
     ],
   },
   {
