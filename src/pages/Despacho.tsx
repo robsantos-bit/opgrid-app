@@ -112,12 +112,13 @@ export default function Despacho() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-5">
         {[
-          { label: 'Aguardando', value: aguardando, icon: Clock, variant: 'warning' },
-          { label: 'Em oferta', value: emOferta, icon: Radar, variant: 'info' },
-          { label: 'Aceitos', value: aceitos, icon: CheckCircle2, variant: 'success' },
+          { label: 'Pendentes', value: aguardando, icon: Clock, variant: 'warning' },
+          { label: 'Em Andamento', value: emOferta, icon: Radar, variant: 'info' },
+          { label: 'Concluídos Hoje', value: aceitos, icon: CheckCircle2, variant: 'success' },
           { label: 'Críticos', value: criticos, icon: AlertTriangle, variant: 'destructive' },
+          { label: 'Motoristas Online', value: 0, icon: Users, variant: 'info' },
         ].map((item) => (
           <Card key={item.label}>
             <CardContent className="flex items-center gap-3 p-4">
