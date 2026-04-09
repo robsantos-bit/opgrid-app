@@ -153,13 +153,11 @@ export default function RedePrestadores() {
     }
   };
 
-  const tipoBadge = (tipo: string) => {
-    switch (tipo) {
-      case 'guincho': return 'default' as const;
-      case 'plataforma': return 'info' as const;
-      case 'apoio': return 'outline' as const;
-      default: return 'secondary' as const;
-    }
+  const getServicosDisplay = (p: any): string => {
+    const arr: string[] = Array.isArray(p.tipos_servico) ? p.tipos_servico : (p.tipo ? [p.tipo] : []);
+    if (arr.length === 0) return '—';
+    if (arr.length <= 2) return arr.join(', ');
+    return `${arr[0]} +${arr.length - 1}`;
   };
 
   const ativos = prestadores.filter((p: any) => p.status === 'ativo' || p.status === 'Ativo').length;
