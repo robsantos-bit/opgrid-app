@@ -229,7 +229,7 @@ export default function RedePrestadores() {
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); openDetail(p); }}>
                       <Eye className="h-3.5 w-3.5" />
                     </Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); setEditForm({ nome: p.nome || '', cnpj: p.cnpj || '', telefone: p.telefone || '', email: p.email || '', endereco: p.endereco || '', cidade: p.cidade || '', uf: p.uf || '', tipo: p.tipo || 'guincho', status: p.status || 'ativo' }); setEditMode(true); }}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setSelected(p); const sv = Array.isArray(p.tipos_servico) ? p.tipos_servico : (p.tipo ? [p.tipo] : []); setEditForm({ nome: p.nome || '', cnpj: p.cnpj || '', telefone: p.telefone || '', email: p.email || '', endereco: p.endereco || '', cidade: p.cidade || '', uf: p.uf || '', servicos: sv, status: p.status || 'ativo' }); setEditMode(true); }}>
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                   </div>
