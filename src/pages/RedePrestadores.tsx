@@ -346,7 +346,7 @@ export default function RedePrestadores() {
                     ['Endereço (Retorno)', selected.endereco],
                     ['Cidade', selected.cidade],
                     ['UF', selected.uf],
-                    ['Tipo', selected.tipo],
+                    ['Serviços', getServicosDisplay(selected)],
                     ['Status', selected.status],
                     ['Cadastrado em', selected.created_at ? new Date(selected.created_at).toLocaleString('pt-BR') : '—'],
                   ].map(([label, val]) => (
