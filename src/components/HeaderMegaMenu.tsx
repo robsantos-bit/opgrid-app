@@ -46,6 +46,7 @@ const menuGroups: MenuGroup[] = [
       { label: 'Acompanhamento do Cliente', path: '/app/operacao/acompanhamento', icon: Activity, description: 'Links de tracking' },
       { label: 'Checklists Executados', path: '/app/operacao/checklists', icon: CheckSquare, description: 'Checklists em campo' },
       { label: 'Simulador WhatsApp', path: '/app/operacao/whatsapp-simulador', icon: Smartphone, description: 'Jornada do cliente via WhatsApp' },
+      { label: 'Sandbox WhatsApp', path: '/app/operacao/sandbox-whatsapp', icon: Smartphone, description: 'Ambiente de testes WhatsApp' },
       { label: 'Conversas WhatsApp', path: '/app/operacao/conversas', icon: MessageCircle, description: 'Monitor de conversas ativas' },
     ],
   },
@@ -65,6 +66,7 @@ const menuGroups: MenuGroup[] = [
     label: 'Financeiro',
     items: [
       { label: 'Faturamento', path: '/app/financeiro/faturamento', icon: DollarSign, description: 'Ciclos de cobrança' },
+      { label: 'NFS-e', path: '/app/financeiro/nfse', icon: FileText, description: 'Notas fiscais de serviço' },
       { label: 'Conferência', path: '/app/financeiro/conferencia', icon: FileSearch, description: 'Conferência de valores' },
       { label: 'Divergências', path: '/app/financeiro/divergencias', icon: AlertCircle, description: 'Inconsistências financeiras' },
       { label: 'Glosas', path: '/app/financeiro/glosas', icon: XCircle, description: 'Contestações e glosas' },
@@ -85,6 +87,10 @@ const menuGroups: MenuGroup[] = [
       { label: 'Permissões', path: '/app/admin/permissoes', icon: Lock, description: 'Perfis de acesso' },
       { label: 'Configurações', path: '/app/admin/configuracoes', icon: Settings, description: 'Preferências do sistema' },
       { label: 'Suporte', path: '/app/admin/suporte', icon: HelpCircle, description: 'Central de ajuda' },
+      { label: 'Mercado Pago', path: '/app/admin/mercadopago', icon: DollarSign, description: 'Integração de pagamentos' },
+      { label: 'Positron', path: '/app/admin/positron', icon: Zap, description: 'Integração Positron' },
+      { label: 'Assinatura', path: '/app/admin/assinatura', icon: FileText, description: 'Plano e assinatura' },
+      { label: 'Leads Prestadores', path: '/app/rede/leads', icon: UsersIcon, description: 'Pré-cadastros recebidos' },
     ],
   },
 ];
