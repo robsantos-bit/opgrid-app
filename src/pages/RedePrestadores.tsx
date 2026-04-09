@@ -91,6 +91,7 @@ export default function RedePrestadores() {
 
   const startEdit = () => {
     if (!selected) return;
+    const parsedServicos = Array.isArray(selected.tipos_servico) ? selected.tipos_servico : (selected.tipo ? [selected.tipo] : []);
     setEditForm({
       nome: selected.nome || '',
       cnpj: selected.cnpj || '',
@@ -99,7 +100,7 @@ export default function RedePrestadores() {
       endereco: selected.endereco || '',
       cidade: selected.cidade || '',
       uf: selected.uf || '',
-      tipo: selected.tipo || 'guincho',
+      servicos: parsedServicos,
       status: selected.status || 'ativo',
     });
     setEditMode(true);
