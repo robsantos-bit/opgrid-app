@@ -31,6 +31,7 @@ const menuGroups = [
     requiredModules: ['operacao'],
     items: [
       { title: 'Solicitações', url: '/app/operacao/solicitacoes', icon: ClipboardList, modules: ['operacao', 'solicitacoes'] },
+      { title: 'Clientes', url: '/app/clientes', icon: Building2, modules: ['operacao'] },
       { title: 'Despacho', url: '/app/operacao/despacho', icon: Send, modules: ['operacao', 'despacho'] },
       { title: 'Atendimentos', url: '/app/operacao/atendimentos', icon: Headphones, modules: ['operacao', 'atendimentos'] },
       { title: 'Mapa Operacional', url: '/app/operacao/mapa', icon: Map, modules: ['operacao', 'mapa'] },
@@ -81,6 +82,8 @@ const menuGroups = [
       { title: 'Auditoria', url: '/app/admin/auditoria', icon: History, modules: ['admin', 'configuracoes'] },
       { title: 'Permissões', url: '/app/admin/permissoes', icon: Lock, modules: ['admin', 'configuracoes'] },
       { title: 'Configurações', url: '/app/admin/configuracoes', icon: Settings, modules: ['admin', 'configuracoes'] },
+      { title: 'Mercado Pago', url: '/app/admin/mercadopago', icon: CreditCard, modules: ['admin', 'configuracoes'] },
+      { title: 'Positron GPS', url: '/app/admin/positron', icon: Satellite, modules: ['admin', 'configuracoes'] },
       { title: 'Suporte', url: '/app/admin/suporte', icon: HelpCircle, modules: ['admin', 'configuracoes'] },
     ],
   },
