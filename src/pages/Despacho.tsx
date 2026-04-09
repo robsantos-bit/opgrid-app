@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useAtendimentos, useSolicitacoes } from '@/hooks/useSupabaseData';
 import { useAllDispatchOffers } from '@/hooks/useWhatsAppData';
-import { Loader2, Radar, Clock, CheckCircle2, AlertTriangle, Eye, ArrowRight, Truck } from 'lucide-react';
+import { Loader2, Radar, Clock, CheckCircle2, AlertTriangle, Eye, ArrowRight, Truck, Plus, Users, Volume2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import NovoAcionamentoDialog from '@/components/NovoAcionamentoDialog';
+import { useQueryClient } from '@tanstack/react-query';
 
 type QueueStatus = 'Aguardando' | 'Ofertas enviadas' | 'Aceito' | 'Sem prestador';
 
@@ -42,10 +45,13 @@ function getQueueStatus(solicitacao: any, offers: any[], atendimento: any): Queu
 }
 
 export default function Despacho() {
+  const queryClient = useQueryClient();
   const { data: solicitacoes = [], isLoading: loadingSolicitacoes } = useSolicitacoes();
   const { data: atendimentos = [], isLoading: loadingAtendimentos } = useAtendimentos();
   const { data: offers = [], isLoading: loadingOffers } = useAllDispatchOffers();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [novoAcionamentoOpen, setNovoAcionamentoOpen] = useState(false);
+  const [sirenEnabled, setSirenEnabled] = useState(() => localStorage.getItem('opgrid-siren-muted') !== 'true');
 
   const queue = useMemo(() => {
     const activeSolicitacoes = solicitacoes.filter((s: any) => !['cancelada', 'concluida', 'finalizada'].includes(String(s.status || '').toLowerCase()));
@@ -83,21 +89,36 @@ export default function Despacho() {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
   }
 
+  const handleSirenToggle = (v: boolean) => {
+    setSirenEnabled(v);
+    localStorage.setItem('opgrid-siren-muted', v ? 'false' : 'true');
+  };
+
   return (
     <div className="space-y-5 animate-fade-in">
       <div className="page-header">
         <div className="page-header-text">
-          <h1>Central de Despacho</h1>
-          <p>Fila operacional em tempo real das solicitações que precisam de prestador.</p>
+          <h1>Painel de Acionamentos</h1>
+          <p>Gerencie acionamentos de serviço em tempo real</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+            <Switch checked={sirenEnabled} onCheckedChange={handleSirenToggle} />
+          </div>
+          <Button onClick={() => setNovoAcionamentoOpen(true)} className="gap-1.5 text-xs">
+            <Plus className="h-3.5 w-3.5" />Novo Acionamento
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 md:grid-cols-5">
         {[
-          { label: 'Aguardando', value: aguardando, icon: Clock, variant: 'warning' },
-          { label: 'Em oferta', value: emOferta, icon: Radar, variant: 'info' },
-          { label: 'Aceitos', value: aceitos, icon: CheckCircle2, variant: 'success' },
+          { label: 'Pendentes', value: aguardando, icon: Clock, variant: 'warning' },
+          { label: 'Em Andamento', value: emOferta, icon: Radar, variant: 'info' },
+          { label: 'Concluídos Hoje', value: aceitos, icon: CheckCircle2, variant: 'success' },
           { label: 'Críticos', value: criticos, icon: AlertTriangle, variant: 'destructive' },
+          { label: 'Motoristas Online', value: 0, icon: Users, variant: 'info' },
         ].map((item) => (
           <Card key={item.label}>
             <CardContent className="flex items-center gap-3 p-4">
@@ -241,6 +262,12 @@ export default function Despacho() {
           )}
         </SheetContent>
       </Sheet>
+
+      <NovoAcionamentoDialog
+        open={novoAcionamentoOpen}
+        onOpenChange={setNovoAcionamentoOpen}
+        onCreated={() => queryClient.invalidateQueries({ queryKey: ['solicitacoes'] })}
+      />
     </div>
   );
 }
