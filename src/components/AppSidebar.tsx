@@ -10,7 +10,7 @@ import {
 import {
   LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send,
   Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones, Smartphone, UserPlus, Star,
-  Building2, CreditCard, Satellite,
+  Building2, CreditCard, Satellite, BadgeDollarSign,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -84,6 +84,7 @@ const menuGroups = [
       { title: 'Configurações', url: '/app/admin/configuracoes', icon: Settings, modules: ['admin', 'configuracoes'] },
       { title: 'Mercado Pago', url: '/app/admin/mercadopago', icon: CreditCard, modules: ['admin', 'configuracoes'] },
       { title: 'Positron GPS', url: '/app/admin/positron', icon: Satellite, modules: ['admin', 'configuracoes'] },
+      { title: 'Assinatura', url: '/app/admin/assinatura', icon: BadgeDollarSign, modules: ['admin', 'configuracoes'] },
       { title: 'Suporte', url: '/app/admin/suporte', icon: HelpCircle, modules: ['admin', 'configuracoes'] },
     ],
   },
