@@ -145,6 +145,21 @@ function AppRoutes() {
       {/* Legacy redirects */}
       <Route path="/app/faturamento" element={<Navigate to="/app/financeiro/faturamento" replace />} />
       <Route path="/app/configuracoes" element={<Navigate to="/app/admin/configuracoes" replace />} />
+      <Route path="/app/dashboard" element={<Navigate to="/app" replace />} />
+      <Route path="/app/operacao" element={<Navigate to="/app/operacao/solicitacoes" replace />} />
+      <Route path="/app/financeiro" element={<Navigate to="/app/financeiro/faturamento" replace />} />
+      <Route path="/app/admin" element={<Navigate to="/app/admin/usuarios" replace />} />
+      <Route path="/app/solicitacoes" element={<Navigate to="/app/operacao/solicitacoes" replace />} />
+      <Route path="/app/despacho" element={<Navigate to="/app/operacao/despacho" replace />} />
+      <Route path="/app/atendimentos" element={<Navigate to="/app/operacao/atendimentos" replace />} />
+      <Route path="/app/prestadores" element={<Navigate to="/app/rede/prestadores" replace />} />
+      <Route path="/app/tarifas" element={<Navigate to="/app/financeiro/tarifas" replace />} />
+      <Route path="/app/tabelas-de-precos" element={<Navigate to="/app/financeiro/tabelas" replace />} />
+      <Route path="/app/relatorios" element={<Navigate to="/app/financeiro/relatorios" replace />} />
+      <Route path="/app/auditoria" element={<Navigate to="/app/admin/auditoria" replace />} />
+      <Route path="/app/mapa" element={<Navigate to="/app/operacao/mapa" replace />} />
+      <Route path="/app/usuarios" element={<Navigate to="/app/admin/usuarios" replace />} />
+      <Route path="/app/contratos" element={<Navigate to="/app/financeiro/faturamento" replace />} />
 
       {/* Portal do Prestador — autenticado */}
       <Route path="/prestador" element={<PrestadorRoute><PrestadorInicio /></PrestadorRoute>} />
