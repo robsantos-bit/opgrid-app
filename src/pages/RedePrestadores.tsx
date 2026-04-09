@@ -78,7 +78,7 @@ export default function RedePrestadores() {
     setTimeout(() => {
       setCadastroSaving(false);
       setShowCadastro(false);
-      setCadastroForm({ nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '' });
+      setCadastroForm({ nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '', servicos: [] });
       toast.success('Prestador cadastrado com sucesso! Senha enviada por email.');
     }, 1200);
   };
