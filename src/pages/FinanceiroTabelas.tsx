@@ -128,10 +128,10 @@ const SEED_ITEMS_NOTURNA: TabelaItem[] = (() => {
 })();
 
 const MOCK_TABELAS: TabelaComercial[] = [
-  { id: '1', nome: 'Tabela Padrão Nacional', vigenciaInicio: '2025-01-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Todos', itens: SEED_ITEMS_PADRAO },
-  { id: '2', nome: 'Tabela Premium SP Capital', vigenciaInicio: '2025-03-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Auto Socorro SP', itens: SEED_ITEMS_PREMIUM },
-  { id: '3', nome: 'Tabela Interior SP', vigenciaInicio: '2024-06-01', vigenciaFim: '2024-12-31', status: 'Expirada', prestadorVinculado: 'Todos', itens: SEED_ITEMS_INTERIOR },
-  { id: '4', nome: 'Tabela Emergencial Noturna', vigenciaInicio: '2025-06-01', vigenciaFim: '2026-05-31', status: 'Rascunho', prestadorVinculado: '—', itens: SEED_ITEMS_NOTURNA },
+  { id: '1', nome: 'Tabela Padrão Nacional', vigenciaInicio: '2025-01-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Todos', regioes: ['Nacional (Padrão)'], prioridade: 0, itens: SEED_ITEMS_PADRAO },
+  { id: '2', nome: 'Tabela Premium SP Capital', vigenciaInicio: '2025-03-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Auto Socorro SP', regioes: ['São Paulo Capital', 'Grande São Paulo (ABCD)'], prioridade: 10, itens: SEED_ITEMS_PREMIUM },
+  { id: '3', nome: 'Tabela Interior SP', vigenciaInicio: '2024-06-01', vigenciaFim: '2024-12-31', status: 'Expirada', prestadorVinculado: 'Todos', regioes: ['Interior SP - Campinas', 'Interior SP - Ribeirão Preto', 'Interior SP - Sorocaba', 'Interior SP - São José dos Campos'], prioridade: 5, itens: SEED_ITEMS_INTERIOR },
+  { id: '4', nome: 'Tabela Emergencial Noturna', vigenciaInicio: '2025-06-01', vigenciaFim: '2026-05-31', status: 'Rascunho', prestadorVinculado: '—', regioes: ['São Paulo Capital'], prioridade: 20, itens: SEED_ITEMS_NOTURNA },
 ];
 
 const statusVariant = (s: string) => {
