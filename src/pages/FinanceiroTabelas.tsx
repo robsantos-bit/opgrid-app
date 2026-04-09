@@ -157,8 +157,8 @@ export default function FinanceiroTabelas() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTabela, setEditingTabela] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', status: '' });
-  const [form, setForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '' });
+  const [editForm, setEditForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', status: '', regioes: [] as string[], prioridade: 0 });
+  const [form, setForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', regioes: [] as string[], prioridade: 0 });
 
   const filtered = useMemo(() => tabelas.filter(t =>
     (!search || t.nome.toLowerCase().includes(search.toLowerCase())) &&
@@ -167,8 +167,12 @@ export default function FinanceiroTabelas() {
 
   const currentTabela = editingTabela ? tabelas.find(t => t.id === editingTabela) : null;
 
+  const toggleRegiao = (regioes: string[], regiao: string) =>
+    regioes.includes(regiao) ? regioes.filter(r => r !== regiao) : [...regioes, regiao];
+
   const handleSave = () => {
     if (!form.nome) { toast.error('Informe o nome da tabela.'); return; }
+    if (form.regioes.length === 0) { toast.error('Selecione ao menos uma região de aplicação.'); return; }
     const newTabela: TabelaComercial = {
       id: `t${Date.now()}`,
       nome: form.nome,
@@ -176,12 +180,14 @@ export default function FinanceiroTabelas() {
       vigenciaFim: form.vigenciaFim || '—',
       status: 'Rascunho',
       prestadorVinculado: form.prestadorVinculado || '—',
+      regioes: form.regioes,
+      prioridade: form.prioridade,
       itens: buildDefaultItems(),
     };
     setTabelas(prev => [...prev, newTabela]);
     setModalOpen(false);
-    setForm({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '' });
-    toast.success('Tabela comercial criada. Clique no ícone de edição para configurar os valores.');
+    setForm({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', regioes: [], prioridade: 0 });
+    toast.success('Tabela comercial criada. Clique para configurar os valores.');
   };
 
   const openEditor = (t: TabelaComercial) => {
