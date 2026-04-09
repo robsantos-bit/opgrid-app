@@ -56,6 +56,9 @@ import AutomacaoWhatsApp from "@/pages/AutomacaoWhatsApp";
 import AdminConversas from "@/pages/AdminConversas";
 import QueroSerPrestador from "@/pages/QueroSerPrestador";
 import AdminLeadsPrestadores from "@/pages/AdminLeadsPrestadores";
+import Clientes from "@/pages/Clientes";
+import ConfigMercadoPago from "@/pages/ConfigMercadoPago";
+import ConfigPositron from "@/pages/ConfigPositron";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -125,6 +128,9 @@ function AppRoutes() {
       <Route path="/app/admin/permissoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminPermissoes /></ProtectedRoute>} />
       <Route path="/app/admin/configuracoes" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><Configuracoes /></ProtectedRoute>} />
       <Route path="/app/admin/suporte" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><AdminSuporte /></ProtectedRoute>} />
+      <Route path="/app/clientes" element={<ProtectedRoute requiredModules={['operacao']}><Clientes /></ProtectedRoute>} />
+      <Route path="/app/admin/mercadopago" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><ConfigMercadoPago /></ProtectedRoute>} />
+      <Route path="/app/admin/positron" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><ConfigPositron /></ProtectedRoute>} />
 
       {/* WhatsApp & Simulação */}
       <Route path="/app/operacao/whatsapp-simulador" element={<ProtectedRoute requiredModules={['operacao']}><WhatsAppSimulador /></ProtectedRoute>} />
