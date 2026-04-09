@@ -59,6 +59,7 @@ import AdminLeadsPrestadores from "@/pages/AdminLeadsPrestadores";
 import Clientes from "@/pages/Clientes";
 import ConfigMercadoPago from "@/pages/ConfigMercadoPago";
 import ConfigPositron from "@/pages/ConfigPositron";
+import Assinatura from "@/pages/Assinatura";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -131,6 +132,7 @@ function AppRoutes() {
       <Route path="/app/clientes" element={<ProtectedRoute requiredModules={['operacao']}><Clientes /></ProtectedRoute>} />
       <Route path="/app/admin/mercadopago" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><ConfigMercadoPago /></ProtectedRoute>} />
       <Route path="/app/admin/positron" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><ConfigPositron /></ProtectedRoute>} />
+      <Route path="/app/admin/assinatura" element={<ProtectedRoute requiredModules={['admin', 'configuracoes']}><Assinatura /></ProtectedRoute>} />
 
       {/* WhatsApp & Simulação */}
       <Route path="/app/operacao/whatsapp-simulador" element={<ProtectedRoute requiredModules={['operacao']}><WhatsAppSimulador /></ProtectedRoute>} />
