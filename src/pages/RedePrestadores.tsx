@@ -34,7 +34,7 @@ export default function RedePrestadores() {
   const [editMode, setEditMode] = useState(false);
   const [editForm, setEditForm] = useState<Record<string, any>>({});
   const [cadastroForm, setCadastroForm] = useState({
-    nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '',
+    nome: '', cnpj: '', whatsapp: '', email: '', qtdVeiculos: '', qtdMotoristas: '', servicos: [] as string[],
   });
   const [cadastroSaving, setCadastroSaving] = useState(false);
 
