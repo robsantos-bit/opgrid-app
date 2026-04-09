@@ -18,7 +18,7 @@ const PAGE_SIZE = 25;
 const STATUSES = ['ativo', 'inativo', 'bloqueado'];
 const TIPOS_SERVICO = [
   'Guincho Leve', 'Guincho Utilitário', 'Guincho Pesado', 'Guincho Extra-Pesado',
-  'Munk', 'Socorro Mecânico', 'Patins', 'Chaveiro',
+  'Munk', 'Socorro Mecânico', 'Patins', 'Chaveiro', 'Táxi',
 ];
 
 export default function RedePrestadores() {
