@@ -221,7 +221,7 @@ export default function RedePrestadores() {
                 <TableCell className="font-medium text-[13px]">{p.nome || '—'}</TableCell>
                 <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground font-mono">{p.cnpj || '—'}</TableCell>
                 <TableCell className="hidden lg:table-cell text-[13px] text-muted-foreground">{p.telefone || '—'}</TableCell>
-                <TableCell><Badge variant={tipoBadge(p.tipo)} className="text-[10px] capitalize">{p.tipo || '—'}</Badge></TableCell>
+                <TableCell><Badge variant="outline" className="text-[10px]">{getServicosDisplay(p)}</Badge></TableCell>
                 <TableCell><Badge variant={statusBadge(p.status)} className="text-[10px] capitalize">{p.status || '—'}</Badge></TableCell>
                 <TableCell className="hidden xl:table-cell text-[13px] text-muted-foreground">{p.created_at ? new Date(p.created_at).toLocaleDateString('pt-BR') : '—'}</TableCell>
                 <TableCell className="text-right">
