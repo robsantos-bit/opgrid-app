@@ -69,12 +69,12 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
     }
   };
 
-  const handlePlacaChange = (value: string) => {
+  const handlePlacaChange = async (value: string) => {
     const upper = value.toUpperCase();
     set('veiculoPlaca', upper);
     const clean = upper.replace(/[-\s]/g, '');
     if (clean.length >= 7) {
-      const result = lookupPlaca(upper);
+      const result = await lookupPlaca(upper);
       if (result) {
         set('veiculoModelo', `${result.marca} ${result.modelo}`);
         toast.success(`Veículo encontrado: ${result.marca} ${result.modelo} - ${result.cor}`);
