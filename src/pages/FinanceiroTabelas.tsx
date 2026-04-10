@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -8,8 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { toast } from 'sonner';
-import { Plus, Search, Pencil, TableProperties, Calendar, Save, ArrowLeft, MapPin, Loader2 } from 'lucide-react';
+import { Plus, Search, Pencil, TableProperties, Calendar, Save, ArrowLeft, MapPin, Loader2, X, MapPinned } from 'lucide-react';
 import { useTabelasComerciais, TabelaComercial, TabelaItem } from '@/hooks/useTabelasComerciais';
 
 const REGIOES_DISPONIVEIS = [
@@ -20,19 +21,155 @@ const REGIOES_DISPONIVEIS = [
   'Belo Horizonte', 'Curitiba', 'Nacional (Padrão)',
 ];
 
-const RegiaoCustomInput = ({ regioes, onAdd }: { regioes: string[]; onAdd: (r: string) => void }) => {
-  const [value, setValue] = useState('');
-  const handleAdd = () => {
-    const trimmed = value.trim();
+const UFS = [
+  'AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG',
+  'PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO',
+];
+
+const RegiaoManager = ({
+  regioes,
+  onToggle,
+  onAdd,
+  onRemove,
+}: {
+  regioes: string[];
+  onToggle: (r: string) => void;
+  onAdd: (r: string) => void;
+  onRemove: (r: string) => void;
+}) => {
+  const [customValue, setCustomValue] = useState('');
+  const [selectedUf, setSelectedUf] = useState('');
+  const [cities, setCities] = useState<string[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [citySearch, setCitySearch] = useState('');
+
+  const handleAddCustom = () => {
+    const trimmed = customValue.trim();
     if (!trimmed) return;
     if (regioes.includes(trimmed)) { toast.error('Região já adicionada.'); return; }
     onAdd(trimmed);
-    setValue('');
+    setCustomValue('');
   };
+
+  const handleUfChange = async (uf: string) => {
+    setSelectedUf(uf);
+    setCitySearch('');
+    if (!uf) { setCities([]); return; }
+    setLoadingCities(true);
+    try {
+      const res = await fetch(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios?orderBy=nome`);
+      const data = await res.json();
+      setCities(data.map((c: { nome: string }) => c.nome));
+    } catch {
+      toast.error('Erro ao buscar cidades do IBGE.');
+      setCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  const filteredCities = citySearch
+    ? cities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase()))
+    : cities;
+
+  const allRegioes = [...REGIOES_DISPONIVEIS, ...regioes.filter(r => !REGIOES_DISPONIVEIS.includes(r))];
+
   return (
-    <div className="flex gap-1.5 mt-2">
-      <Input value={value} onChange={e => setValue(e.target.value)} placeholder="Adicionar região personalizada..." className="text-xs h-8" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdd())} />
-      <Button type="button" size="sm" variant="outline" className="h-8 text-xs px-3" onClick={handleAdd}>+ Adicionar</Button>
+    <div className="space-y-2">
+      {/* Regiões selecionadas com botão de remover */}
+      {regioes.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {regioes.map(r => (
+            <Badge key={r} variant="secondary" className="text-[11px] gap-1 pr-1">
+              {r}
+              <button
+                type="button"
+                onClick={() => onRemove(r)}
+                className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
+              >
+                <X className="h-2.5 w-2.5 text-muted-foreground hover:text-destructive" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* Checkboxes predefinidos + customizados */}
+      <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto">
+        {allRegioes.map(r => (
+          <label key={r} className="flex items-center gap-1.5 text-xs cursor-pointer bg-muted/50 rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors">
+            <Checkbox checked={regioes.includes(r)} onCheckedChange={() => onToggle(r)} className="h-3.5 w-3.5" />
+            {r}
+          </label>
+        ))}
+      </div>
+
+      {/* Input manual */}
+      <div className="flex gap-1.5">
+        <Input
+          value={customValue}
+          onChange={e => setCustomValue(e.target.value)}
+          placeholder="Região personalizada..."
+          className="text-xs h-8"
+          onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAddCustom())}
+        />
+        <Button type="button" size="sm" variant="outline" className="h-8 text-xs px-3 shrink-0" onClick={handleAddCustom}>
+          + Adicionar
+        </Button>
+      </div>
+
+      {/* Busca por UF/Cidade via IBGE */}
+      <div className="border rounded-lg p-3 bg-muted/20 space-y-2">
+        <Label className="text-[11px] font-medium flex items-center gap-1.5">
+          <MapPinned className="h-3 w-3" />Buscar cidades por UF (IBGE)
+        </Label>
+        <div className="flex gap-2">
+          <Select value={selectedUf} onValueChange={handleUfChange}>
+            <SelectTrigger className="w-24 h-8 text-xs">
+              <SelectValue placeholder="UF" />
+            </SelectTrigger>
+            <SelectContent>
+              {UFS.map(uf => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          {cities.length > 0 && (
+            <Input
+              value={citySearch}
+              onChange={e => setCitySearch(e.target.value)}
+              placeholder="Filtrar cidade..."
+              className="text-xs h-8 flex-1"
+            />
+          )}
+          {loadingCities && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground self-center" />}
+        </div>
+        {filteredCities.length > 0 && (
+          <ScrollArea className="max-h-32 border rounded-md p-1">
+            <div className="flex flex-wrap gap-1">
+              {filteredCities.slice(0, 100).map(city => {
+                const label = `${city} - ${selectedUf}`;
+                const isSelected = regioes.includes(label);
+                return (
+                  <button
+                    key={city}
+                    type="button"
+                    onClick={() => isSelected ? onRemove(label) : onAdd(label)}
+                    className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
+                      isSelected
+                        ? 'bg-primary text-primary-foreground border-primary'
+                        : 'bg-background hover:bg-muted border-border'
+                    }`}
+                  >
+                    {city}
+                  </button>
+                );
+              })}
+              {filteredCities.length > 100 && (
+                <span className="text-[10px] text-muted-foreground px-2 py-1">+{filteredCities.length - 100} cidades...</span>
+              )}
+            </div>
+          </ScrollArea>
+        )}
+      </div>
     </div>
   );
 };
