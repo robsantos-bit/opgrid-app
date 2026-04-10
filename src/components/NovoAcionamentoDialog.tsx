@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useCepLookup } from '@/hooks/useCepLookup';
+import { usePlacaLookup } from '@/hooks/usePlacaLookup';
 import { toast } from 'sonner';
 import {
   Loader2, MapPin, Car, User, Phone, FileText, Clock, Link2,
@@ -32,6 +33,7 @@ interface Props {
 
 export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }: Props) {
   const { lookupCep, loading: cepLoading } = useCepLookup();
+  const { lookupPlaca, loading: placaLoading } = usePlacaLookup();
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
@@ -103,6 +105,56 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
         }));
       }
       toast.success('Endereço preenchido!');
+    } else {
+      toast.error('CEP não encontrado.');
+    }
+  };
+
+  const handleCepChange = async (tipo: 'origem' | 'destino', value: string) => {
+    const field = tipo === 'origem' ? 'origemCep' : 'destinoCep';
+    set(field, value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const result = await lookupCep(value);
+      if (result) {
+        if (tipo === 'origem') {
+          setForm(prev => ({
+            ...prev,
+            origemRua: result.logradouro || '',
+            origemBairro: result.bairro || '',
+            origemCidade: result.localidade || '',
+            origemUf: result.uf || '',
+          }));
+        } else {
+          setForm(prev => ({
+            ...prev,
+            destinoRua: result.logradouro || '',
+            destinoBairro: result.bairro || '',
+            destinoCidade: result.localidade || '',
+            destinoUf: result.uf || '',
+          }));
+        }
+        toast.success('Endereço preenchido automaticamente!');
+      }
+    }
+  };
+
+  const handlePlacaChange = async (value: string) => {
+    const upper = value.toUpperCase();
+    set('placa', upper);
+    const clean = upper.replace(/[-\s]/g, '');
+    if (clean.length >= 7) {
+      const result = await lookupPlaca(upper);
+      if (result) {
+        setForm(prev => ({
+          ...prev,
+          modelo: `${result.marca} ${result.modelo}`,
+          cor: result.cor || prev.cor,
+        }));
+        toast.success(`Veículo: ${result.marca} ${result.modelo} - ${result.cor}`);
+      } else {
+        toast.info('Placa não encontrada. Preencha manualmente.');
+      }
     }
   };
 
@@ -281,9 +333,12 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
                 <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1.5">
                   <Car className="h-3 w-3 text-muted-foreground" />Placa
                 </Label>
-                <Input placeholder="ABC1D23" value={form.placa}
-                  onChange={e => set('placa', e.target.value.toUpperCase())}
-                  className="text-sm font-mono" maxLength={7} />
+                <div className="relative">
+                  <Input placeholder="ABC1D23" value={form.placa}
+                    onChange={e => handlePlacaChange(e.target.value)}
+                    className="text-sm font-mono" maxLength={7} />
+                  {placaLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-semibold mb-1.5 block">Modelo *</Label>
@@ -311,7 +366,7 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
                   <Label className="text-[11px] text-muted-foreground mb-1 block">CEP</Label>
                   <div className="flex gap-1">
                     <Input placeholder="00000-000" value={form.origemCep}
-                      onChange={e => set('origemCep', e.target.value)}
+                      onChange={e => handleCepChange('origem', e.target.value)}
                       className="text-sm font-mono w-32" maxLength={9} />
                     <Button variant="outline" size="icon" className="h-9 w-9 shrink-0"
                       onClick={() => handleCepLookup('origem')} disabled={cepLoading}>
@@ -371,7 +426,7 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
                   <Label className="text-[11px] text-muted-foreground mb-1 block">CEP</Label>
                   <div className="flex gap-1">
                     <Input placeholder="00000-000" value={form.destinoCep}
-                      onChange={e => set('destinoCep', e.target.value)}
+                      onChange={e => handleCepChange('destino', e.target.value)}
                       className="text-sm font-mono w-32" maxLength={9} />
                     <Button variant="outline" size="icon" className="h-9 w-9 shrink-0"
                       onClick={() => handleCepLookup('destino')} disabled={cepLoading}>
