@@ -176,8 +176,8 @@ export function useTabelasComerciais() {
   const saveTabela = useCallback(async (tabela: TabelaComercial) => {
     setSaving(true);
     try {
-      // Update metadata
-      const { error: metaErr } = await supabase
+      // Update metadata with select to verify the update actually persisted
+      const { data: updatedRow, error: metaErr } = await supabase
         .from('tabelas_comerciais')
         .update({
           nome: tabela.nome,
@@ -189,9 +189,18 @@ export function useTabelasComerciais() {
           prioridade: tabela.prioridade,
           updated_at: new Date().toISOString(),
         })
-        .eq('id', tabela.id);
+        .eq('id', tabela.id)
+        .select()
+        .single();
 
       if (metaErr) throw metaErr;
+
+      // Verify regioes were actually saved
+      if (updatedRow && JSON.stringify(updatedRow.regioes) !== JSON.stringify(tabela.regioes)) {
+        console.warn('Regiões não persistiram corretamente:', { sent: tabela.regioes, received: updatedRow.regioes });
+        toast.error('Erro: as regiões não foram salvas corretamente. Verifique suas permissões.');
+        return;
+      }
 
       // Upsert all items using onConflict to avoid duplicate key errors
       const itensToUpsert = tabela.itens.map(i => ({
@@ -213,9 +222,11 @@ export function useTabelasComerciais() {
 
       toast.success('Tabela salva com sucesso!');
       await fetchTabelas();
+      return updatedRow;
     } catch (err: any) {
       console.error('Erro ao salvar tabela:', err);
       toast.error('Erro ao salvar: ' + (err.message || 'desconhecido'));
+      return null;
     } finally {
       setSaving(false);
     }

@@ -264,7 +264,11 @@ export default function FinanceiroTabelas() {
       regioes: editForm.regioes,
       prioridade: editForm.prioridade,
     };
-    await saveTabela(updated);
+    const result = await saveTabela(updated);
+    // Sync editForm with saved data to prevent stale state
+    if (result) {
+      setEditForm(prev => ({ ...prev, regioes: result.regioes || prev.regioes }));
+    }
   };
 
   const kpis = [
