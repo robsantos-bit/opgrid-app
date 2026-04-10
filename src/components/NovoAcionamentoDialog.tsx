@@ -366,7 +366,7 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
                   <Label className="text-[11px] text-muted-foreground mb-1 block">CEP</Label>
                   <div className="flex gap-1">
                     <Input placeholder="00000-000" value={form.origemCep}
-                      onChange={e => set('origemCep', e.target.value)}
+                      onChange={e => handleCepChange('origem', e.target.value)}
                       className="text-sm font-mono w-32" maxLength={9} />
                     <Button variant="outline" size="icon" className="h-9 w-9 shrink-0"
                       onClick={() => handleCepLookup('origem')} disabled={cepLoading}>
@@ -426,7 +426,7 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
                   <Label className="text-[11px] text-muted-foreground mb-1 block">CEP</Label>
                   <div className="flex gap-1">
                     <Input placeholder="00000-000" value={form.destinoCep}
-                      onChange={e => set('destinoCep', e.target.value)}
+                      onChange={e => handleCepChange('destino', e.target.value)}
                       className="text-sm font-mono w-32" maxLength={9} />
                     <Button variant="outline" size="icon" className="h-9 w-9 shrink-0"
                       onClick={() => handleCepLookup('destino')} disabled={cepLoading}>
