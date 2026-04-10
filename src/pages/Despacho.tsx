@@ -171,9 +171,9 @@ export default function Despacho() {
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-[11px] text-muted-foreground">
                     <div className="flex max-w-[220px] items-center gap-1">
-                      <span className="truncate">{item.solicitacao.origem_endereco || '—'}</span>
+                      <span className="truncate">{item.solicitacao.origem_endereco || item.solicitacao.origem || '—'}</span>
                       <ArrowRight className="h-3 w-3 shrink-0 text-muted-foreground/40" />
-                      <span className="truncate">{item.solicitacao.destino_endereco || '—'}</span>
+                      <span className="truncate">{item.solicitacao.destino_endereco || item.solicitacao.destino || '—'}</span>
                     </div>
                   </TableCell>
                   <TableCell><Badge variant={statusVariant[item.status]} className="text-[10px]">{item.status}</Badge></TableCell>
@@ -213,8 +213,8 @@ export default function Despacho() {
                     ['Telefone', selected.solicitacao.cliente_telefone || selected.solicitacao.cliente_whatsapp],
                     ['Placa', getPlaca(selected.solicitacao)],
                     ['Tipo veículo', selected.solicitacao.tipo_veiculo],
-                    ['Origem', selected.solicitacao.origem_endereco],
-                    ['Destino', selected.solicitacao.destino_endereco],
+                    ['Origem', selected.solicitacao.origem_endereco || selected.solicitacao.origem],
+                    ['Destino', selected.solicitacao.destino_endereco || selected.solicitacao.destino],
                     ['Valor', getValor(selected.solicitacao) ? fmtMoney(getValor(selected.solicitacao)) : '—'],
                     ['Atendimento', selected.solicitacao.atendimento_id || selected.atendimento?.id || '—'],
                     ['Criado em', fmtDateTime(selected.solicitacao.created_at || selected.solicitacao.data_hora)],
