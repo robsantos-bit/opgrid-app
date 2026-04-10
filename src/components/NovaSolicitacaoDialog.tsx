@@ -46,7 +46,7 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { lookupCep, loading: cepLoading } = useCepLookup();
-  const { lookupPlaca } = usePlacaLookup();
+  const { lookupPlaca, loading: placaLoading } = usePlacaLookup();
 
   const set = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
@@ -69,12 +69,12 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
     }
   };
 
-  const handlePlacaChange = (value: string) => {
+  const handlePlacaChange = async (value: string) => {
     const upper = value.toUpperCase();
     set('veiculoPlaca', upper);
     const clean = upper.replace(/[-\s]/g, '');
     if (clean.length >= 7) {
-      const result = lookupPlaca(upper);
+      const result = await lookupPlaca(upper);
       if (result) {
         set('veiculoModelo', `${result.marca} ${result.modelo}`);
         toast.success(`Veículo encontrado: ${result.marca} ${result.modelo} - ${result.cor}`);
@@ -375,13 +375,16 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
                   <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
                     <FileText className="h-3 w-3 text-muted-foreground" />Placa
                   </Label>
-                  <Input
-                    placeholder="Ex: ABC1234"
-                    value={form.veiculoPlaca}
-                    onChange={e => handlePlacaChange(e.target.value)}
-                    className={`text-sm font-mono ${errors.veiculoPlaca ? 'border-destructive' : ''}`}
-                    maxLength={8}
-                  />
+                  <div className="relative">
+                    <Input
+                      placeholder="Ex: ABC1234"
+                      value={form.veiculoPlaca}
+                      onChange={e => handlePlacaChange(e.target.value)}
+                      className={`text-sm font-mono ${errors.veiculoPlaca ? 'border-destructive' : ''}`}
+                      maxLength={8}
+                    />
+                    {placaLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                  </div>
                   {errors.veiculoPlaca && <p className="text-[11px] text-destructive mt-1">{errors.veiculoPlaca}</p>}
                 </div>
                 <div>
