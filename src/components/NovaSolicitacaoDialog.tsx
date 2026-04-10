@@ -46,7 +46,7 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const { lookupCep, loading: cepLoading } = useCepLookup();
-  const { lookupPlaca } = usePlacaLookup();
+  const { lookupPlaca, loading: placaLoading } = usePlacaLookup();
 
   const set = (field: string, value: string) => {
     setForm(prev => ({ ...prev, [field]: value }));
