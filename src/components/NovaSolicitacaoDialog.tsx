@@ -375,13 +375,16 @@ export default function NovaSolicitacaoDialog({ open, onOpenChange, onCreated }:
                   <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1.5">
                     <FileText className="h-3 w-3 text-muted-foreground" />Placa
                   </Label>
-                  <Input
-                    placeholder="Ex: ABC1234"
-                    value={form.veiculoPlaca}
-                    onChange={e => handlePlacaChange(e.target.value)}
-                    className={`text-sm font-mono ${errors.veiculoPlaca ? 'border-destructive' : ''}`}
-                    maxLength={8}
-                  />
+                  <div className="relative">
+                    <Input
+                      placeholder="Ex: ABC1234"
+                      value={form.veiculoPlaca}
+                      onChange={e => handlePlacaChange(e.target.value)}
+                      className={`text-sm font-mono ${errors.veiculoPlaca ? 'border-destructive' : ''}`}
+                      maxLength={8}
+                    />
+                    {placaLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                  </div>
                   {errors.veiculoPlaca && <p className="text-[11px] text-destructive mt-1">{errors.veiculoPlaca}</p>}
                 </div>
                 <div>
