@@ -20,6 +20,23 @@ const REGIOES_DISPONIVEIS = [
   'Belo Horizonte', 'Curitiba', 'Nacional (Padrão)',
 ];
 
+const RegiaoCustomInput = ({ regioes, onAdd }: { regioes: string[]; onAdd: (r: string) => void }) => {
+  const [value, setValue] = useState('');
+  const handleAdd = () => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    if (regioes.includes(trimmed)) { toast.error('Região já adicionada.'); return; }
+    onAdd(trimmed);
+    setValue('');
+  };
+  return (
+    <div className="flex gap-1.5 mt-2">
+      <Input value={value} onChange={e => setValue(e.target.value)} placeholder="Adicionar região personalizada..." className="text-xs h-8" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleAdd())} />
+      <Button type="button" size="sm" variant="outline" className="h-8 text-xs px-3" onClick={handleAdd}>+ Adicionar</Button>
+    </div>
+  );
+};
+
 const statusVariant = (s: string) => {
   switch (s) {
     case 'Vigente': return 'success';
