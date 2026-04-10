@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,129 +9,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Plus, Search, Pencil, TableProperties, Calendar, Eye, Save, ArrowLeft, Copy, MapPin } from 'lucide-react';
-import { getTarifas } from '@/data/store';
-
-interface TabelaItem {
-  tarifaId: string;
-  tarifaNome: string;
-  categoria: string;
-  valor: number;
-  franquia: number;
-  valorExcedente: number;
-  minimo: number;
-  observacao: string;
-}
+import { Plus, Search, Pencil, TableProperties, Calendar, Save, ArrowLeft, MapPin, Loader2 } from 'lucide-react';
+import { useTabelasComerciais, TabelaComercial, TabelaItem } from '@/hooks/useTabelasComerciais';
 
 const REGIOES_DISPONIVEIS = [
-  'São Paulo Capital',
-  'Grande São Paulo (ABCD)',
-  'Interior SP - Campinas',
-  'Interior SP - Ribeirão Preto',
-  'Interior SP - Sorocaba',
-  'Interior SP - São José dos Campos',
-  'Litoral SP',
-  'Rio de Janeiro Capital',
-  'Grande Rio (Niterói/Baixada)',
-  'Belo Horizonte',
-  'Curitiba',
-  'Nacional (Padrão)',
-];
-
-interface TabelaComercial {
-  id: string;
-  nome: string;
-  vigenciaInicio: string;
-  vigenciaFim: string;
-  status: 'Vigente' | 'Expirada' | 'Rascunho' | 'Em revisão';
-  prestadorVinculado: string;
-  regioes: string[];
-  prioridade: number;
-  itens: TabelaItem[];
-}
-
-const buildDefaultItems = (): TabelaItem[] => {
-  const tarifas = getTarifas().filter(t => t.situacao === 'Ativo');
-  return tarifas.map(t => ({
-    tarifaId: t.id,
-    tarifaNome: t.nome,
-    categoria: t.categoria,
-    valor: 0,
-    franquia: 0,
-    valorExcedente: 0,
-    minimo: 0,
-    observacao: '',
-  }));
-};
-
-const SEED_ITEMS_PADRAO: TabelaItem[] = (() => {
-  const items = buildDefaultItems();
-  const values: Record<string, Partial<TabelaItem>> = {
-    'Saída': { valor: 180, minimo: 180 },
-    'Km Excedente': { valor: 4.50, franquia: 10, valorExcedente: 5.50 },
-    'Hora Trabalhada': { valor: 95 },
-    'Hora Parada': { valor: 55 },
-    'Diária Base': { valor: 450 },
-    'Estrada de Terra': { valor: 6.00 },
-    'Pedágio': { valor: 0, observacao: 'Repasse integral' },
-    'Adicional Noturno': { valor: 72, observacao: '40% sobre saída' },
-    'Patins': { valor: 300 },
-    'Guincho Pesado': { valor: 600, minimo: 600 },
-  };
-  return items.map(i => ({ ...i, ...(values[i.tarifaNome] || {}) }));
-})();
-
-const SEED_ITEMS_PREMIUM: TabelaItem[] = (() => {
-  const items = buildDefaultItems();
-  const values: Record<string, Partial<TabelaItem>> = {
-    'Saída': { valor: 250, minimo: 250 },
-    'Km Excedente': { valor: 6.00, franquia: 15, valorExcedente: 7.50 },
-    'Hora Trabalhada': { valor: 130 },
-    'Hora Parada': { valor: 75 },
-    'Diária Base': { valor: 600 },
-    'Estrada de Terra': { valor: 8.00 },
-    'Pedágio': { valor: 0, observacao: 'Repasse integral' },
-    'Adicional Noturno': { valor: 100, observacao: '40% sobre saída' },
-    'Patins': { valor: 400 },
-    'Guincho Pesado': { valor: 800, minimo: 800 },
-  };
-  return items.map(i => ({ ...i, ...(values[i.tarifaNome] || {}) }));
-})();
-
-const SEED_ITEMS_INTERIOR: TabelaItem[] = (() => {
-  const items = buildDefaultItems();
-  const values: Record<string, Partial<TabelaItem>> = {
-    'Saída': { valor: 150, minimo: 150 },
-    'Km Excedente': { valor: 3.80, franquia: 15, valorExcedente: 4.80 },
-    'Hora Trabalhada': { valor: 80 },
-    'Hora Parada': { valor: 45 },
-    'Diária Base': { valor: 380 },
-    'Pedágio': { valor: 0, observacao: 'Repasse integral' },
-    'Adicional Noturno': { valor: 60, observacao: '40% sobre saída' },
-    'Patins': { valor: 250 },
-  };
-  return items.map(i => ({ ...i, ...(values[i.tarifaNome] || {}) }));
-})();
-
-const SEED_ITEMS_NOTURNA: TabelaItem[] = (() => {
-  const items = buildDefaultItems();
-  const values: Record<string, Partial<TabelaItem>> = {
-    'Saída': { valor: 280, minimo: 280 },
-    'Km Excedente': { valor: 7.00, franquia: 10, valorExcedente: 9.00 },
-    'Hora Trabalhada': { valor: 150 },
-    'Hora Parada': { valor: 85 },
-    'Adicional Noturno': { valor: 0, observacao: 'Já incluso na taxa' },
-    'Patins': { valor: 450 },
-    'Guincho Pesado': { valor: 900, minimo: 900 },
-  };
-  return items.map(i => ({ ...i, ...(values[i.tarifaNome] || {}) }));
-})();
-
-const MOCK_TABELAS: TabelaComercial[] = [
-  { id: '1', nome: 'Tabela Padrão Nacional', vigenciaInicio: '2025-01-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Todos', regioes: ['Nacional (Padrão)'], prioridade: 0, itens: SEED_ITEMS_PADRAO },
-  { id: '2', nome: 'Tabela Premium SP Capital', vigenciaInicio: '2025-03-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Auto Socorro SP', regioes: ['São Paulo Capital', 'Grande São Paulo (ABCD)'], prioridade: 10, itens: SEED_ITEMS_PREMIUM },
-  { id: '3', nome: 'Tabela Interior SP', vigenciaInicio: '2024-06-01', vigenciaFim: '2024-12-31', status: 'Expirada', prestadorVinculado: 'Todos', regioes: ['Interior SP - Campinas', 'Interior SP - Ribeirão Preto', 'Interior SP - Sorocaba', 'Interior SP - São José dos Campos'], prioridade: 5, itens: SEED_ITEMS_INTERIOR },
-  { id: '4', nome: 'Tabela Emergencial Noturna', vigenciaInicio: '2025-06-01', vigenciaFim: '2026-05-31', status: 'Rascunho', prestadorVinculado: '—', regioes: ['São Paulo Capital'], prioridade: 20, itens: SEED_ITEMS_NOTURNA },
+  'São Paulo Capital', 'Grande São Paulo (ABCD)',
+  'Interior SP - Campinas', 'Interior SP - Ribeirão Preto',
+  'Interior SP - Sorocaba', 'Interior SP - São José dos Campos',
+  'Litoral SP', 'Rio de Janeiro Capital', 'Grande Rio (Niterói/Baixada)',
+  'Belo Horizonte', 'Curitiba', 'Nacional (Padrão)',
 ];
 
 const statusVariant = (s: string) => {
@@ -149,10 +35,11 @@ const fmtDate = (d: string) => {
   try { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR'); } catch { return d; }
 };
 
-const fmtCurrency = (v: number) => v ? `R$ ${v.toFixed(2).replace('.', ',')}` : '—';
+const toggleRegiao = (regioes: string[], regiao: string) =>
+  regioes.includes(regiao) ? regioes.filter(r => r !== regiao) : [...regioes, regiao];
 
 export default function FinanceiroTabelas() {
-  const [tabelas, setTabelas] = useState(MOCK_TABELAS);
+  const { tabelas, loading, saving, createTabela, saveTabela, cloneItens, updateItemLocal } = useTabelasComerciais();
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
@@ -167,27 +54,21 @@ export default function FinanceiroTabelas() {
 
   const currentTabela = editingTabela ? tabelas.find(t => t.id === editingTabela) : null;
 
-  const toggleRegiao = (regioes: string[], regiao: string) =>
-    regioes.includes(regiao) ? regioes.filter(r => r !== regiao) : [...regioes, regiao];
-
-  const handleSave = () => {
+  const handleCreate = async () => {
     if (!form.nome) { toast.error('Informe o nome da tabela.'); return; }
-    if (form.regioes.length === 0) { toast.error('Selecione ao menos uma região de aplicação.'); return; }
-    const newTabela: TabelaComercial = {
-      id: `t${Date.now()}`,
+    if (form.regioes.length === 0) { toast.error('Selecione ao menos uma região.'); return; }
+    const id = await createTabela({
       nome: form.nome,
-      vigenciaInicio: form.vigenciaInicio || '—',
-      vigenciaFim: form.vigenciaFim || '—',
-      status: 'Rascunho',
-      prestadorVinculado: form.prestadorVinculado || '—',
+      vigenciaInicio: form.vigenciaInicio,
+      vigenciaFim: form.vigenciaFim,
+      prestadorVinculado: form.prestadorVinculado,
       regioes: form.regioes,
       prioridade: form.prioridade,
-      itens: buildDefaultItems(),
-    };
-    setTabelas(prev => [...prev, newTabela]);
-    setModalOpen(false);
-    setForm({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', regioes: [], prioridade: 0 });
-    toast.success('Tabela comercial criada. Clique para configurar os valores.');
+    });
+    if (id) {
+      setModalOpen(false);
+      setForm({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', regioes: [], prioridade: 0 });
+    }
   };
 
   const openEditor = (t: TabelaComercial) => {
@@ -195,41 +76,19 @@ export default function FinanceiroTabelas() {
     setEditForm({ nome: t.nome, vigenciaInicio: t.vigenciaInicio, vigenciaFim: t.vigenciaFim, prestadorVinculado: t.prestadorVinculado, status: t.status, regioes: [...t.regioes], prioridade: t.prioridade });
   };
 
-  const updateItemField = (tarifaId: string, field: keyof TabelaItem, value: string | number) => {
-    setTabelas(prev => prev.map(tab => {
-      if (tab.id !== editingTabela) return tab;
-      return {
-        ...tab,
-        itens: tab.itens.map(item =>
-          item.tarifaId === tarifaId ? { ...item, [field]: value } : item
-        ),
-      };
-    }));
-  };
-
-  const handleSaveTabela = () => {
-    if (!editingTabela) return;
-    setTabelas(prev => prev.map(t => t.id === editingTabela ? {
-      ...t,
-      nome: editForm.nome || t.nome,
-      vigenciaInicio: editForm.vigenciaInicio || t.vigenciaInicio,
-      vigenciaFim: editForm.vigenciaFim || t.vigenciaFim,
-      prestadorVinculado: editForm.prestadorVinculado || t.prestadorVinculado,
-      status: (editForm.status || t.status) as TabelaComercial['status'],
+  const handleSaveTabela = async () => {
+    if (!editingTabela || !currentTabela) return;
+    const updated: TabelaComercial = {
+      ...currentTabela,
+      nome: editForm.nome || currentTabela.nome,
+      vigenciaInicio: editForm.vigenciaInicio || currentTabela.vigenciaInicio,
+      vigenciaFim: editForm.vigenciaFim || currentTabela.vigenciaFim,
+      prestadorVinculado: editForm.prestadorVinculado || currentTabela.prestadorVinculado,
+      status: (editForm.status || currentTabela.status) as TabelaComercial['status'],
       regioes: editForm.regioes,
       prioridade: editForm.prioridade,
-    } : t));
-    toast.success('Tabela salva com sucesso!');
-  };
-
-  const handleCloneTabela = (sourceId: string) => {
-    const source = tabelas.find(t => t.id === sourceId);
-    if (!source || !editingTabela) return;
-    setTabelas(prev => prev.map(tab => {
-      if (tab.id !== editingTabela) return tab;
-      return { ...tab, itens: source.itens.map(i => ({ ...i })) };
-    }));
-    toast.success(`Valores importados de "${source.nome}".`);
+    };
+    await saveTabela(updated);
   };
 
   const kpis = [
@@ -238,6 +97,16 @@ export default function FinanceiroTabelas() {
     { label: 'Expiradas', value: tabelas.filter(t => t.status === 'Expirada').length, color: 'text-muted-foreground' },
     { label: 'Total', value: tabelas.length, color: 'text-foreground' },
   ];
+
+  // ===== LOADING =====
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <span className="ml-3 text-muted-foreground">Carregando tabelas comerciais...</span>
+      </div>
+    );
+  }
 
   // ===== EDITOR VIEW =====
   if (currentTabela) {
@@ -256,7 +125,10 @@ export default function FinanceiroTabelas() {
               <p>Edite valores, franquias e mínimos de cada tarifa desta tabela</p>
             </div>
           </div>
-          <Button onClick={handleSaveTabela}><Save className="h-4 w-4 mr-1.5" />Salvar Tabela</Button>
+          <Button onClick={handleSaveTabela} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Save className="h-4 w-4 mr-1.5" />}
+            Salvar Tabela
+          </Button>
         </div>
 
         {/* Metadados + Clone */}
@@ -288,7 +160,7 @@ export default function FinanceiroTabelas() {
             </div>
             <div className="space-y-1.5 min-w-[180px]">
               <Label className="text-xs font-medium">Importar valores de</Label>
-              <Select onValueChange={handleCloneTabela}>
+              <Select onValueChange={v => cloneItens(v, editingTabela!)}>
                 <SelectTrigger><SelectValue placeholder="Outra tabela..." /></SelectTrigger>
                 <SelectContent>
                   {tabelas.filter(t => t.id !== editingTabela).map(t => (
@@ -312,18 +184,16 @@ export default function FinanceiroTabelas() {
                 </label>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground mt-1.5">Tabelas com maior prioridade substituem as de menor prioridade na mesma região. "Nacional (Padrão)" funciona como fallback.</p>
+            <p className="text-[10px] text-muted-foreground mt-1.5">Tabelas com maior prioridade substituem as de menor prioridade na mesma região.</p>
           </div>
         </CardContent></Card>
 
-        {/* Status badges */}
         <div className="flex items-center gap-2">
           <Badge variant="success" className="font-semibold">{configuredCount} tarifas configuradas</Badge>
           {pendingCount > 0 && <Badge variant="warning" className="font-semibold">{pendingCount} sem valor</Badge>}
           <Badge variant="outline" className="font-semibold">{currentTabela.itens.length} total</Badge>
         </div>
 
-        {/* Pricing Grid */}
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto scrollbar-thin">
@@ -340,35 +210,32 @@ export default function FinanceiroTabelas() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentTabela.itens.map(item => {
-                    const hasValue = item.valor > 0;
-                    return (
-                      <TableRow key={item.tarifaId} className={`table-row-hover ${!hasValue ? 'bg-warning/[0.03]' : ''}`}>
-                        <TableCell className="font-semibold text-[13px]">{item.tarifaNome}</TableCell>
-                        <TableCell><Badge variant="outline" className="text-[10px] font-semibold">{item.categoria}</Badge></TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums"
-                            value={item.valor || ''} onChange={e => updateItemField(item.tarifaId, 'valor', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="1" min="0" className="w-20 h-8 text-xs tabular-nums"
-                            value={item.franquia || ''} onChange={e => updateItemField(item.tarifaId, 'franquia', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums"
-                            value={item.valorExcedente || ''} onChange={e => updateItemField(item.tarifaId, 'valorExcedente', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums"
-                            value={item.minimo || ''} onChange={e => updateItemField(item.tarifaId, 'minimo', parseFloat(e.target.value) || 0)} />
-                        </TableCell>
-                        <TableCell>
-                          <Input className="w-36 h-8 text-xs"
-                            value={item.observacao} onChange={e => updateItemField(item.tarifaId, 'observacao', e.target.value)} />
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {currentTabela.itens.map(item => (
+                    <TableRow key={item.tarifaId} className={`table-row-hover ${item.valor === 0 ? 'bg-warning/[0.03]' : ''}`}>
+                      <TableCell className="font-semibold text-[13px]">{item.tarifaNome}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-[10px] font-semibold">{item.categoria}</Badge></TableCell>
+                      <TableCell>
+                        <Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums"
+                          value={item.valor || ''} onChange={e => updateItemLocal(editingTabela!, item.tarifaId, 'valor', parseFloat(e.target.value) || 0)} />
+                      </TableCell>
+                      <TableCell>
+                        <Input type="number" step="1" min="0" className="w-20 h-8 text-xs tabular-nums"
+                          value={item.franquia || ''} onChange={e => updateItemLocal(editingTabela!, item.tarifaId, 'franquia', parseFloat(e.target.value) || 0)} />
+                      </TableCell>
+                      <TableCell>
+                        <Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums"
+                          value={item.valorExcedente || ''} onChange={e => updateItemLocal(editingTabela!, item.tarifaId, 'valorExcedente', parseFloat(e.target.value) || 0)} />
+                      </TableCell>
+                      <TableCell>
+                        <Input type="number" step="0.01" min="0" className="w-24 h-8 text-xs tabular-nums"
+                          value={item.minimo || ''} onChange={e => updateItemLocal(editingTabela!, item.tarifaId, 'minimo', parseFloat(e.target.value) || 0)} />
+                      </TableCell>
+                      <TableCell>
+                        <Input className="w-36 h-8 text-xs"
+                          value={item.observacao} onChange={e => updateItemLocal(editingTabela!, item.tarifaId, 'observacao', e.target.value)} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
@@ -462,7 +329,6 @@ export default function FinanceiroTabelas() {
         </Table>
       </CardContent></Card>
 
-      {/* Modal Nova Tabela */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Nova Tabela Comercial</DialogTitle></DialogHeader>
@@ -489,7 +355,13 @@ export default function FinanceiroTabelas() {
               <p className="text-[10px] text-muted-foreground">Tabelas com maior prioridade são usadas primeiro na mesma região.</p>
             </div>
           </div>
-          <DialogFooter className="gap-2"><Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button><Button onClick={handleSave}>Criar Tabela</Button></DialogFooter>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button>
+            <Button onClick={handleCreate} disabled={saving}>
+              {saving && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Criar Tabela
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
