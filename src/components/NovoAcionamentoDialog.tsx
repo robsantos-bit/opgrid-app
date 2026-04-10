@@ -162,10 +162,22 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
   const [calculatingQuote, setCalculatingQuote] = useState(false);
   const calcTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const buildEnderecoStringFromForm = (tipo: 'origem' | 'destino') => {
+    const prefix = tipo;
+    const rua = (form as any)[`${prefix}Rua`];
+    const num = (form as any)[`${prefix}Numero`];
+    const complemento = (form as any)[`${prefix}Complemento`];
+    const bairro = (form as any)[`${prefix}Bairro`];
+    const cidade = (form as any)[`${prefix}Cidade`];
+    const uf = (form as any)[`${prefix}Uf`];
+    const cidadeUf = cidade && uf ? `${cidade}/${uf}` : cidade || uf || '';
+    return [rua, num, complemento, bairro, cidadeUf].filter(Boolean).join(', ');
+  };
+
   const calculateQuote = async () => {
     const origemEndereco = buildEnderecoStringFromForm('origem');
     const destinoEndereco = buildEnderecoStringFromForm('destino');
-    if (!origemEndereco || origemEndereco.length < 5 || !destinoEndereco || destinoEndereco.length < 5) return;
+    if (origemEndereco.length < 8 || destinoEndereco.length < 8) return null;
 
     setCalculatingQuote(true);
     try {
@@ -188,45 +200,83 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
       if (data?.sucesso && data.orcamento) {
         setForm(prev => ({
           ...prev,
-          valorServico: String(data.orcamento.total),
-          kmTotal: String(data.orcamento.distancia_km),
+          valorServico: String(data.orcamento.total ?? ''),
+          kmTotal: String(data.orcamento.distancia_km ?? ''),
         }));
-        toast.success(`Cotação calculada: R$ ${data.orcamento.total.toFixed(2)} | ${data.orcamento.distancia_km.toFixed(1)} km`, {
-          description: `Tabela: ${data.orcamento.tabela_aplicada}`,
-        });
+        return data.orcamento;
       }
     } catch (err: any) {
       console.error('Quote calc error:', err);
-      // Don't show error toast - manual input is fine
     } finally {
       setCalculatingQuote(false);
     }
-  };
 
-  const buildEnderecoStringFromForm = (tipo: 'origem' | 'destino') => {
-    const prefix = tipo;
-    const rua = (form as any)[`${prefix}Rua`];
-    const num = (form as any)[`${prefix}Numero`];
-    const bairro = (form as any)[`${prefix}Bairro`];
-    const cidade = (form as any)[`${prefix}Cidade`];
-    const uf = (form as any)[`${prefix}Uf`];
-    return [rua, num, bairro, cidade ? `${cidade}/${uf}` : ''].filter(Boolean).join(', ');
+    return null;
   };
 
   // Trigger auto-calc when addresses change (debounced)
   useEffect(() => {
     if (calcTimeoutRef.current) clearTimeout(calcTimeoutRef.current);
-    const origemOk = form.origemCidade && form.origemRua;
-    const destinoOk = form.destinoCidade && form.destinoRua;
-    if (origemOk && destinoOk) {
+
+    const origemEndereco = buildEnderecoStringFromForm('origem');
+    const destinoEndereco = buildEnderecoStringFromForm('destino');
+
+    if (origemEndereco.length >= 8 && destinoEndereco.length >= 8) {
       calcTimeoutRef.current = setTimeout(() => {
-        calculateQuote();
-      }, 1500);
+        void calculateQuote();
+      }, 900);
     }
-    return () => { if (calcTimeoutRef.current) clearTimeout(calcTimeoutRef.current); };
-  }, [form.origemRua, form.origemCidade, form.origemUf, form.destinoRua, form.destinoCidade, form.destinoUf]);
+
+    return () => {
+      if (calcTimeoutRef.current) clearTimeout(calcTimeoutRef.current);
+    };
+  }, [
+    form.origemRua,
+    form.origemNumero,
+    form.origemComplemento,
+    form.origemBairro,
+    form.origemCidade,
+    form.origemUf,
+    form.destinoRua,
+    form.destinoNumero,
+    form.destinoComplemento,
+    form.destinoBairro,
+    form.destinoCidade,
+    form.destinoUf,
+    form.tipoServico,
+  ]);
 
   const buildEnderecoString = buildEnderecoStringFromForm;
+
+  const insertSolicitacaoResiliente = async (payload: Record<string, any>) => {
+    const unknownColumnRegex = /Could not find the '([^']+)' column of 'solicitacoes'/i;
+    let nextPayload = { ...payload };
+    let lastError: any = null;
+
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const cleanedPayload = Object.fromEntries(
+        Object.entries(nextPayload).filter(([, value]) => value !== undefined)
+      );
+
+      const { data, error } = await supabase
+        .from('solicitacoes')
+        .insert(cleanedPayload)
+        .select()
+        .single();
+
+      if (!error) return data;
+
+      lastError = error;
+      const unknownColumn = error.message?.match(unknownColumnRegex)?.[1];
+      if (!unknownColumn || !(unknownColumn in nextPayload)) throw error;
+
+      const { [unknownColumn]: _removed, ...rest } = nextPayload;
+      nextPayload = rest;
+      console.warn('[NovoAcionamentoDialog] removendo coluna não suportada:', unknownColumn);
+    }
+
+    throw lastError;
+  };
 
   const handleSubmit = async () => {
     if (!form.modelo.trim()) {
@@ -238,41 +288,51 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
       return;
     }
 
+    const origemEndereco = buildEnderecoString('origem');
+    const destinoEndereco = buildEnderecoString('destino');
+
+    if (!origemEndereco || !destinoEndereco) {
+      toast.error('Preencha origem e destino para criar o acionamento');
+      return;
+    }
+
     setSubmitting(true);
     try {
       const now = new Date().toISOString();
       const protocolo = form.protocolo.trim() || `OS-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(Math.floor(Math.random() * 9999)).padStart(4, '0')}`;
-      const origemEndereco = buildEnderecoString('origem');
-      const destinoEndereco = buildEnderecoString('destino');
+      const quote = (!form.valorServico || !form.kmTotal) ? await calculateQuote() : null;
+      const valorCalculado = quote?.total ?? (form.valorServico ? parseFloat(form.valorServico) : null);
+      const kmCalculado = quote?.distancia_km ?? (form.kmTotal ? parseFloat(form.kmTotal) : null);
 
-      // Use only known columns from solicitacoes table
       const insertData: Record<string, any> = {
         protocolo,
         data_hora: form.dataHora ? new Date(form.dataHora).toISOString() : now,
         cliente_nome: form.nomeSolicitante.trim() || 'Cliente direto',
         cliente_telefone: form.whatsapp.trim() || null,
+        cliente_whatsapp: form.whatsapp.trim() || null,
         placa: form.placa.trim().toUpperCase() || null,
         tipo_veiculo: form.tipoServico,
         modelo_veiculo: form.modelo.trim(),
-        cor: form.cor.trim() || null,
-        origem: origemEndereco || null,
-        destino: destinoEndereco || null,
+        origem_endereco: origemEndereco,
+        destino_endereco: destinoEndereco,
+        origem: origemEndereco,
+        destino: destinoEndereco,
         motivo: form.tipoServico,
         observacoes: form.observacoes.trim() || null,
-        valor_estimado: form.valorServico ? parseFloat(form.valorServico) : null,
-        status: 'Recebida',
+        valor_estimado: valorCalculado,
+        valor: valorCalculado,
+        distancia_estimada_km: kmCalculado,
+        status: 'pendente',
+        prioridade: 'normal',
         canal: 'Web',
       };
 
-      const { data, error } = await supabase.from('solicitacoes').insert(insertData).select().single();
-
-      if (error) throw error;
+      await insertSolicitacaoResiliente(insertData);
 
       toast.success('Acionamento criado com sucesso!', {
         description: `${protocolo} — ${form.modelo} • ${form.placa}`,
       });
 
-      // Reset form
       setForm({
         protocolo: '', dataHora: new Date().toISOString().slice(0, 16),
         previsaoChegadaMin: '60', servicoAgendado: false, clienteId: '',
@@ -289,7 +349,7 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
       onOpenChange(false);
       onCreated?.();
     } catch (err: any) {
-      toast.error('Erro ao criar acionamento', { description: err.message });
+      toast.error('Erro ao criar acionamento', { description: err.message || 'Falha ao salvar a solicitação' });
     } finally {
       setSubmitting(false);
     }
