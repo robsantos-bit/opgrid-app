@@ -552,9 +552,11 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
               <div>
                 <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1.5">
                   <DollarSign className="h-3 w-3 text-muted-foreground" />Valor do Serviço (R$)
+                  {calculatingQuote && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
                 </Label>
                 <Input type="number" step="0.01" placeholder="Ex: 150,00" value={form.valorServico}
                   onChange={e => set('valorServico', e.target.value)} className="text-sm" />
+                {calculatingQuote && <p className="text-[10px] text-primary mt-1">Calculando cotação...</p>}
               </div>
               <div>
                 <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1.5">
@@ -563,7 +565,7 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
                 <Input type="number" step="0.1" placeholder="Ex: 25" value={form.kmTotal}
                   onChange={e => set('kmTotal', e.target.value)} className="text-sm" />
                 <p className="text-[10px] text-muted-foreground mt-1">
-                  Calculado automaticamente: Base → Origem → Destino → Base
+                  Calculado automaticamente ao preencher Origem e Destino
                 </p>
               </div>
             </div>
