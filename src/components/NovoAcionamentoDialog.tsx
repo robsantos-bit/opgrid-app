@@ -105,6 +105,56 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
         }));
       }
       toast.success('Endereço preenchido!');
+    } else {
+      toast.error('CEP não encontrado.');
+    }
+  };
+
+  const handleCepChange = async (tipo: 'origem' | 'destino', value: string) => {
+    const field = tipo === 'origem' ? 'origemCep' : 'destinoCep';
+    set(field, value);
+    const clean = value.replace(/\D/g, '');
+    if (clean.length === 8) {
+      const result = await lookupCep(value);
+      if (result) {
+        if (tipo === 'origem') {
+          setForm(prev => ({
+            ...prev,
+            origemRua: result.logradouro || '',
+            origemBairro: result.bairro || '',
+            origemCidade: result.localidade || '',
+            origemUf: result.uf || '',
+          }));
+        } else {
+          setForm(prev => ({
+            ...prev,
+            destinoRua: result.logradouro || '',
+            destinoBairro: result.bairro || '',
+            destinoCidade: result.localidade || '',
+            destinoUf: result.uf || '',
+          }));
+        }
+        toast.success('Endereço preenchido automaticamente!');
+      }
+    }
+  };
+
+  const handlePlacaChange = async (value: string) => {
+    const upper = value.toUpperCase();
+    set('placa', upper);
+    const clean = upper.replace(/[-\s]/g, '');
+    if (clean.length >= 7) {
+      const result = await lookupPlaca(upper);
+      if (result) {
+        setForm(prev => ({
+          ...prev,
+          modelo: `${result.marca} ${result.modelo}`,
+          cor: result.cor || prev.cor,
+        }));
+        toast.success(`Veículo: ${result.marca} ${result.modelo} - ${result.cor}`);
+      } else {
+        toast.info('Placa não encontrada. Preencha manualmente.');
+      }
     }
   };
 
