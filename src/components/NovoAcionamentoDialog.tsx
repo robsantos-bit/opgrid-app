@@ -33,6 +33,7 @@ interface Props {
 
 export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }: Props) {
   const { lookupCep, loading: cepLoading } = useCepLookup();
+  const { lookupPlaca, loading: placaLoading } = usePlacaLookup();
   const [submitting, setSubmitting] = useState(false);
 
   const [form, setForm] = useState({
