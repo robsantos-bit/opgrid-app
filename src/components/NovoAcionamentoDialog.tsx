@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,7 @@ import { usePlacaLookup } from '@/hooks/usePlacaLookup';
 import { toast } from 'sonner';
 import {
   Loader2, MapPin, Car, User, Phone, FileText, Clock, Link2,
-  DollarSign, Route, Eye, EyeOff, Send, Zap
+  DollarSign, Route, Eye, EyeOff, Send, Zap, Calculator
 } from 'lucide-react';
 
 const TIPOS_SERVICO = [
