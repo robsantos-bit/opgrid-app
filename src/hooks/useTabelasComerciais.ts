@@ -193,10 +193,8 @@ export function useTabelasComerciais() {
 
       if (metaErr) throw metaErr;
 
-      // Upsert all items (delete + re-insert for simplicity)
-      await supabase.from('tabelas_comerciais_itens').delete().eq('tabela_id', tabela.id);
-
-      const itensToInsert = tabela.itens.map(i => ({
+      // Upsert all items using onConflict to avoid duplicate key errors
+      const itensToUpsert = tabela.itens.map(i => ({
         tabela_id: tabela.id,
         tarifa_nome: i.tarifaNome,
         categoria: i.categoria,
@@ -209,7 +207,7 @@ export function useTabelasComerciais() {
 
       const { error: itensErr } = await supabase
         .from('tabelas_comerciais_itens')
-        .insert(itensToInsert);
+        .upsert(itensToUpsert, { onConflict: 'tabela_id,tarifa_nome' });
 
       if (itensErr) throw itensErr;
 
