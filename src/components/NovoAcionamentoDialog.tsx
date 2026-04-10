@@ -158,8 +158,53 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
     }
   };
 
-  const buildEnderecoString = (tipo: 'origem' | 'destino') => {
-    const prefix = tipo === 'origem' ? 'origem' : 'destino';
+  // Auto-calculate quote when both origin and destination are filled
+  const [calculatingQuote, setCalculatingQuote] = useState(false);
+  const calcTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const calculateQuote = async () => {
+    const origemEndereco = buildEnderecoStringFromForm('origem');
+    const destinoEndereco = buildEnderecoStringFromForm('destino');
+    if (!origemEndereco || origemEndereco.length < 5 || !destinoEndereco || destinoEndereco.length < 5) return;
+
+    setCalculatingQuote(true);
+    try {
+      const tipoVeiculo = form.tipoServico?.toLowerCase().includes('pesado') ? 'pesado' :
+        form.tipoServico?.toLowerCase().includes('moto') ? 'moto' : 'leve';
+
+      const { data, error } = await supabase.functions.invoke('calculate-quote', {
+        body: {
+          origem: origemEndereco,
+          destino: destinoEndereco,
+          tipo_veiculo: tipoVeiculo,
+          possui_patins: false,
+          eh_noturno: false,
+          origem_cidade: form.origemCidade,
+          origem_uf: form.origemUf,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.sucesso && data.orcamento) {
+        setForm(prev => ({
+          ...prev,
+          valorServico: String(data.orcamento.total),
+          kmTotal: String(data.orcamento.distancia_km),
+        }));
+        toast.success(`Cotação calculada: R$ ${data.orcamento.total.toFixed(2)} | ${data.orcamento.distancia_km.toFixed(1)} km`, {
+          description: `Tabela: ${data.orcamento.tabela_aplicada}`,
+        });
+      }
+    } catch (err: any) {
+      console.error('Quote calc error:', err);
+      // Don't show error toast - manual input is fine
+    } finally {
+      setCalculatingQuote(false);
+    }
+  };
+
+  const buildEnderecoStringFromForm = (tipo: 'origem' | 'destino') => {
+    const prefix = tipo;
     const rua = (form as any)[`${prefix}Rua`];
     const num = (form as any)[`${prefix}Numero`];
     const bairro = (form as any)[`${prefix}Bairro`];
@@ -167,6 +212,21 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
     const uf = (form as any)[`${prefix}Uf`];
     return [rua, num, bairro, cidade ? `${cidade}/${uf}` : ''].filter(Boolean).join(', ');
   };
+
+  // Trigger auto-calc when addresses change (debounced)
+  useEffect(() => {
+    if (calcTimeoutRef.current) clearTimeout(calcTimeoutRef.current);
+    const origemOk = form.origemCidade && form.origemRua;
+    const destinoOk = form.destinoCidade && form.destinoRua;
+    if (origemOk && destinoOk) {
+      calcTimeoutRef.current = setTimeout(() => {
+        calculateQuote();
+      }, 1500);
+    }
+    return () => { if (calcTimeoutRef.current) clearTimeout(calcTimeoutRef.current); };
+  }, [form.origemRua, form.origemCidade, form.origemUf, form.destinoRua, form.destinoCidade, form.destinoUf]);
+
+  const buildEnderecoString = buildEnderecoStringFromForm;
 
   const handleSubmit = async () => {
     if (!form.modelo.trim()) {
@@ -185,27 +245,26 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
       const origemEndereco = buildEnderecoString('origem');
       const destinoEndereco = buildEnderecoString('destino');
 
-      const { data, error } = await supabase.from('solicitacoes').insert({
+      // Use only known columns from solicitacoes table
+      const insertData: Record<string, any> = {
         protocolo,
         data_hora: form.dataHora ? new Date(form.dataHora).toISOString() : now,
         cliente_nome: form.nomeSolicitante.trim() || 'Cliente direto',
-        cliente_telefone: form.whatsapp.trim(),
-        cliente_whatsapp: form.whatsapp.trim(),
-        placa: form.placa.trim().toUpperCase(),
+        cliente_telefone: form.whatsapp.trim() || null,
+        placa: form.placa.trim().toUpperCase() || null,
         tipo_veiculo: form.tipoServico,
         modelo_veiculo: form.modelo.trim(),
-        cor: form.cor.trim(),
-        origem: origemEndereco,
-        origem_endereco: origemEndereco,
-        destino: destinoEndereco,
-        destino_endereco: destinoEndereco,
+        cor: form.cor.trim() || null,
+        origem: origemEndereco || null,
+        destino: destinoEndereco || null,
         motivo: form.tipoServico,
-        observacoes: form.observacoes.trim(),
+        observacoes: form.observacoes.trim() || null,
         valor_estimado: form.valorServico ? parseFloat(form.valorServico) : null,
-        distancia_km: form.kmTotal ? parseFloat(form.kmTotal) : null,
         status: 'Recebida',
         canal: 'Web',
-      }).select().single();
+      };
+
+      const { data, error } = await supabase.from('solicitacoes').insert(insertData).select().single();
 
       if (error) throw error;
 
