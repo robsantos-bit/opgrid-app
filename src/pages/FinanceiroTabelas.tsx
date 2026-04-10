@@ -42,12 +42,23 @@ const RegiaoManager = ({
   const [cities, setCities] = useState<string[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
   const [citySearch, setCitySearch] = useState('');
+  const [removedRegioes, setRemovedRegioes] = useState<string[]>([]);
+
+  const handleAddRegion = (regiao: string) => {
+    setRemovedRegioes(prev => prev.filter(item => item !== regiao));
+    onAdd(regiao);
+  };
+
+  const handleDeleteRegion = (regiao: string) => {
+    onRemove(regiao);
+    setRemovedRegioes(prev => prev.includes(regiao) ? prev : [...prev, regiao]);
+  };
 
   const handleAddCustom = () => {
     const trimmed = customValue.trim();
     if (!trimmed) return;
     if (regioes.includes(trimmed)) { toast.error('Região já adicionada.'); return; }
-    onAdd(trimmed);
+    handleAddRegion(trimmed);
     setCustomValue('');
   };
 
@@ -72,7 +83,12 @@ const RegiaoManager = ({
     ? cities.filter(c => c.toLowerCase().includes(citySearch.toLowerCase()))
     : cities;
 
-  const allRegioes = [...REGIOES_DISPONIVEIS, ...regioes.filter(r => !REGIOES_DISPONIVEIS.includes(r))];
+  const allRegioes = Array.from(
+    new Set([
+      ...REGIOES_DISPONIVEIS,
+      ...regioes.filter(r => !REGIOES_DISPONIVEIS.includes(r)),
+    ]),
+  ).filter(r => !removedRegioes.includes(r));
 
   return (
     <div className="space-y-2">
@@ -84,7 +100,12 @@ const RegiaoManager = ({
               {r}
               <button
                 type="button"
-                onClick={() => onRemove(r)}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  handleDeleteRegion(r);
+                }}
+                aria-label={`Excluir região ${r}`}
                 className="ml-0.5 rounded-full hover:bg-destructive/20 p-0.5 transition-colors"
               >
                 <X className="h-2.5 w-2.5 text-muted-foreground hover:text-destructive" />
@@ -147,12 +168,13 @@ const RegiaoManager = ({
             <div className="flex flex-wrap gap-1">
               {filteredCities.slice(0, 100).map(city => {
                 const label = `${city} - ${selectedUf}`;
+                if (removedRegioes.includes(label)) return null;
                 const isSelected = regioes.includes(label);
                 return (
                   <button
                     key={city}
                     type="button"
-                    onClick={() => isSelected ? onRemove(label) : onAdd(label)}
+                    onClick={() => isSelected ? onToggle(label) : handleAddRegion(label)}
                     className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${
                       isSelected
                         ? 'bg-primary text-primary-foreground border-primary'
