@@ -430,7 +430,7 @@ export default function FinanceiroTabelas() {
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-16">
+              <TableRow><TableCell colSpan={7} className="text-center py-16">
                 <div className="empty-state">
                   <div className="empty-state-icon"><TableProperties className="h-5 w-5 text-muted-foreground" /></div>
                   <p className="empty-state-title">Nenhuma tabela comercial encontrada</p>
@@ -440,11 +440,16 @@ export default function FinanceiroTabelas() {
             ) : filtered.map(t => (
               <TableRow key={t.id} className="table-row-hover cursor-pointer" onClick={() => openEditor(t)}>
                 <TableCell><span className="font-semibold text-[13px]">{t.nome}</span></TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <div className="flex flex-wrap gap-1">
+                    {t.regioes.map(r => <Badge key={r} variant="outline" className="text-[10px] font-medium">{r}</Badge>)}
+                  </div>
+                </TableCell>
                 <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">
                   <div className="flex items-center gap-1.5"><Calendar className="h-3 w-3" />{fmtDate(t.vigenciaInicio)} — {fmtDate(t.vigenciaFim)}</div>
                 </TableCell>
                 <TableCell><Badge variant={statusVariant(t.status) as any} className="font-semibold">{t.status}</Badge></TableCell>
-                <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground">{t.prestadorVinculado}</TableCell>
+                <TableCell className="text-center text-[13px] font-bold tabular-nums">{t.prioridade}</TableCell>
                 <TableCell className="text-center text-[13px] font-medium">{t.itens.filter(i => i.valor > 0).length}/{t.itens.length}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar valores" onClick={e => { e.stopPropagation(); openEditor(t); }}>
