@@ -333,9 +333,12 @@ export default function NovoAcionamentoDialog({ open, onOpenChange, onCreated }:
                 <Label className="text-xs font-semibold mb-1.5 flex items-center gap-1.5">
                   <Car className="h-3 w-3 text-muted-foreground" />Placa
                 </Label>
-                <Input placeholder="ABC1D23" value={form.placa}
-                  onChange={e => set('placa', e.target.value.toUpperCase())}
-                  className="text-sm font-mono" maxLength={7} />
+                <div className="relative">
+                  <Input placeholder="ABC1D23" value={form.placa}
+                    onChange={e => handlePlacaChange(e.target.value)}
+                    className="text-sm font-mono" maxLength={7} />
+                  {placaLoading && <Loader2 className="h-3.5 w-3.5 animate-spin absolute right-3 top-2.5 text-muted-foreground" />}
+                </div>
               </div>
               <div>
                 <Label className="text-xs font-semibold mb-1.5 block">Modelo *</Label>
