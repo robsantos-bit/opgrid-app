@@ -194,13 +194,14 @@ export default function FinanceiroTabelas() {
           <div className="mt-4">
             <Label className="text-xs font-medium flex items-center gap-1.5 mb-2"><MapPin className="h-3 w-3" />Regiões de aplicação</Label>
             <div className="flex flex-wrap gap-2">
-              {REGIOES_DISPONIVEIS.map(r => (
+              {[...REGIOES_DISPONIVEIS, ...editForm.regioes.filter(r => !REGIOES_DISPONIVEIS.includes(r))].map(r => (
                 <label key={r} className="flex items-center gap-1.5 text-xs cursor-pointer bg-muted/50 rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors">
                   <Checkbox checked={editForm.regioes.includes(r)} onCheckedChange={() => setEditForm(p => ({ ...p, regioes: toggleRegiao(p.regioes, r) }))} className="h-3.5 w-3.5" />
                   {r}
                 </label>
               ))}
             </div>
+            <RegiaoCustomInput regioes={editForm.regioes} onAdd={(r) => setEditForm(p => ({ ...p, regioes: [...p.regioes, r] }))} />
             <p className="text-[10px] text-muted-foreground mt-1.5">Tabelas com maior prioridade substituem as de menor prioridade na mesma região.</p>
           </div>
         </CardContent></Card>
@@ -362,13 +363,14 @@ export default function FinanceiroTabelas() {
             <div className="space-y-1.5">
               <Label className="text-xs font-medium flex items-center gap-1.5"><MapPin className="h-3 w-3" />Regiões de aplicação *</Label>
               <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                {REGIOES_DISPONIVEIS.map(r => (
+                {[...REGIOES_DISPONIVEIS, ...form.regioes.filter(r => !REGIOES_DISPONIVEIS.includes(r))].map(r => (
                   <label key={r} className="flex items-center gap-1.5 text-xs cursor-pointer bg-muted/50 rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors">
                     <Checkbox checked={form.regioes.includes(r)} onCheckedChange={() => setForm(p => ({ ...p, regioes: toggleRegiao(p.regioes, r) }))} className="h-3.5 w-3.5" />
                     {r}
                   </label>
                 ))}
               </div>
+              <RegiaoCustomInput regioes={form.regioes} onAdd={(r) => setForm(p => ({ ...p, regioes: [...p.regioes, r] }))} />
               <p className="text-[10px] text-muted-foreground">Tabelas com maior prioridade são usadas primeiro na mesma região.</p>
             </div>
           </div>
