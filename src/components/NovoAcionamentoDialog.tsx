@@ -12,6 +12,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useCepLookup } from '@/hooks/useCepLookup';
+import { usePlacaLookup } from '@/hooks/usePlacaLookup';
 import { toast } from 'sonner';
 import {
   Loader2, MapPin, Car, User, Phone, FileText, Clock, Link2,
