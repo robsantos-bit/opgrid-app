@@ -464,7 +464,7 @@ export default function FinanceiroTabelas() {
 
       {/* Modal Nova Tabela */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Nova Tabela Comercial</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-1.5"><Label className="text-xs font-medium">Nome *</Label><Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Tabela Premium SP" /></div>
@@ -472,7 +472,22 @@ export default function FinanceiroTabelas() {
               <div className="space-y-1.5"><Label className="text-xs font-medium">Início vigência</Label><Input type="date" value={form.vigenciaInicio} onChange={e => setForm(p => ({ ...p, vigenciaInicio: e.target.value }))} /></div>
               <div className="space-y-1.5"><Label className="text-xs font-medium">Fim vigência</Label><Input type="date" value={form.vigenciaFim} onChange={e => setForm(p => ({ ...p, vigenciaFim: e.target.value }))} /></div>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs font-medium">Prestador vinculado</Label><Input value={form.prestadorVinculado} onChange={e => setForm(p => ({ ...p, prestadorVinculado: e.target.value }))} placeholder="Todos ou nome específico" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Prestador vinculado</Label><Input value={form.prestadorVinculado} onChange={e => setForm(p => ({ ...p, prestadorVinculado: e.target.value }))} placeholder="Todos ou nome" /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Prioridade</Label><Input type="number" min="0" max="100" value={form.prioridade} onChange={e => setForm(p => ({ ...p, prioridade: parseInt(e.target.value) || 0 }))} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1.5"><MapPin className="h-3 w-3" />Regiões de aplicação *</Label>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                {REGIOES_DISPONIVEIS.map(r => (
+                  <label key={r} className="flex items-center gap-1.5 text-xs cursor-pointer bg-muted/50 rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors">
+                    <Checkbox checked={form.regioes.includes(r)} onCheckedChange={() => setForm(p => ({ ...p, regioes: toggleRegiao(p.regioes, r) }))} className="h-3.5 w-3.5" />
+                    {r}
+                  </label>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Tabelas com maior prioridade são usadas primeiro na mesma região.</p>
+            </div>
           </div>
           <DialogFooter className="gap-2"><Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button><Button onClick={handleSave}>Criar Tabela</Button></DialogFooter>
         </DialogContent>
