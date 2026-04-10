@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { Plus, Search, Pencil, TableProperties, Calendar, Eye, Save, ArrowLeft, Copy } from 'lucide-react';
+import { Plus, Search, Pencil, TableProperties, Calendar, Eye, Save, ArrowLeft, Copy, MapPin } from 'lucide-react';
 import { getTarifas } from '@/data/store';
 
 interface TabelaItem {
@@ -22,6 +23,21 @@ interface TabelaItem {
   observacao: string;
 }
 
+const REGIOES_DISPONIVEIS = [
+  'São Paulo Capital',
+  'Grande São Paulo (ABCD)',
+  'Interior SP - Campinas',
+  'Interior SP - Ribeirão Preto',
+  'Interior SP - Sorocaba',
+  'Interior SP - São José dos Campos',
+  'Litoral SP',
+  'Rio de Janeiro Capital',
+  'Grande Rio (Niterói/Baixada)',
+  'Belo Horizonte',
+  'Curitiba',
+  'Nacional (Padrão)',
+];
+
 interface TabelaComercial {
   id: string;
   nome: string;
@@ -29,6 +45,8 @@ interface TabelaComercial {
   vigenciaFim: string;
   status: 'Vigente' | 'Expirada' | 'Rascunho' | 'Em revisão';
   prestadorVinculado: string;
+  regioes: string[];
+  prioridade: number;
   itens: TabelaItem[];
 }
 
@@ -110,10 +128,10 @@ const SEED_ITEMS_NOTURNA: TabelaItem[] = (() => {
 })();
 
 const MOCK_TABELAS: TabelaComercial[] = [
-  { id: '1', nome: 'Tabela Padrão Nacional', vigenciaInicio: '2025-01-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Todos', itens: SEED_ITEMS_PADRAO },
-  { id: '2', nome: 'Tabela Premium SP Capital', vigenciaInicio: '2025-03-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Auto Socorro SP', itens: SEED_ITEMS_PREMIUM },
-  { id: '3', nome: 'Tabela Interior SP', vigenciaInicio: '2024-06-01', vigenciaFim: '2024-12-31', status: 'Expirada', prestadorVinculado: 'Todos', itens: SEED_ITEMS_INTERIOR },
-  { id: '4', nome: 'Tabela Emergencial Noturna', vigenciaInicio: '2025-06-01', vigenciaFim: '2026-05-31', status: 'Rascunho', prestadorVinculado: '—', itens: SEED_ITEMS_NOTURNA },
+  { id: '1', nome: 'Tabela Padrão Nacional', vigenciaInicio: '2025-01-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Todos', regioes: ['Nacional (Padrão)'], prioridade: 0, itens: SEED_ITEMS_PADRAO },
+  { id: '2', nome: 'Tabela Premium SP Capital', vigenciaInicio: '2025-03-01', vigenciaFim: '2025-12-31', status: 'Vigente', prestadorVinculado: 'Auto Socorro SP', regioes: ['São Paulo Capital', 'Grande São Paulo (ABCD)'], prioridade: 10, itens: SEED_ITEMS_PREMIUM },
+  { id: '3', nome: 'Tabela Interior SP', vigenciaInicio: '2024-06-01', vigenciaFim: '2024-12-31', status: 'Expirada', prestadorVinculado: 'Todos', regioes: ['Interior SP - Campinas', 'Interior SP - Ribeirão Preto', 'Interior SP - Sorocaba', 'Interior SP - São José dos Campos'], prioridade: 5, itens: SEED_ITEMS_INTERIOR },
+  { id: '4', nome: 'Tabela Emergencial Noturna', vigenciaInicio: '2025-06-01', vigenciaFim: '2026-05-31', status: 'Rascunho', prestadorVinculado: '—', regioes: ['São Paulo Capital'], prioridade: 20, itens: SEED_ITEMS_NOTURNA },
 ];
 
 const statusVariant = (s: string) => {
@@ -139,8 +157,8 @@ export default function FinanceiroTabelas() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingTabela, setEditingTabela] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', status: '' });
-  const [form, setForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '' });
+  const [editForm, setEditForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', status: '', regioes: [] as string[], prioridade: 0 });
+  const [form, setForm] = useState({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', regioes: [] as string[], prioridade: 0 });
 
   const filtered = useMemo(() => tabelas.filter(t =>
     (!search || t.nome.toLowerCase().includes(search.toLowerCase())) &&
@@ -149,8 +167,12 @@ export default function FinanceiroTabelas() {
 
   const currentTabela = editingTabela ? tabelas.find(t => t.id === editingTabela) : null;
 
+  const toggleRegiao = (regioes: string[], regiao: string) =>
+    regioes.includes(regiao) ? regioes.filter(r => r !== regiao) : [...regioes, regiao];
+
   const handleSave = () => {
     if (!form.nome) { toast.error('Informe o nome da tabela.'); return; }
+    if (form.regioes.length === 0) { toast.error('Selecione ao menos uma região de aplicação.'); return; }
     const newTabela: TabelaComercial = {
       id: `t${Date.now()}`,
       nome: form.nome,
@@ -158,17 +180,19 @@ export default function FinanceiroTabelas() {
       vigenciaFim: form.vigenciaFim || '—',
       status: 'Rascunho',
       prestadorVinculado: form.prestadorVinculado || '—',
+      regioes: form.regioes,
+      prioridade: form.prioridade,
       itens: buildDefaultItems(),
     };
     setTabelas(prev => [...prev, newTabela]);
     setModalOpen(false);
-    setForm({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '' });
-    toast.success('Tabela comercial criada. Clique no ícone de edição para configurar os valores.');
+    setForm({ nome: '', vigenciaInicio: '', vigenciaFim: '', prestadorVinculado: '', regioes: [], prioridade: 0 });
+    toast.success('Tabela comercial criada. Clique para configurar os valores.');
   };
 
   const openEditor = (t: TabelaComercial) => {
     setEditingTabela(t.id);
-    setEditForm({ nome: t.nome, vigenciaInicio: t.vigenciaInicio, vigenciaFim: t.vigenciaFim, prestadorVinculado: t.prestadorVinculado, status: t.status });
+    setEditForm({ nome: t.nome, vigenciaInicio: t.vigenciaInicio, vigenciaFim: t.vigenciaFim, prestadorVinculado: t.prestadorVinculado, status: t.status, regioes: [...t.regioes], prioridade: t.prioridade });
   };
 
   const updateItemField = (tarifaId: string, field: keyof TabelaItem, value: string | number) => {
@@ -192,6 +216,8 @@ export default function FinanceiroTabelas() {
       vigenciaFim: editForm.vigenciaFim || t.vigenciaFim,
       prestadorVinculado: editForm.prestadorVinculado || t.prestadorVinculado,
       status: (editForm.status || t.status) as TabelaComercial['status'],
+      regioes: editForm.regioes,
+      prioridade: editForm.prioridade,
     } : t));
     toast.success('Tabela salva com sucesso!');
   };
@@ -271,6 +297,22 @@ export default function FinanceiroTabelas() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-1.5 min-w-[80px]">
+              <Label className="text-xs font-medium">Prioridade</Label>
+              <Input type="number" min="0" max="100" value={editForm.prioridade} onChange={e => setEditForm(p => ({ ...p, prioridade: parseInt(e.target.value) || 0 }))} className="w-20" />
+            </div>
+          </div>
+          <div className="mt-4">
+            <Label className="text-xs font-medium flex items-center gap-1.5 mb-2"><MapPin className="h-3 w-3" />Regiões de aplicação</Label>
+            <div className="flex flex-wrap gap-2">
+              {REGIOES_DISPONIVEIS.map(r => (
+                <label key={r} className="flex items-center gap-1.5 text-xs cursor-pointer bg-muted/50 rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors">
+                  <Checkbox checked={editForm.regioes.includes(r)} onCheckedChange={() => setEditForm(p => ({ ...p, regioes: toggleRegiao(p.regioes, r) }))} className="h-3.5 w-3.5" />
+                  {r}
+                </label>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground mt-1.5">Tabelas com maior prioridade substituem as de menor prioridade na mesma região. "Nacional (Padrão)" funciona como fallback.</p>
           </div>
         </CardContent></Card>
 
@@ -379,15 +421,16 @@ export default function FinanceiroTabelas() {
         <Table>
           <TableHeader><TableRow className="hover:bg-transparent">
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Nome</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Regiões</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Vigência</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold">Status</TableHead>
-            <TableHead className="text-[11px] uppercase tracking-wider font-semibold hidden md:table-cell">Prestador</TableHead>
+            <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center">Prio</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-center">Itens</TableHead>
             <TableHead className="text-[11px] uppercase tracking-wider font-semibold text-right">Ações</TableHead>
           </TableRow></TableHeader>
           <TableBody>
             {filtered.length === 0 ? (
-              <TableRow><TableCell colSpan={6} className="text-center py-16">
+              <TableRow><TableCell colSpan={7} className="text-center py-16">
                 <div className="empty-state">
                   <div className="empty-state-icon"><TableProperties className="h-5 w-5 text-muted-foreground" /></div>
                   <p className="empty-state-title">Nenhuma tabela comercial encontrada</p>
@@ -397,11 +440,16 @@ export default function FinanceiroTabelas() {
             ) : filtered.map(t => (
               <TableRow key={t.id} className="table-row-hover cursor-pointer" onClick={() => openEditor(t)}>
                 <TableCell><span className="font-semibold text-[13px]">{t.nome}</span></TableCell>
+                <TableCell className="hidden md:table-cell">
+                  <div className="flex flex-wrap gap-1">
+                    {t.regioes.map(r => <Badge key={r} variant="outline" className="text-[10px] font-medium">{r}</Badge>)}
+                  </div>
+                </TableCell>
                 <TableCell className="hidden md:table-cell text-[12px] text-muted-foreground">
                   <div className="flex items-center gap-1.5"><Calendar className="h-3 w-3" />{fmtDate(t.vigenciaInicio)} — {fmtDate(t.vigenciaFim)}</div>
                 </TableCell>
                 <TableCell><Badge variant={statusVariant(t.status) as any} className="font-semibold">{t.status}</Badge></TableCell>
-                <TableCell className="hidden md:table-cell text-[13px] text-muted-foreground">{t.prestadorVinculado}</TableCell>
+                <TableCell className="text-center text-[13px] font-bold tabular-nums">{t.prioridade}</TableCell>
                 <TableCell className="text-center text-[13px] font-medium">{t.itens.filter(i => i.valor > 0).length}/{t.itens.length}</TableCell>
                 <TableCell className="text-right">
                   <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar valores" onClick={e => { e.stopPropagation(); openEditor(t); }}>
@@ -416,7 +464,7 @@ export default function FinanceiroTabelas() {
 
       {/* Modal Nova Tabela */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Nova Tabela Comercial</DialogTitle></DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="space-y-1.5"><Label className="text-xs font-medium">Nome *</Label><Input value={form.nome} onChange={e => setForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Tabela Premium SP" /></div>
@@ -424,7 +472,22 @@ export default function FinanceiroTabelas() {
               <div className="space-y-1.5"><Label className="text-xs font-medium">Início vigência</Label><Input type="date" value={form.vigenciaInicio} onChange={e => setForm(p => ({ ...p, vigenciaInicio: e.target.value }))} /></div>
               <div className="space-y-1.5"><Label className="text-xs font-medium">Fim vigência</Label><Input type="date" value={form.vigenciaFim} onChange={e => setForm(p => ({ ...p, vigenciaFim: e.target.value }))} /></div>
             </div>
-            <div className="space-y-1.5"><Label className="text-xs font-medium">Prestador vinculado</Label><Input value={form.prestadorVinculado} onChange={e => setForm(p => ({ ...p, prestadorVinculado: e.target.value }))} placeholder="Todos ou nome específico" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Prestador vinculado</Label><Input value={form.prestadorVinculado} onChange={e => setForm(p => ({ ...p, prestadorVinculado: e.target.value }))} placeholder="Todos ou nome" /></div>
+              <div className="space-y-1.5"><Label className="text-xs font-medium">Prioridade</Label><Input type="number" min="0" max="100" value={form.prioridade} onChange={e => setForm(p => ({ ...p, prioridade: parseInt(e.target.value) || 0 }))} /></div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium flex items-center gap-1.5"><MapPin className="h-3 w-3" />Regiões de aplicação *</Label>
+              <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                {REGIOES_DISPONIVEIS.map(r => (
+                  <label key={r} className="flex items-center gap-1.5 text-xs cursor-pointer bg-muted/50 rounded-md px-2.5 py-1.5 hover:bg-muted transition-colors">
+                    <Checkbox checked={form.regioes.includes(r)} onCheckedChange={() => setForm(p => ({ ...p, regioes: toggleRegiao(p.regioes, r) }))} className="h-3.5 w-3.5" />
+                    {r}
+                  </label>
+                ))}
+              </div>
+              <p className="text-[10px] text-muted-foreground">Tabelas com maior prioridade são usadas primeiro na mesma região.</p>
+            </div>
           </div>
           <DialogFooter className="gap-2"><Button variant="outline" onClick={() => setModalOpen(false)}>Cancelar</Button><Button onClick={handleSave}>Criar Tabela</Button></DialogFooter>
         </DialogContent>
