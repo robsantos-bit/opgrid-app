@@ -14,13 +14,16 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecoveryLink, setIsRecoveryLink] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const searchParams = new URLSearchParams(window.location.search);
     const isRecovery = hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
+    const firstLogin = searchParams.get('first_login') === 'true';
 
     setIsRecoveryLink(isRecovery);
+    setIsFirstLogin(firstLogin);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,6 +51,13 @@ export default function ResetPassword() {
       toast.error('Não foi possível atualizar a senha: ' + error.message);
       setLoading(false);
       return;
+    }
+
+    // Clear the must_change_password flag if it was a first-login forced change
+    if (isFirstLogin) {
+      await supabase.auth.updateUser({
+        data: { must_change_password: false },
+      });
     }
 
     toast.success('Senha atualizada com sucesso.');
