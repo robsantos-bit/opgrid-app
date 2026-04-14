@@ -99,9 +99,17 @@ export default function AdminLeadsPrestadores() {
   const convertToProvider = async (id: string) => {
     setUpdating(true);
     try {
-      const { data, error } = await supabase.rpc('converter_lead_em_prestador', { p_lead_id: id });
+      const { data, error } = await supabase.functions.invoke('approve-lead', {
+        body: { lead_id: id },
+      });
       if (error) throw error;
-      toast.success('Lead convertido em prestador com sucesso!');
+      if (data?.error) throw new Error(data.error);
+      
+      const msg = data?.temp_password 
+        ? `Prestador criado! Email: ${data.email} | Senha temporária: ${data.temp_password}`
+        : 'Lead convertido em prestador com sucesso!';
+      toast.success(msg, { duration: 15000 });
+      
       setLeads(prev => prev.map(l => l.id === id ? { ...l, status_lead: 'convertido_em_prestador' } : l));
       if (selected?.id === id) setSelected(prev => prev ? { ...prev, status_lead: 'convertido_em_prestador' } : null);
     } catch (err: any) {
