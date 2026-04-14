@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQueryClient } from '@tanstack/react-query';
@@ -38,12 +39,17 @@ export default function Login() {
       }
     } else {
       setNeedsConfirmation(false);
+      // Check if user must change temporary password
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (currentUser?.user_metadata?.must_change_password) {
+        toast.info('Você precisa trocar sua senha temporária antes de continuar.');
+        navigate('/reset-password?type=recovery&first_login=true');
+        setLoading(false);
+        return;
+      }
       toast.success('Bem-vindo ao OpGrid');
-      // Invalidate cached auth-profile so route guards fetch fresh role data
       await queryClient.invalidateQueries({ queryKey: ['auth-profile'] });
-      // Wait briefly for the auth state to propagate
       await new Promise(r => setTimeout(r, 500));
-      // Re-fetch to determine correct redirect
       const authData = await queryClient.fetchQuery<any>({
         queryKey: ['auth-profile'],
         staleTime: 0,

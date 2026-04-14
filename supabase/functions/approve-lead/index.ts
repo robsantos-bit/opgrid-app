@@ -57,6 +57,7 @@ Deno.serve(async (req) => {
       user_metadata: {
         nome: lead.responsavel,
         origem: 'lead_aprovado',
+        must_change_password: true,
       },
     });
 

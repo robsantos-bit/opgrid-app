@@ -14,13 +14,16 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [isRecoveryLink, setIsRecoveryLink] = useState(false);
+  const [isFirstLogin, setIsFirstLogin] = useState(false);
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''));
     const searchParams = new URLSearchParams(window.location.search);
     const isRecovery = hashParams.get('type') === 'recovery' || searchParams.get('type') === 'recovery';
+    const firstLogin = searchParams.get('first_login') === 'true';
 
     setIsRecoveryLink(isRecovery);
+    setIsFirstLogin(firstLogin);
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,6 +53,13 @@ export default function ResetPassword() {
       return;
     }
 
+    // Clear the must_change_password flag if it was a first-login forced change
+    if (isFirstLogin) {
+      await supabase.auth.updateUser({
+        data: { must_change_password: false },
+      });
+    }
+
     toast.success('Senha atualizada com sucesso.');
     navigate('/conecte-se', { replace: true });
   };
@@ -63,9 +73,13 @@ export default function ResetPassword() {
               <KeyRound className="h-5 w-5" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-xl">Redefinir senha</CardTitle>
+              <CardTitle className="text-xl">
+                {isFirstLogin ? 'Crie sua senha definitiva' : 'Redefinir senha'}
+              </CardTitle>
               <CardDescription>
-                Crie uma nova senha para voltar a acessar o portal do prestador com segurança.
+                {isFirstLogin
+                  ? 'Você está usando uma senha temporária. Crie uma nova senha para acessar o portal com segurança.'
+                  : 'Crie uma nova senha para voltar a acessar o portal do prestador com segurança.'}
               </CardDescription>
             </div>
           </CardHeader>
