@@ -73,9 +73,13 @@ export default function ResetPassword() {
               <KeyRound className="h-5 w-5" />
             </div>
             <div className="space-y-1">
-              <CardTitle className="text-xl">Redefinir senha</CardTitle>
+              <CardTitle className="text-xl">
+                {isFirstLogin ? 'Crie sua senha definitiva' : 'Redefinir senha'}
+              </CardTitle>
               <CardDescription>
-                Crie uma nova senha para voltar a acessar o portal do prestador com segurança.
+                {isFirstLogin
+                  ? 'Você está usando uma senha temporária. Crie uma nova senha para acessar o portal com segurança.'
+                  : 'Crie uma nova senha para voltar a acessar o portal do prestador com segurança.'}
               </CardDescription>
             </div>
           </CardHeader>
