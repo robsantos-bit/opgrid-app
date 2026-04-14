@@ -135,12 +135,40 @@ Deno.serve(async (req) => {
       .update({ status_lead: 'convertido_em_prestador', updated_at: new Date().toISOString() })
       .eq('id', lead_id);
 
+    // 8. Enviar credenciais via WhatsApp para o prestador
+    const phone = (lead.telefone || '').replace(/\D/g, '');
+    if (phone) {
+      const mensagem = [
+        `🎉 *Bem-vindo à OpGrid, ${lead.responsavel}!*`,
+        '',
+        'Seu cadastro foi aprovado com sucesso!',
+        'Aqui estão suas credenciais de acesso:',
+        '',
+        `📧 *Email:* ${lead.email}`,
+        `🔑 *Senha temporária:* ${tempPassword}`,
+        '',
+        '⚠️ Recomendamos trocar a senha no primeiro acesso.',
+        '',
+        'Acesse o portal do prestador e fique disponível para receber chamados! 🚀',
+      ].join('\n');
+
+      try {
+        await supabase.functions.invoke('whatsapp-send', {
+          body: { to: phone, message: mensagem },
+        });
+        console.log('[APPROVE] WhatsApp enviado para', phone);
+      } catch (whatsErr) {
+        console.error('[APPROVE] Falha ao enviar WhatsApp:', whatsErr);
+      }
+    }
+
     return new Response(JSON.stringify({
       success: true,
       prestador_id: prestador.id,
       user_id: userId,
       email: lead.email,
       temp_password: tempPassword,
+      whatsapp_sent: !!phone,
       message: `Prestador "${lead.razao_social}" criado com sucesso!`,
     }), {
       status: 200,
