@@ -5,6 +5,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function respond(ok: boolean, payload: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify({ ok, ...payload }), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -13,10 +20,7 @@ Deno.serve(async (req) => {
   try {
     const { lead_id } = await req.json();
     if (!lead_id) {
-      return new Response(JSON.stringify({ error: 'lead_id é obrigatório' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return respond(false, { error: 'lead_id é obrigatório' });
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -33,17 +37,11 @@ Deno.serve(async (req) => {
       .single();
 
     if (leadErr || !lead) {
-      return new Response(JSON.stringify({ error: 'Lead não encontrado' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return respond(false, { error: 'Lead não encontrado' });
     }
 
     if (lead.status_lead === 'convertido_em_prestador') {
-      return new Response(JSON.stringify({ error: 'Lead já foi convertido' }), {
-        status: 409,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return respond(false, { error: 'Lead já foi convertido' });
     }
 
     // 2. Generate a temporary password
@@ -62,10 +60,7 @@ Deno.serve(async (req) => {
     });
 
     if (authErr) {
-      return new Response(JSON.stringify({ error: `Erro ao criar usuário: ${authErr.message}` }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return respond(false, { error: `Erro ao criar usuário: ${authErr.message}` });
     }
 
     const userId = authData.user.id;
@@ -101,10 +96,7 @@ Deno.serve(async (req) => {
     if (prestErr) {
       // Rollback: delete the auth user
       await supabase.auth.admin.deleteUser(userId);
-      return new Response(JSON.stringify({ error: `Erro ao criar prestador: ${prestErr.message}` }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return respond(false, { error: `Erro ao criar prestador: ${prestErr.message}` });
     }
 
     // 5. Create/update profile linking user to prestador
@@ -163,23 +155,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({
-      success: true,
+    return respond(true, {
       prestador_id: prestador.id,
       user_id: userId,
       email: lead.email,
       temp_password: tempPassword,
       whatsapp_sent: !!phone,
       message: `Prestador "${lead.razao_social}" criado com sucesso!`,
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     console.error('Erro inesperado:', err);
-    return new Response(JSON.stringify({ error: err.message || 'Erro interno' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return respond(false, { error: err.message || 'Erro interno' });
   }
 });
