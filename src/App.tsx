@@ -62,6 +62,7 @@ import ConfigMercadoPago from "@/pages/ConfigMercadoPago";
 import ConfigPositron from "@/pages/ConfigPositron";
 import Assinatura from "@/pages/Assinatura";
 import FinanceiroNfse from "@/pages/FinanceiroNfse";
+import BoasVindasPrestador from "@/pages/BoasVindasPrestador";
 import NotFound from "@/pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -80,6 +81,7 @@ function AppRoutes() {
       <Route path="/conecte-se" element={<PublicOnlyRoute><Login /></PublicOnlyRoute>} />
       <Route path="/login" element={<Navigate to="/conecte-se" replace />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/prestador/boas-vindas" element={<BoasVindasPrestador />} />
 
       {/* Backoffice — /app/* */}
       <Route path="/app" element={<ProtectedRoute><PainelDashboard /></ProtectedRoute>} />
