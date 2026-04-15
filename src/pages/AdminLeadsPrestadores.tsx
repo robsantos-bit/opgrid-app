@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import AppLayout from '@/components/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
-import { Search, Eye, CheckCircle, XCircle, Clock, UserPlus, RefreshCw, Loader2, ArrowRightLeft } from 'lucide-react';
+import { Search, Eye, CheckCircle, XCircle, Clock, UserPlus, RefreshCw, Loader2, ArrowRightLeft, Pencil } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface Lead {
@@ -62,6 +65,8 @@ export default function AdminLeadsPrestadores() {
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selected, setSelected] = useState<Lead | null>(null);
   const [updating, setUpdating] = useState(false);
+  const [editing, setEditing] = useState<Lead | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const fetchLeads = async () => {
     setLoading(true);
@@ -103,7 +108,7 @@ export default function AdminLeadsPrestadores() {
         body: { lead_id: id },
       });
       if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      if (data && !data.ok) throw new Error(data.error || 'Erro desconhecido');
       
       const msg = data?.temp_password 
         ? `Prestador criado! Email: ${data.email} | Senha temporária: ${data.temp_password}`
@@ -118,6 +123,26 @@ export default function AdminLeadsPrestadores() {
     } finally {
       setUpdating(false);
     }
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    setSaving(true);
+    const { id, created_at, status_lead, origem, ...fields } = editing;
+    const { error } = await supabase
+      .from('prestador_leads')
+      .update({ ...fields, updated_at: new Date().toISOString() } as any)
+      .eq('id', id);
+    if (error) {
+      toast.error('Erro ao salvar alterações');
+      console.error(error);
+    } else {
+      toast.success('Lead atualizado com sucesso');
+      setLeads(prev => prev.map(l => l.id === id ? { ...l, ...fields } : l));
+      if (selected?.id === id) setSelected(prev => prev ? { ...prev, ...fields } : null);
+      setEditing(null);
+    }
+    setSaving(false);
   };
 
   const filtered = leads.filter(l => {
@@ -143,6 +168,34 @@ export default function AdminLeadsPrestadores() {
     <Badge variant="outline" className={value ? 'bg-accent/10 text-accent border-accent/20' : 'bg-muted text-muted-foreground'}>
       {value ? '✓' : '✗'} {label}
     </Badge>
+  );
+
+  const EditField = ({ label, field, type = 'text' }: { label: string; field: keyof Lead; type?: string }) => (
+    <div className="space-y-1">
+      <Label className="text-xs text-muted-foreground">{label}</Label>
+      {type === 'textarea' ? (
+        <Textarea
+          value={(editing?.[field] as string) || ''}
+          onChange={e => setEditing(prev => prev ? { ...prev, [field]: e.target.value } : null)}
+          rows={2}
+        />
+      ) : (
+        <Input
+          value={(editing?.[field] as string) || ''}
+          onChange={e => setEditing(prev => prev ? { ...prev, [field]: e.target.value } : null)}
+        />
+      )}
+    </div>
+  );
+
+  const EditSwitch = ({ label, field }: { label: string; field: keyof Lead }) => (
+    <div className="flex items-center justify-between">
+      <Label className="text-sm">{label}</Label>
+      <Switch
+        checked={!!editing?.[field]}
+        onCheckedChange={v => setEditing(prev => prev ? { ...prev, [field]: v } : null)}
+      />
+    </div>
   );
 
   return (
@@ -222,7 +275,10 @@ export default function AdminLeadsPrestadores() {
                       <TableCell><Badge variant="outline">{lead.tipo_principal}</Badge></TableCell>
                       <TableCell><StatusBadge status={lead.status_lead} /></TableCell>
                       <TableCell className="text-muted-foreground text-sm">{format(new Date(lead.created_at), 'dd/MM/yy')}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-1">
+                        <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setEditing({ ...lead }); }}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setSelected(lead); }}>
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -251,6 +307,9 @@ export default function AdminLeadsPrestadores() {
               <div className="space-y-5 text-sm">
                 {/* Actions */}
                 <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { setSelected(null); setEditing({ ...selected }); }}>
+                    <Pencil className="h-3.5 w-3.5 mr-1" /> Editar
+                  </Button>
                   <Button size="sm" variant="outline" disabled={updating} onClick={() => updateStatus(selected.id, 'em_analise')}>
                     <Search className="h-3.5 w-3.5 mr-1" /> Em análise
                   </Button>
@@ -260,15 +319,15 @@ export default function AdminLeadsPrestadores() {
                   <Button size="sm" className="bg-accent hover:bg-accent/90" disabled={updating} onClick={() => updateStatus(selected.id, 'aprovado')}>
                     <CheckCircle className="h-3.5 w-3.5 mr-1" /> Aprovar
                   </Button>
-                   <Button size="sm" variant="destructive" disabled={updating} onClick={() => updateStatus(selected.id, 'reprovado')}>
-                     <XCircle className="h-3.5 w-3.5 mr-1" /> Reprovar
-                   </Button>
-                   {selected.status_lead !== 'convertido_em_prestador' && selected.status_lead === 'aprovado' && (
-                     <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={updating} onClick={() => convertToProvider(selected.id)}>
-                       <ArrowRightLeft className="h-3.5 w-3.5 mr-1" /> Converter em prestador
-                     </Button>
-                   )}
-                 </div>
+                  <Button size="sm" variant="destructive" disabled={updating} onClick={() => updateStatus(selected.id, 'reprovado')}>
+                    <XCircle className="h-3.5 w-3.5 mr-1" /> Reprovar
+                  </Button>
+                  {selected.status_lead !== 'convertido_em_prestador' && selected.status_lead === 'aprovado' && (
+                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={updating} onClick={() => convertToProvider(selected.id)}>
+                      <ArrowRightLeft className="h-3.5 w-3.5 mr-1" /> Converter em prestador
+                    </Button>
+                  )}
+                </div>
 
                 <Separator />
 
@@ -330,6 +389,67 @@ export default function AdminLeadsPrestadores() {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>Origem: {selected.origem}</span>
                   <span>Recebido em {format(new Date(selected.created_at), 'dd/MM/yyyy HH:mm')}</span>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editing} onOpenChange={() => setEditing(null)}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          {editing && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Editar Lead</DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <EditField label="Razão Social" field="razao_social" />
+                  <EditField label="Nome Fantasia" field="nome_fantasia" />
+                  <EditField label="Documento" field="documento" />
+                  <EditField label="Responsável" field="responsavel" />
+                  <EditField label="Telefone" field="telefone" />
+                  <EditField label="WhatsApp" field="whatsapp" />
+                  <EditField label="Email" field="email" />
+                  <EditField label="Tipo Principal" field="tipo_principal" />
+                </div>
+
+                <Separator />
+                <h4 className="font-semibold text-foreground text-sm">Localização</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <EditField label="CEP" field="cep" />
+                  <EditField label="Cidade" field="cidade" />
+                  <EditField label="Estado" field="estado" />
+                  <EditField label="Bairro" field="bairro" />
+                  <EditField label="Endereço" field="endereco" />
+                  <EditField label="Número" field="numero" />
+                </div>
+                <EditField label="Área de Cobertura" field="cobertura_texto" type="textarea" />
+
+                <Separator />
+                <h4 className="font-semibold text-foreground text-sm">Estrutura</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <EditSwitch label="Atendimento 24h" field="atendimento_24h" />
+                  <EditSwitch label="Possui Plataforma" field="possui_plataforma" />
+                  <EditSwitch label="Possui Patins" field="possui_patins" />
+                  <EditSwitch label="Possui Pátio" field="possui_patio" />
+                  <EditSwitch label="Possui Rastreador" field="possui_rastreador" />
+                  <EditSwitch label="Atende Rodovia" field="atende_rodovia" />
+                  <EditSwitch label="Atende Noturno" field="atende_noturno" />
+                </div>
+
+                <EditField label="Qtd. Veículos" field="qtd_veiculos" />
+                <EditField label="Observações" field="observacoes" type="textarea" />
+
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" onClick={() => setEditing(null)}>Cancelar</Button>
+                  <Button onClick={saveEdit} disabled={saving}>
+                    {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                    Salvar
+                  </Button>
                 </div>
               </div>
             </>
