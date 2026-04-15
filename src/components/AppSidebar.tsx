@@ -4,9 +4,11 @@ import { useAuthProfile } from '@/hooks/useAuthProfile';
 import { useSignOut } from '@/hooks/useSignOut';
 import { hasModuleAccess, type AppRole } from '@/components/RouteGuards';
 import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel,
-  SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarFooter, useSidebar,
+  Sidebar, SidebarContent, SidebarFooter, useSidebar,
 } from '@/components/ui/sidebar';
+import {
+  Accordion, AccordionContent, AccordionItem, AccordionTrigger,
+} from '@/components/ui/accordion';
 import {
   LayoutDashboard, Users, Tag, TableProperties, ClipboardList, DollarSign, Settings, LogOut, BarChart3, FileText, History, Hexagon, MessageCircle, Radio, Zap, Map, Send,
   Globe, Shield, TrendingUp, Megaphone, FileSearch, AlertCircle, XCircle, ListChecks, Lock, HelpCircle, CheckSquare, Activity, Headphones, Smartphone, UserPlus, Star,
@@ -16,10 +18,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useMemo } from 'react';
 
 const menuGroups = [
   {
     label: 'Visão Geral',
+    icon: LayoutDashboard,
     requiredModules: ['painel', 'dashboard'],
     items: [
       { title: 'Dashboard', url: '/app/painel', icon: LayoutDashboard, modules: ['dashboard', 'painel'] },
@@ -28,6 +33,7 @@ const menuGroups = [
   },
   {
     label: 'Operação',
+    icon: Headphones,
     requiredModules: ['operacao'],
     items: [
       { title: 'Solicitações', url: '/app/operacao/solicitacoes', icon: ClipboardList, modules: ['operacao', 'solicitacoes'] },
@@ -45,6 +51,7 @@ const menuGroups = [
   },
   {
     label: 'Rede',
+    icon: Globe,
     requiredModules: ['rede'],
     items: [
       { title: 'Prestadores', url: '/app/rede/prestadores', icon: Users, modules: ['rede', 'prestadores'] },
@@ -59,6 +66,7 @@ const menuGroups = [
   },
   {
     label: 'Financeiro',
+    icon: DollarSign,
     requiredModules: ['financeiro'],
     items: [
       { title: 'Faturamento', url: '/app/financeiro/faturamento', icon: DollarSign, modules: ['financeiro', 'faturamento'] },
@@ -73,6 +81,7 @@ const menuGroups = [
   },
   {
     label: 'Admin',
+    icon: Settings,
     requiredModules: ['admin'],
     items: [
       { title: 'Usuários', url: '/app/admin/usuarios', icon: Users, modules: ['admin', 'usuarios'] },
@@ -108,6 +117,15 @@ export function AppSidebar() {
   const displayName = authData?.profile?.nome || user?.nome || '';
   const displayEmail = authData?.profile?.email || user?.email || '';
 
+  // Determine which groups have active routes to auto-expand them
+  const defaultOpenGroups = useMemo(() => {
+    return menuGroups
+      .filter(group => group.items.some(item =>
+        location.pathname === item.url || (item.url !== '/app/painel' && location.pathname.startsWith(item.url))
+      ))
+      .map(group => group.label);
+  }, [location.pathname]);
+
   const handleLogout = () => {
     signOut.mutate(undefined, {
       onSettled: () => navigate('/login'),
@@ -116,9 +134,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="sidebar-gradient border-r-0">
-      <SidebarContent className="py-3">
+      <SidebarContent className="p-0">
         {/* Logo */}
-        <div className="px-4 pb-3">
+        <div className="px-4 py-3">
           {!collapsed ? (
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 bg-gradient-to-br from-sidebar-primary to-sidebar-primary/60 rounded-lg flex items-center justify-center shrink-0">
@@ -136,40 +154,69 @@ export function AppSidebar() {
           )}
         </div>
 
-        <Separator className="bg-sidebar-border/40 mb-1.5" />
+        <Separator className="bg-sidebar-border/40" />
 
-        {menuGroups.map(group => {
-          const visibleItems = group.items.filter(item => hasModuleAccess(roles, item.modules));
-          if (visibleItems.length === 0) return null;
-          return (
-            <SidebarGroup key={group.label} className="py-0.5">
-              {!collapsed && <SidebarGroupLabel className="text-[9px] text-sidebar-muted/60 uppercase tracking-[0.15em] font-semibold px-4 pb-0.5 pt-2">{group.label}</SidebarGroupLabel>}
-              <SidebarGroupContent>
-                <SidebarMenu className="gap-px px-2">
-                  {visibleItems.map((item) => {
-                    const active = location.pathname === item.url || (item.url !== '/app/painel' && location.pathname.startsWith(item.url));
-                    return (
-                      <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild>
-                          <NavLink to={item.url} end={item.url === '/app/painel'}
-                            className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-100 ${
-                              active
-                                ? 'bg-sidebar-primary/15 text-sidebar-primary-foreground font-semibold'
-                                : 'text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30'
-                            }`}
-                            activeClassName="bg-sidebar-primary/15 text-sidebar-primary-foreground font-semibold">
-                            <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-sidebar-primary' : ''}`} />
-                            {!collapsed && <span>{item.title}</span>}
-                          </NavLink>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
-          );
-        })}
+        <ScrollArea className="flex-1">
+          {collapsed ? (
+            /* Collapsed: show only icons flat */
+            <div className="flex flex-col items-center gap-0.5 py-2">
+              {menuGroups.map(group => {
+                const visibleItems = group.items.filter(item => hasModuleAccess(roles, item.modules));
+                if (visibleItems.length === 0) return null;
+                return visibleItems.map(item => {
+                  const active = location.pathname === item.url || (item.url !== '/app/painel' && location.pathname.startsWith(item.url));
+                  return (
+                    <NavLink key={item.url} to={item.url} end={item.url === '/app/painel'}
+                      className={`flex items-center justify-center w-9 h-9 rounded-md transition-all ${
+                        active ? 'bg-sidebar-primary/15 text-sidebar-primary' : 'text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30'
+                      }`}
+                      title={item.title}>
+                      <item.icon className="h-4 w-4 shrink-0" />
+                    </NavLink>
+                  );
+                });
+              })}
+            </div>
+          ) : (
+            /* Expanded: accordion groups */
+            <Accordion type="multiple" defaultValue={defaultOpenGroups} className="px-2 py-1">
+              {menuGroups.map(group => {
+                const visibleItems = group.items.filter(item => hasModuleAccess(roles, item.modules));
+                if (visibleItems.length === 0) return null;
+                const GroupIcon = group.icon;
+                return (
+                  <AccordionItem key={group.label} value={group.label} className="border-b-0 border-sidebar-border/20">
+                    <AccordionTrigger className="py-2 px-2.5 text-[10px] uppercase tracking-[0.12em] font-semibold text-sidebar-muted/70 hover:text-sidebar-foreground hover:no-underline [&[data-state=open]>svg]:text-sidebar-primary">
+                      <span className="flex items-center gap-2">
+                        <GroupIcon className="h-3.5 w-3.5" />
+                        {group.label}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-1 pt-0">
+                      <div className="flex flex-col gap-px">
+                        {visibleItems.map(item => {
+                          const active = location.pathname === item.url || (item.url !== '/app/painel' && location.pathname.startsWith(item.url));
+                          return (
+                            <NavLink key={item.url} to={item.url} end={item.url === '/app/painel'}
+                              className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] transition-all duration-100 ${
+                                active
+                                  ? 'bg-sidebar-primary/15 text-sidebar-primary-foreground font-semibold'
+                                  : 'text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/30'
+                              }`}
+                              activeClassName="bg-sidebar-primary/15 text-sidebar-primary-foreground font-semibold">
+                              <item.icon className={`h-4 w-4 shrink-0 ${active ? 'text-sidebar-primary' : ''}`} />
+                              <span>{item.title}</span>
+                            </NavLink>
+                          );
+                        })}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                );
+              })}
+            </Accordion>
+          )}
+        </ScrollArea>
       </SidebarContent>
 
       <SidebarFooter className="p-2.5 border-t border-sidebar-border/40">
