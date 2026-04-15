@@ -8,6 +8,8 @@ import { usePushSubscription } from '@/hooks/usePushSubscription';
 import { usePwaInstall } from '@/hooks/usePwaInstall';
 import { toast } from 'sonner';
 import { Loader2, User, Building2, Headphones, Activity, CheckCircle2, Wifi, WifiOff, Bell, BellRing, TestTube, MapPin, Smartphone } from 'lucide-react';
+import TutorialOverlay, { useTutorial, TutorialButton } from '@/components/portal/TutorialPrestador';
+import { useEffect } from 'react';
 
 export default function PrestadorInicio() {
   const { user } = useAuth();
@@ -16,6 +18,15 @@ export default function PrestadorInicio() {
   const { isOnline, goOnline, goOffline, playSirene } = usePrestadorOnline(user?.provider_id ?? undefined);
   const { isSubscribed, isSupported, subscribe } = usePushSubscription(user?.provider_id ?? undefined);
   const { canInstall, isInstalled, install } = usePwaInstall();
+  const tutorial = useTutorial();
+
+  // Auto-start tutorial for first-time users (after loading)
+  useEffect(() => {
+    if (!isLoading && prestador && tutorial.shouldAutoStart) {
+      const t = setTimeout(() => tutorial.start(), 800);
+      return () => clearTimeout(t);
+    }
+  }, [isLoading, prestador, tutorial.shouldAutoStart]);
 
   if (isLoading) {
     return <div className="flex items-center justify-center py-20"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -26,12 +37,15 @@ export default function PrestadorInicio() {
 
   return (
     <div className="space-y-5 animate-fade-in max-w-2xl mx-auto p-4">
+      <TutorialOverlay isActive={tutorial.isActive} onClose={tutorial.stop} />
+
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1>Portal do Prestador</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Bem-vindo, {user?.nome}</p>
         </div>
         <div className="flex items-center gap-2">
+          <TutorialButton onClick={tutorial.start} />
           {canInstall && (
             <Button
               size="lg"
@@ -47,6 +61,7 @@ export default function PrestadorInicio() {
             </Button>
           )}
           <Button
+            id="tutorial-btn-online"
             size="lg"
             variant={isOnline ? 'destructive' : 'default'}
             onClick={isOnline ? goOffline : goOnline}
@@ -67,20 +82,23 @@ export default function PrestadorInicio() {
             </span>
             <span className="text-sm font-medium text-success">Online — Aguardando novas ofertas...</span>
           </div>
-          {isSupported && !isSubscribed && (
-            <Button variant="outline" size="sm" className="w-full gap-2" onClick={subscribe}>
-              <Bell className="h-4 w-4" />
-              Ativar notificações push (tela bloqueada)
-            </Button>
-          )}
-          {isSubscribed && (
-            <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
-              <Bell className="h-3 w-3" /> Push ativo — alertas mesmo com tela bloqueada
-            </div>
-          )}
+          <div id="tutorial-push-area">
+            {isSupported && !isSubscribed && (
+              <Button variant="outline" size="sm" className="w-full gap-2" onClick={subscribe}>
+                <Bell className="h-4 w-4" />
+                Ativar notificações push (tela bloqueada)
+              </Button>
+            )}
+            {isSubscribed && (
+              <div className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1">
+                <Bell className="h-3 w-3" /> Push ativo — alertas mesmo com tela bloqueada
+              </div>
+            )}
+          </div>
           {/* Test buttons */}
           <div className="flex gap-2">
             <Button
+              id="tutorial-test-siren"
               variant="outline"
               size="sm"
               className="flex-1 gap-2"
@@ -156,7 +174,7 @@ export default function PrestadorInicio() {
               </div>
               {/* Endereço fixo (base de retorno) */}
               {(prestador.endereco || prestador.cidade || prestador.uf) && (
-                <div className="flex items-start gap-2 bg-muted/50 rounded-lg p-3 mt-2">
+                <div id="tutorial-address" className="flex items-start gap-2 bg-muted/50 rounded-lg p-3 mt-2">
                   <MapPin className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                   <div className="text-[13px]">
                     <p className="font-semibold text-foreground">Endereço Base (Retorno)</p>
@@ -170,7 +188,7 @@ export default function PrestadorInicio() {
           </Card>
 
           {/* Quick stats */}
-          <div className="grid grid-cols-3 gap-3">
+          <div id="tutorial-stats" className="grid grid-cols-3 gap-3">
             {[
               { label: 'Total', value: atendimentos.length, icon: Headphones, bg: 'bg-primary/10', color: 'text-primary' },
               { label: 'Em andamento', value: emAndamento, icon: Activity, bg: 'bg-info/10', color: 'text-info' },
