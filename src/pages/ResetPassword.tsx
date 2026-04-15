@@ -61,7 +61,7 @@ export default function ResetPassword() {
     }
 
     toast.success('Senha atualizada com sucesso.');
-    navigate('/conecte-se', { replace: true });
+    navigate(isFirstLogin ? '/prestador/boas-vindas' : '/conecte-se', { replace: true });
   };
 
   return (
