@@ -4,8 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import AppLayout from '@/components/AppLayout';
-import { Check, X, Crown, Zap, Building2, Star, CreditCard, Calendar, Users, Truck, CheckSquare, MessageCircle, Map, BarChart3, Shield, Headphones } from 'lucide-react';
+import { Check, X, Crown, Zap, Building2, Star, CreditCard, Calendar, Users, Truck, CheckSquare, MessageCircle, Map, BarChart3, Shield, Headphones, Pencil, Save, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -16,7 +17,7 @@ interface PlanoFeature {
   empresarial: boolean | string;
 }
 
-const FEATURES: PlanoFeature[] = [
+const INITIAL_FEATURES: PlanoFeature[] = [
   { label: 'Usuários inclusos', basico: '1', profissional: '5', empresarial: 'Ilimitado' },
   { label: 'Guincheiros / Motoristas', basico: '3', profissional: '15', empresarial: 'Ilimitado' },
   { label: 'Checklists por mês', basico: '50', profissional: '500', empresarial: 'Ilimitado' },
@@ -40,7 +41,7 @@ const FEATURES: PlanoFeature[] = [
   { label: 'SLA garantido', basico: false, profissional: false, empresarial: true },
 ];
 
-const PLANOS = [
+const INITIAL_PLANOS = [
   {
     id: 'basico',
     nome: 'Básico',
@@ -87,13 +88,37 @@ function FeatureValue({ value }: { value: boolean | string }) {
 export default function Assinatura() {
   const [anual, setAnual] = useState(false);
   const [planoAtual] = useState('profissional');
+  const [editMode, setEditMode] = useState(false);
+  const [planos, setPlanos] = useState(INITIAL_PLANOS);
+  const [features, setFeatures] = useState<PlanoFeature[]>(INITIAL_FEATURES);
 
   const handleAssinar = (planoId: string) => {
     if (planoId === planoAtual) {
       toast.info('Você já está neste plano.');
       return;
     }
-    toast.success(`Solicitação de upgrade para o plano ${PLANOS.find(p => p.id === planoId)?.nome} enviada!`);
+    toast.success(`Solicitação de upgrade para o plano ${planos.find(p => p.id === planoId)?.nome} enviada!`);
+  };
+
+  const updatePlano = (id: string, field: 'precoMensal' | 'precoAnual' | 'nome' | 'descricao', value: string) => {
+    setPlanos(prev => prev.map(p => p.id === id ? { ...p, [field]: field.startsWith('preco') ? (parseFloat(value) || 0) : value } : p));
+  };
+
+  const updateFeature = (idx: number, field: keyof PlanoFeature, value: string | boolean) => {
+    setFeatures(prev => prev.map((f, i) => i === idx ? { ...f, [field]: value } : f));
+  };
+
+  const addFeature = () => {
+    setFeatures(prev => [...prev, { label: 'Nova funcionalidade', basico: false, profissional: false, empresarial: false }]);
+  };
+
+  const removeFeature = (idx: number) => {
+    setFeatures(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSave = () => {
+    setEditMode(false);
+    toast.success('Alterações salvas com sucesso!');
   };
 
   return (
@@ -103,6 +128,24 @@ export default function Assinatura() {
           <div className="page-header-text">
             <h1>Plano de Assinatura</h1>
             <p>Gerencie seu plano e funcionalidades disponíveis</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {editMode ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => { setEditMode(false); setPlanos(INITIAL_PLANOS); setFeatures(INITIAL_FEATURES); }}>
+                  Cancelar
+                </Button>
+                <Button size="sm" onClick={handleSave}>
+                  <Save className="h-3.5 w-3.5 mr-1.5" />
+                  Salvar Alterações
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => setEditMode(true)}>
+                <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                Editar Planos
+              </Button>
+            )}
           </div>
         </div>
 
@@ -139,7 +182,7 @@ export default function Assinatura() {
 
         {/* Cards de planos */}
         <div className="grid md:grid-cols-3 gap-4">
-          {PLANOS.map(plano => {
+          {planos.map(plano => {
             const isAtual = plano.id === planoAtual;
             const preco = anual ? plano.precoAnual / 12 : plano.precoMensal;
             const precoTotal = anual ? plano.precoAnual : plano.precoMensal;
@@ -159,21 +202,43 @@ export default function Assinatura() {
                   <div className="mx-auto w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-2">
                     <plano.icon className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle className="text-lg">{plano.nome}</CardTitle>
-                  <p className="text-[11px] text-muted-foreground mt-1">{plano.descricao}</p>
+                  {editMode ? (
+                    <>
+                      <Input value={plano.nome} onChange={e => updatePlano(plano.id, 'nome', e.target.value)} className="text-center h-8 text-sm font-semibold" />
+                      <Input value={plano.descricao} onChange={e => updatePlano(plano.id, 'descricao', e.target.value)} className="text-center h-7 text-[11px] mt-1" />
+                    </>
+                  ) : (
+                    <>
+                      <CardTitle className="text-lg">{plano.nome}</CardTitle>
+                      <p className="text-[11px] text-muted-foreground mt-1">{plano.descricao}</p>
+                    </>
+                  )}
                 </CardHeader>
                 <CardContent className="text-center space-y-4">
-                  <div>
-                    <div className="flex items-baseline justify-center gap-1">
-                      <span className="text-3xl font-bold">R$ {preco.toFixed(2).replace('.', ',')}</span>
-                      <span className="text-xs text-muted-foreground">/mês</span>
+                  {editMode ? (
+                    <div className="space-y-2 text-left">
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Preço Mensal (R$)</Label>
+                        <Input type="number" step="0.01" value={plano.precoMensal} onChange={e => updatePlano(plano.id, 'precoMensal', e.target.value)} className="h-8 text-sm" />
+                      </div>
+                      <div>
+                        <Label className="text-[10px] text-muted-foreground">Preço Anual (R$)</Label>
+                        <Input type="number" step="0.01" value={plano.precoAnual} onChange={e => updatePlano(plano.id, 'precoAnual', e.target.value)} className="h-8 text-sm" />
+                      </div>
                     </div>
-                    {anual && (
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        Total: R$ {precoTotal.toFixed(2).replace('.', ',')} /ano
-                      </p>
-                    )}
-                  </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-baseline justify-center gap-1">
+                        <span className="text-3xl font-bold">R$ {preco.toFixed(2).replace('.', ',')}</span>
+                        <span className="text-xs text-muted-foreground">/mês</span>
+                      </div>
+                      {anual && (
+                        <p className="text-[10px] text-muted-foreground mt-1">
+                          Total: R$ {precoTotal.toFixed(2).replace('.', ',')} /ano
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {isAtual ? (
                     <Button variant="outline" className="w-full" disabled>
@@ -187,7 +252,7 @@ export default function Assinatura() {
                   )}
 
                   <div className="border-t pt-3 space-y-2 text-left">
-                    {FEATURES.slice(0, 8).map(f => {
+                    {features.slice(0, 8).map(f => {
                       const val = f[plano.id as keyof PlanoFeature];
                       return (
                         <div key={f.label} className="flex items-center justify-between text-[11px]">
@@ -205,8 +270,14 @@ export default function Assinatura() {
 
         {/* Tabela comparativa completa */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm">Comparativo Completo de Funcionalidades</CardTitle>
+            {editMode && (
+              <Button size="sm" variant="outline" onClick={addFeature}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Adicionar Funcionalidade
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -217,15 +288,45 @@ export default function Assinatura() {
                     <th className="text-center p-3 text-xs font-medium w-[20%]">Básico</th>
                     <th className="text-center p-3 text-xs font-medium text-primary w-[20%]">Profissional</th>
                     <th className="text-center p-3 text-xs font-medium w-[20%]">Empresarial</th>
+                    {editMode && <th className="w-10"></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {FEATURES.map((f, i) => (
-                    <tr key={f.label} className={cn("border-b border-dashed", i % 2 === 0 && "bg-muted/10")}>
-                      <td className="p-3 text-xs">{f.label}</td>
-                      <td className="p-3 text-center"><div className="flex justify-center"><FeatureValue value={f.basico} /></div></td>
-                      <td className="p-3 text-center bg-primary/5"><div className="flex justify-center"><FeatureValue value={f.profissional} /></div></td>
-                      <td className="p-3 text-center"><div className="flex justify-center"><FeatureValue value={f.empresarial} /></div></td>
+                  {features.map((f, i) => (
+                    <tr key={i} className={cn("border-b border-dashed", i % 2 === 0 && "bg-muted/10")}>
+                      <td className="p-2 text-xs">
+                        {editMode ? (
+                          <Input value={f.label} onChange={e => updateFeature(i, 'label', e.target.value)} className="h-8 text-xs" />
+                        ) : f.label}
+                      </td>
+                      {(['basico', 'profissional', 'empresarial'] as const).map(plan => (
+                        <td key={plan} className={cn("p-2 text-center", plan === 'profissional' && "bg-primary/5")}>
+                          {editMode ? (
+                            typeof f[plan] === 'string' || (typeof f[plan] === 'boolean' && false) ? (
+                              <Input
+                                value={typeof f[plan] === 'boolean' ? '' : (f[plan] as string)}
+                                onChange={e => updateFeature(i, plan, e.target.value)}
+                                placeholder="Texto ou vazio"
+                                className="h-8 text-xs text-center"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                <Switch checked={f[plan] === true} onCheckedChange={v => updateFeature(i, plan, v)} />
+                                <button type="button" onClick={() => updateFeature(i, plan, '')} className="text-[9px] text-muted-foreground hover:text-primary">usar texto</button>
+                              </div>
+                            )
+                          ) : (
+                            <div className="flex justify-center"><FeatureValue value={f[plan]} /></div>
+                          )}
+                        </td>
+                      ))}
+                      {editMode && (
+                        <td className="p-2">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeFeature(i)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
