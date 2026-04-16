@@ -133,7 +133,7 @@ function MegaMenuDropdown({ group, isActive }: { group: MenuGroup; isActive: boo
 
       {open && (
         <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50">
-          <div className="bg-popover border border-border rounded-xl shadow-xl p-2 min-w-[280px] animate-in fade-in-0 zoom-in-95 duration-150">
+          <div className="bg-popover border border-border rounded-xl shadow-xl p-2 min-w-[280px] max-h-[calc(100vh-5rem)] overflow-y-auto animate-in fade-in-0 zoom-in-95 duration-150">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest px-3 pt-1 pb-2">
               {group.label}
             </p>
