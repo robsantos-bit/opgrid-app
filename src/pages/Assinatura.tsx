@@ -17,7 +17,7 @@ interface PlanoFeature {
   empresarial: boolean | string;
 }
 
-const FEATURES: PlanoFeature[] = [
+const INITIAL_FEATURES: PlanoFeature[] = [
   { label: 'Usuários inclusos', basico: '1', profissional: '5', empresarial: 'Ilimitado' },
   { label: 'Guincheiros / Motoristas', basico: '3', profissional: '15', empresarial: 'Ilimitado' },
   { label: 'Checklists por mês', basico: '50', profissional: '500', empresarial: 'Ilimitado' },
@@ -41,7 +41,7 @@ const FEATURES: PlanoFeature[] = [
   { label: 'SLA garantido', basico: false, profissional: false, empresarial: true },
 ];
 
-const PLANOS = [
+const INITIAL_PLANOS = [
   {
     id: 'basico',
     nome: 'Básico',
