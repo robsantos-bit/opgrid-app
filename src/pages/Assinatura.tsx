@@ -377,6 +377,137 @@ export default function Assinatura() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={pagamentoOpen} onOpenChange={setPagamentoOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Gerenciar Pagamento
+            </DialogTitle>
+            <DialogDescription>
+              Atualize seu método de pagamento, consulte faturas e gerencie a renovação.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue="metodo" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="metodo">Método</TabsTrigger>
+              <TabsTrigger value="faturas">Faturas</TabsTrigger>
+              <TabsTrigger value="assinatura">Assinatura</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="metodo" className="space-y-3 pt-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Forma de pagamento</Label>
+                <Select value={metodoPagamento} onValueChange={(v: any) => setMetodoPagamento(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cartao">Cartão de Crédito</SelectItem>
+                    <SelectItem value="pix">PIX (cobrança mensal)</SelectItem>
+                    <SelectItem value="boleto">Boleto Bancário</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {metodoPagamento === 'cartao' && (
+                <div className="space-y-3 rounded-lg border p-3 bg-muted/30">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Número do cartão</Label>
+                    <Input value={cartaoNumero} onChange={e => setCartaoNumero(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nome impresso</Label>
+                    <Input value={cartaoNome} onChange={e => setCartaoNome(e.target.value)} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Validade</Label>
+                      <Input value={cartaoValidade} onChange={e => setCartaoValidade(e.target.value)} placeholder="MM/AA" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">CVV</Label>
+                      <Input value={cartaoCvv} onChange={e => setCartaoCvv(e.target.value)} placeholder="•••" maxLength={4} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {metodoPagamento === 'pix' && (
+                <div className="rounded-lg border p-4 bg-muted/30 text-sm text-muted-foreground">
+                  A cobrança será gerada via PIX no dia do vencimento e enviada para o e-mail cadastrado.
+                </div>
+              )}
+
+              {metodoPagamento === 'boleto' && (
+                <div className="rounded-lg border p-4 bg-muted/30 text-sm text-muted-foreground">
+                  O boleto será emitido com 5 dias de antecedência ao vencimento.
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="faturas" className="pt-3">
+              <div className="space-y-2">
+                {faturas.map(f => (
+                  <div key={f.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{f.id}</p>
+                        <p className="text-[11px] text-muted-foreground">{f.data} • {f.valor}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[10px]">{f.status}</Badge>
+                      <Button variant="ghost" size="sm" onClick={() => toast.success(`Baixando ${f.id}...`)}>
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="assinatura" className="space-y-3 pt-3">
+              <div className="rounded-lg border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Renovação automática</p>
+                    <p className="text-[11px] text-muted-foreground">Cobrança automática no vencimento</p>
+                  </div>
+                  <Switch checked={autoRenovacao} onCheckedChange={setAutoRenovacao} />
+                </div>
+              </div>
+              <div className="rounded-lg border p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Próxima cobrança</p>
+                  <p className="text-[11px] text-muted-foreground">01/05/2025 • R$ 299,00</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => toast.info('Cobrança antecipada solicitada')}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  Antecipar
+                </Button>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full"
+                onClick={() => { toast.warning('Cancelamento solicitado. Nossa equipe entrará em contato.'); setPagamentoOpen(false); }}
+              >
+                Cancelar assinatura
+              </Button>
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPagamentoOpen(false)}>Fechar</Button>
+            <Button onClick={handleSalvarPagamento}>
+              <Save className="h-4 w-4 mr-1.5" />
+              Salvar alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
