@@ -6,9 +6,12 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/components/AppLayout';
-import { Check, X, Crown, Zap, Building2, Star, CreditCard, Calendar, Users, Truck, CheckSquare, MessageCircle, Map, BarChart3, Shield, Headphones, Pencil, Save, Plus, Trash2 } from 'lucide-react';
+import { Check, X, Crown, Zap, Building2, Star, CreditCard, Calendar, Users, Truck, CheckSquare, MessageCircle, Map, BarChart3, Shield, Headphones, Pencil, Save, Plus, Trash2, Download, Receipt, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PlanoFeature {
   label: string;
