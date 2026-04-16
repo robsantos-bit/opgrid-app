@@ -6,9 +6,12 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import AppLayout from '@/components/AppLayout';
-import { Check, X, Crown, Zap, Building2, Star, CreditCard, Calendar, Users, Truck, CheckSquare, MessageCircle, Map, BarChart3, Shield, Headphones, Pencil, Save, Plus, Trash2 } from 'lucide-react';
+import { Check, X, Crown, Zap, Building2, Star, CreditCard, Calendar, Users, Truck, CheckSquare, MessageCircle, Map, BarChart3, Shield, Headphones, Pencil, Save, Plus, Trash2, Download, Receipt, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface PlanoFeature {
   label: string;
@@ -91,6 +94,24 @@ export default function Assinatura() {
   const [editMode, setEditMode] = useState(false);
   const [planos, setPlanos] = useState(INITIAL_PLANOS);
   const [features, setFeatures] = useState<PlanoFeature[]>(INITIAL_FEATURES);
+  const [pagamentoOpen, setPagamentoOpen] = useState(false);
+  const [metodoPagamento, setMetodoPagamento] = useState<'cartao' | 'pix' | 'boleto'>('cartao');
+  const [cartaoNumero, setCartaoNumero] = useState('•••• •••• •••• 4242');
+  const [cartaoNome, setCartaoNome] = useState('JOAO DA SILVA');
+  const [cartaoValidade, setCartaoValidade] = useState('12/27');
+  const [cartaoCvv, setCartaoCvv] = useState('');
+  const [autoRenovacao, setAutoRenovacao] = useState(true);
+
+  const faturas = [
+    { id: 'INV-2025-003', data: '01/03/2025', valor: 'R$ 299,00', status: 'Paga' },
+    { id: 'INV-2025-002', data: '01/02/2025', valor: 'R$ 299,00', status: 'Paga' },
+    { id: 'INV-2025-001', data: '01/01/2025', valor: 'R$ 299,00', status: 'Paga' },
+  ];
+
+  const handleSalvarPagamento = () => {
+    toast.success('Método de pagamento atualizado!');
+    setPagamentoOpen(false);
+  };
 
   const handleAssinar = (planoId: string) => {
     if (planoId === planoAtual) {
@@ -163,7 +184,7 @@ export default function Assinatura() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="default" className="text-xs">Ativo</Badge>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setPagamentoOpen(true)}>
                 <CreditCard className="h-3.5 w-3.5 mr-1.5" />
                 Gerenciar Pagamento
               </Button>
@@ -356,6 +377,137 @@ export default function Assinatura() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={pagamentoOpen} onOpenChange={setPagamentoOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              Gerenciar Pagamento
+            </DialogTitle>
+            <DialogDescription>
+              Atualize seu método de pagamento, consulte faturas e gerencie a renovação.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue="metodo" className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="metodo">Método</TabsTrigger>
+              <TabsTrigger value="faturas">Faturas</TabsTrigger>
+              <TabsTrigger value="assinatura">Assinatura</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="metodo" className="space-y-3 pt-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Forma de pagamento</Label>
+                <Select value={metodoPagamento} onValueChange={(v: any) => setMetodoPagamento(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="cartao">Cartão de Crédito</SelectItem>
+                    <SelectItem value="pix">PIX (cobrança mensal)</SelectItem>
+                    <SelectItem value="boleto">Boleto Bancário</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {metodoPagamento === 'cartao' && (
+                <div className="space-y-3 rounded-lg border p-3 bg-muted/30">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Número do cartão</Label>
+                    <Input value={cartaoNumero} onChange={e => setCartaoNumero(e.target.value)} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Nome impresso</Label>
+                    <Input value={cartaoNome} onChange={e => setCartaoNome(e.target.value)} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Validade</Label>
+                      <Input value={cartaoValidade} onChange={e => setCartaoValidade(e.target.value)} placeholder="MM/AA" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">CVV</Label>
+                      <Input value={cartaoCvv} onChange={e => setCartaoCvv(e.target.value)} placeholder="•••" maxLength={4} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {metodoPagamento === 'pix' && (
+                <div className="rounded-lg border p-4 bg-muted/30 text-sm text-muted-foreground">
+                  A cobrança será gerada via PIX no dia do vencimento e enviada para o e-mail cadastrado.
+                </div>
+              )}
+
+              {metodoPagamento === 'boleto' && (
+                <div className="rounded-lg border p-4 bg-muted/30 text-sm text-muted-foreground">
+                  O boleto será emitido com 5 dias de antecedência ao vencimento.
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="faturas" className="pt-3">
+              <div className="space-y-2">
+                {faturas.map(f => (
+                  <div key={f.id} className="flex items-center justify-between rounded-lg border p-3">
+                    <div className="flex items-center gap-3">
+                      <Receipt className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{f.id}</p>
+                        <p className="text-[11px] text-muted-foreground">{f.data} • {f.valor}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-[10px]">{f.status}</Badge>
+                      <Button variant="ghost" size="sm" onClick={() => toast.success(`Baixando ${f.id}...`)}>
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="assinatura" className="space-y-3 pt-3">
+              <div className="rounded-lg border p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">Renovação automática</p>
+                    <p className="text-[11px] text-muted-foreground">Cobrança automática no vencimento</p>
+                  </div>
+                  <Switch checked={autoRenovacao} onCheckedChange={setAutoRenovacao} />
+                </div>
+              </div>
+              <div className="rounded-lg border p-3 flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium">Próxima cobrança</p>
+                  <p className="text-[11px] text-muted-foreground">01/05/2025 • R$ 299,00</p>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => toast.info('Cobrança antecipada solicitada')}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+                  Antecipar
+                </Button>
+              </div>
+              <Button
+                variant="destructive"
+                size="sm"
+                className="w-full"
+                onClick={() => { toast.warning('Cancelamento solicitado. Nossa equipe entrará em contato.'); setPagamentoOpen(false); }}
+              >
+                Cancelar assinatura
+              </Button>
+            </TabsContent>
+          </Tabs>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPagamentoOpen(false)}>Fechar</Button>
+            <Button onClick={handleSalvarPagamento}>
+              <Save className="h-4 w-4 mr-1.5" />
+              Salvar alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   );
 }
