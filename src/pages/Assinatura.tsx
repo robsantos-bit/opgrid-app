@@ -88,13 +88,37 @@ function FeatureValue({ value }: { value: boolean | string }) {
 export default function Assinatura() {
   const [anual, setAnual] = useState(false);
   const [planoAtual] = useState('profissional');
+  const [editMode, setEditMode] = useState(false);
+  const [planos, setPlanos] = useState(INITIAL_PLANOS);
+  const [features, setFeatures] = useState<PlanoFeature[]>(INITIAL_FEATURES);
 
   const handleAssinar = (planoId: string) => {
     if (planoId === planoAtual) {
       toast.info('Você já está neste plano.');
       return;
     }
-    toast.success(`Solicitação de upgrade para o plano ${PLANOS.find(p => p.id === planoId)?.nome} enviada!`);
+    toast.success(`Solicitação de upgrade para o plano ${planos.find(p => p.id === planoId)?.nome} enviada!`);
+  };
+
+  const updatePlano = (id: string, field: 'precoMensal' | 'precoAnual' | 'nome' | 'descricao', value: string) => {
+    setPlanos(prev => prev.map(p => p.id === id ? { ...p, [field]: field.startsWith('preco') ? (parseFloat(value) || 0) : value } : p));
+  };
+
+  const updateFeature = (idx: number, field: keyof PlanoFeature, value: string | boolean) => {
+    setFeatures(prev => prev.map((f, i) => i === idx ? { ...f, [field]: value } : f));
+  };
+
+  const addFeature = () => {
+    setFeatures(prev => [...prev, { label: 'Nova funcionalidade', basico: false, profissional: false, empresarial: false }]);
+  };
+
+  const removeFeature = (idx: number) => {
+    setFeatures(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSave = () => {
+    setEditMode(false);
+    toast.success('Alterações salvas com sucesso!');
   };
 
   return (
