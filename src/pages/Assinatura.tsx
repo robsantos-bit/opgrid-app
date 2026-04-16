@@ -184,7 +184,7 @@ export default function Assinatura() {
             </div>
             <div className="flex items-center gap-2">
               <Badge variant="default" className="text-xs">Ativo</Badge>
-              <Button variant="outline" size="sm">
+              <Button variant="outline" size="sm" onClick={() => setPagamentoOpen(true)}>
                 <CreditCard className="h-3.5 w-3.5 mr-1.5" />
                 Gerenciar Pagamento
               </Button>
