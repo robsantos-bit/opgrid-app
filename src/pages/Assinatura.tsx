@@ -270,8 +270,14 @@ export default function Assinatura() {
 
         {/* Tabela comparativa completa */}
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
             <CardTitle className="text-sm">Comparativo Completo de Funcionalidades</CardTitle>
+            {editMode && (
+              <Button size="sm" variant="outline" onClick={addFeature}>
+                <Plus className="h-3.5 w-3.5 mr-1.5" />
+                Adicionar Funcionalidade
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
@@ -282,15 +288,45 @@ export default function Assinatura() {
                     <th className="text-center p-3 text-xs font-medium w-[20%]">Básico</th>
                     <th className="text-center p-3 text-xs font-medium text-primary w-[20%]">Profissional</th>
                     <th className="text-center p-3 text-xs font-medium w-[20%]">Empresarial</th>
+                    {editMode && <th className="w-10"></th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {FEATURES.map((f, i) => (
-                    <tr key={f.label} className={cn("border-b border-dashed", i % 2 === 0 && "bg-muted/10")}>
-                      <td className="p-3 text-xs">{f.label}</td>
-                      <td className="p-3 text-center"><div className="flex justify-center"><FeatureValue value={f.basico} /></div></td>
-                      <td className="p-3 text-center bg-primary/5"><div className="flex justify-center"><FeatureValue value={f.profissional} /></div></td>
-                      <td className="p-3 text-center"><div className="flex justify-center"><FeatureValue value={f.empresarial} /></div></td>
+                  {features.map((f, i) => (
+                    <tr key={i} className={cn("border-b border-dashed", i % 2 === 0 && "bg-muted/10")}>
+                      <td className="p-2 text-xs">
+                        {editMode ? (
+                          <Input value={f.label} onChange={e => updateFeature(i, 'label', e.target.value)} className="h-8 text-xs" />
+                        ) : f.label}
+                      </td>
+                      {(['basico', 'profissional', 'empresarial'] as const).map(plan => (
+                        <td key={plan} className={cn("p-2 text-center", plan === 'profissional' && "bg-primary/5")}>
+                          {editMode ? (
+                            typeof f[plan] === 'string' || (typeof f[plan] === 'boolean' && false) ? (
+                              <Input
+                                value={typeof f[plan] === 'boolean' ? '' : (f[plan] as string)}
+                                onChange={e => updateFeature(i, plan, e.target.value)}
+                                placeholder="Texto ou vazio"
+                                className="h-8 text-xs text-center"
+                              />
+                            ) : (
+                              <div className="flex flex-col items-center gap-1">
+                                <Switch checked={f[plan] === true} onCheckedChange={v => updateFeature(i, plan, v)} />
+                                <button type="button" onClick={() => updateFeature(i, plan, '')} className="text-[9px] text-muted-foreground hover:text-primary">usar texto</button>
+                              </div>
+                            )
+                          ) : (
+                            <div className="flex justify-center"><FeatureValue value={f[plan]} /></div>
+                          )}
+                        </td>
+                      ))}
+                      {editMode && (
+                        <td className="p-2">
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeFeature(i)}>
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
