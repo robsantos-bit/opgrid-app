@@ -94,6 +94,24 @@ export default function Assinatura() {
   const [editMode, setEditMode] = useState(false);
   const [planos, setPlanos] = useState(INITIAL_PLANOS);
   const [features, setFeatures] = useState<PlanoFeature[]>(INITIAL_FEATURES);
+  const [pagamentoOpen, setPagamentoOpen] = useState(false);
+  const [metodoPagamento, setMetodoPagamento] = useState<'cartao' | 'pix' | 'boleto'>('cartao');
+  const [cartaoNumero, setCartaoNumero] = useState('•••• •••• •••• 4242');
+  const [cartaoNome, setCartaoNome] = useState('JOAO DA SILVA');
+  const [cartaoValidade, setCartaoValidade] = useState('12/27');
+  const [cartaoCvv, setCartaoCvv] = useState('');
+  const [autoRenovacao, setAutoRenovacao] = useState(true);
+
+  const faturas = [
+    { id: 'INV-2025-003', data: '01/03/2025', valor: 'R$ 299,00', status: 'Paga' },
+    { id: 'INV-2025-002', data: '01/02/2025', valor: 'R$ 299,00', status: 'Paga' },
+    { id: 'INV-2025-001', data: '01/01/2025', valor: 'R$ 299,00', status: 'Paga' },
+  ];
+
+  const handleSalvarPagamento = () => {
+    toast.success('Método de pagamento atualizado!');
+    setPagamentoOpen(false);
+  };
 
   const handleAssinar = (planoId: string) => {
     if (planoId === planoAtual) {
